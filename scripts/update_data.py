@@ -9,7 +9,8 @@ DATA=ROOT/'data'; DATA.mkdir(exist_ok=True)
 CMC='https://pro-api.coinmarketcap.com/public-api'
 CG='https://api.coingecko.com/api/v3'
 NOW=lambda: datetime.now(timezone.utc).isoformat()
-HEADERS={'User-Agent':'Mozilla/5.0 CryptoCheckpoint/2.7','Accept':'application/json'}
+HEADERS={'User-Agent':'Mozilla/5.0 CryptoCheckpoint/2.9','Accept':'application/json'}
+OKX='https://www.okx.com'
 
 
 def get_json(url, timeout=20, retries=2):
@@ -119,79 +120,48 @@ def derivative_base(d):
 
 
 HISTORY_CACHE=DATA/'history_cache.json'
-HISTORY_TTL=3600  # hourly history is cached for 1 hour; workflow itself runs every 15 min.
+HISTORY_TTL=3600
 
 def load_history_cache():
-    try:
-        return json.loads(HISTORY_CACHE.read_text())
-    except Exception:
-        return {}
+    try: return json.loads(HISTORY_CACHE.read_text())
+    except Exception: return {}
 
-def save_history_cache(cache):
-    HISTORY_CACHE.write_text(json.dumps(cache,separators=(',',':')))
+def save_history_cache(cache): HISTORY_CACHE.write_text(json.dumps(cache,separators=(',',':')))
 
 history_cache=load_history_cache()
 
-def fetch_coin_history(coin_id):
+def okx_history(coin_base):
+    # Prefer the USDT perpetual so technical/volume data reflects futures activity.
+    # OKX public market endpoints are unauthenticated and support recent candles.
+    candidates=[f'{coin_base}-USDT-SWAP', f'{coin_base}-USDT']
+    last=None
+    for inst in candidates:
+        try:
+            q=urlencode({'instId':inst,'bar':'1H','limit':'600'})
+            j=get_json(f'{OKX}/api/v5/market/candles?{q}',timeout=20,retries=1)
+            if str(j.get('code'))!='0': raise RuntimeError(f"OKX {j.get('code')}: {j.get('msg')}" )
+            rows=[]
+            for r in j.get('data',[]):
+                if len(r)<9: continue
+                # OKX returns newest first. Use only completed candles.
+                if str(r[8])!='1': continue
+                rows.append([int(r[0])//1000,float(r[1]),float(r[2]),float(r[3]),float(r[4]),float(r[7] or r[5] or 0)])
+            rows.sort(key=lambda x:x[0])
+            if len(rows)>=120: return rows, ('OKX '+('SWAP' if inst.endswith('-SWAP') else 'SPOT'),inst)
+            if rows: last=RuntimeError(f'OKX {inst}: only {len(rows)} completed 1H candles')
+        except Exception as e: last=e
+    raise last or RuntimeError(f'OKX: no history for {coin_base}')
+
+def fetch_coin_history(coin_id, base_symbol=None):
     key=str(coin_id)
     now=time.time()
     cached=history_cache.get(key)
     if isinstance(cached,dict) and cached.get('fetched_at') and now-float(cached['fetched_at']) < HISTORY_TTL and cached.get('rows'):
-        return cached['rows'], True
+        return cached['rows'], True, cached.get('source','OKX cached')
+    rows,source=okx_history(str(base_symbol or '').upper())
+    history_cache[key]={'fetched_at':now,'rows':rows,'source':source[0],'instrument':source[1]}
+    return rows,False,source[0]
 
-    # 21d hourly is enough for 4H MA100 (100 x 4h = 16.7d) and 1D structure.
-    # Requests are deliberately serialized because CoinGecko public access is rate-limited.
-    j=cg(f'/coins/{coin_id}/market_chart',{'vs_currency':'usd','days':'21','interval':'hourly'})
-    prices=j.get('prices',[]); vols=j.get('total_volumes',[])
-    vm={int(t/1000):float(v) for t,v in vols}
-    rows=[]
-    for p in prices:
-        ts=int(p[0]/1000); rows.append([ts,float(p[1]),float(p[1]),float(p[1]),float(p[1]),vm.get(ts,0)])
-    history_cache[key]={'fetched_at':now,'rows':rows}
-    return rows, False
-
-
-def technical_from_history(symbol,m,history):
-    try:
-        h4=aggregate_hourly(history,4); d1=aggregate_hourly(history,24)
-        c=[x[4] for x in h4]
-        e10,e20,e55=ema(c,10),ema(c,20),ema(c,55);ma50,ma100=sma(c,50),sma(c,100);rr=rsi(c);aa=atr(h4)
-        s4=structure(h4);s1=structure(d1)
-        score=5.0; reasons=[]
-        if e10 and e20 and e55:
-            if e10>e20>e55:score+=1.2;reasons.append('EMA bullish')
-            elif e10<e20<e55:score-=1.2;reasons.append('EMA bearish')
-        if ma50 and ma100:
-            if ma50>ma100:score+=.5;reasons.append('MA50 > MA100')
-            elif ma50<ma100:score-=.5;reasons.append('MA50 < MA100')
-        if rr is not None:
-            if 55<=rr<=70:score+=.7;reasons.append('RSI bullish zone')
-            elif rr<=45:score-=.7;reasons.append('RSI weak')
-        ch=m.get('change',0)
-        if ch>3:score+=.4;reasons.append('momentum')
-        elif ch<-3:score-=.4;reasons.append('negative momentum')
-        oi=m.get('oiDelta')
-        if oi is not None:
-            if oi>5:score+=.5;reasons.append('OI expansion')
-            elif oi<-5:score-=.2;reasons.append('OI contraction')
-        vr=m.get('volRatio') or 0
-        if vr>=1.75:score+=.8;reasons.append(f'{vr:.1f}x 1H volume spike')
-        elif vr>=1.25:score+=.3;reasons.append('elevated 1H volume')
-        score=max(0,min(10,score));signal='LONG' if score>=7 else 'SHORT' if score<=4 else 'NEUTRAL'
-        return {'symbol':symbol,'score':round(score,2),'signal':signal,'rsi':rr,'ema10':e10,'ema20':e20,'ema55':e55,'ma50':ma50,'ma100':ma100,'atr':aa,'structure4h':s4,'structure1d':s1,'trend':s4['trend'],'reasons':reasons,'historySource':'CoinGecko market_chart'}
-    except Exception as e:
-        return {'symbol':symbol,'error':str(e)}
-
-
-def volume_spike(history):
-    if len(history)<22:return None
-    # Use completed hourly bars; latest may be incomplete, so use previous bar as current completed bar.
-    vols=[float(x[5]) for x in history]
-    cur=vols[-2];base=statistics.median(vols[-22:-2])
-    if base<=0:return None
-    ratio=cur/base
-    label='EXTREME' if ratio>=4 else 'MAJOR' if ratio>=2.5 else 'SPIKE' if ratio>=1.75 else 'ELEVATED' if ratio>=1.25 else 'NORMAL'
-    return {'vol1h':cur,'volBaseline':base,'volRatio':ratio,'spike':label,'spikeSource':'CoinGecko 1H market volume'}
 
 # Normalize CMC v3 quote shapes. Listings/Quotes v3 return quote as a LIST.
 def usd_quote(asset):
@@ -345,14 +315,16 @@ for x in ranked:
     if not x.get('coinId'): continue
     history_stats['requested']+=1
     try:
-        h,cache_hit=fetch_coin_history(x['coinId'])
+        h,cache_hit,hsrc=fetch_coin_history(x['coinId'],x.get('baseSymbol'))
         histories[x['assetKey']]=h
+        x['historySource']=hsrc
         history_stats['cacheHits']+=1 if cache_hit else 0
         history_stats['freshFetches']+=0 if cache_hit else 1
         sp=volume_spike(h)
-        if sp:x.update(sp)
-        # Small pacing delay between fresh public requests. Cached assets do not wait.
-        if not cache_hit: time.sleep(8)
+        if sp:
+            sp['spikeSource']=hsrc+' 1H market volume'
+            x.update(sp)
+        if not cache_hit: time.sleep(1)
     except Exception as e:
         history_stats['errors']+=1
         x['historyError']=str(e)
@@ -383,20 +355,20 @@ ctx['engine_status']='OK' if rows else 'NO_MARKET_DATA'
 ctx['context_status']='COMPLETE' if all(k in ctx for k in ('fng','altseason','btcDom','totalMarketCap','btcCap','ethCap','total3','total3Btc')) else 'PARTIAL'
 ctx['marketSource']='CoinMarketCap listings'
 ctx['derivativesSource']='CoinGecko aggregated derivatives'
-ctx['volumeSource']='CoinGecko hourly market_chart'
+ctx['volumeSource']='OKX 1H candles (futures-first, spot fallback)'
 ctx['volumeSpikeTimeframe']='1H'
 ctx['assetUniverse']='CMC listings excluding obvious tokenized-stock assets; unique identity = coinId'
 ctx['stageBHistoryLimit']=12
 ctx['oiDeltaDefinition']='snapshot-to-snapshot change versus previous market.json run, not 24h'
 ctx['derivativesMapping']='Only unique CMC ticker symbols are auto-enriched to avoid same-symbol collisions'
-ctx['historyProvider']='CoinGecko market_chart (serialized + 1h cache)'
+ctx['historyProvider']='OKX 1H candles (futures-first, spot fallback; serialized + 1h cache)'
 ctx['historyCacheTTLSeconds']=HISTORY_TTL
-ctx['historyFetchPacingSeconds']=8
+ctx['historyFetchPacingSeconds']=1
 ctx['historyStats']=history_stats
 ctx['generated_at']=NOW()
 
 (DATA/'market.json').write_text(json.dumps({'generated_at':NOW(),'source':'CMC + CoinGecko','count':len(rows),'symbols':rows,'engine_status':'OK' if rows else 'NO_MARKET_DATA'},separators=(',',':')))
-(DATA/'analysis.json').write_text(json.dumps({'generated_at':NOW(),'source':'CoinGecko hourly → 4H/1D','count':len(analysis),'analysis':analysis},separators=(',',':')))
+(DATA/'analysis.json').write_text(json.dumps({'generated_at':NOW(),'source':'OKX hourly → 4H/1D','count':len(analysis),'analysis':analysis},separators=(',',':')))
 (DATA/'context.json').write_text(json.dumps(ctx,separators=(',',':')))
 
 print(f'Generated {len(rows)} broad market rows, {len(analysis)} Stage-B analyses')
