@@ -179,30 +179,131 @@ def fetch_coin_history(coin_id, base_symbol=None):
 
 
 
-def confirmation_from_history(history, direction, entry_low, entry_high):
-    # Use completed 1H candles only. A zone touch alone is not confirmation.
-    if not history or len(history) < 3:
+def confirmation_from_history(history, direction, entry_low, entry_high, atrv):
+    # Completed 1H candle confirmation. A zone touch alone is never confirmation.
+    if not history or len(history) < 4:
         return {'status':'NO_DATA','reason':'Insufficient completed candles'}
-    rows=history[-4:]
-    last=rows[-1]; prev=rows[-2]
+    last=history[-2] if len(history)>=2 else history[-1]
+    prev=history[-3] if len(history)>=3 else history[-2]
     o,h,l,c=map(float,last[1:5])
     po,ph,pl,pc=map(float,prev[1:5])
-    touched= l <= entry_high and h >= entry_low
-    bullish=(c>o)
-    bearish=(c<o)
+    body=abs(c-o)
+    atrv=max(float(atrv or 0), 1e-12)
+    touched=l <= entry_high and h >= entry_low
+    body_ratio=body/atrv
+    close_buffer=0.05*atrv
     if direction=='LONG':
-        confirmed = touched and bullish and c > entry_high and c > pc
+        bullish=c>o
+        close_above=c > entry_high + close_buffer
+        higher_close=c > pc
+        # Require a meaningful bullish body and a close clearly outside the zone.
+        confirmed=touched and bullish and close_above and higher_close and body_ratio>=0.25
         if confirmed:
-            return {'status':'CONFIRMED','reason':'Zone touch + bullish 1H close above entry zone','candleClose':c,'candleHigh':h,'candleLow':l}
+            return {'status':'CONFIRMED','reason':'Zone touch + meaningful bullish 1H reaction + close above zone',
+                    'candleOpen':o,'candleClose':c,'candleHigh':h,'candleLow':l,
+                    'bodyATR':round(body_ratio,3),'closeBufferATR':0.05}
         if touched:
-            return {'status':'TOUCHED_WAIT_CONFIRMATION','reason':'Entry zone touched; bullish confirmation not yet present','candleClose':c,'candleHigh':h,'candleLow':l}
-        return {'status':'NOT_TRIGGERED','reason':'No completed 1H reaction from entry zone','candleClose':c,'candleHigh':h,'candleLow':l}
-    confirmed = touched and bearish and c < entry_low and c < pc
+            reasons=[]
+            if not bullish: reasons.append('1H candle not bullish')
+            if not close_above: reasons.append('close not sufficiently above entry zone')
+            if not higher_close: reasons.append('close did not exceed previous 1H close')
+            if body_ratio<0.25: reasons.append('1H body too weak')
+            return {'status':'TOUCHED_WAIT_CONFIRMATION','reason':'Entry zone touched; '+'; '.join(reasons),
+                    'candleOpen':o,'candleClose':c,'candleHigh':h,'candleLow':l,
+                    'bodyATR':round(body_ratio,3),'closeBufferATR':0.05}
+        return {'status':'NOT_TRIGGERED','reason':'No completed 1H reaction from entry zone',
+                'candleOpen':o,'candleClose':c,'candleHigh':h,'candleLow':l,
+                'bodyATR':round(body_ratio,3),'closeBufferATR':0.05}
+    bearish=c<o
+    close_below=c < entry_low - close_buffer
+    lower_close=c < pc
+    confirmed=touched and bearish and close_below and lower_close and body_ratio>=0.25
     if confirmed:
-        return {'status':'CONFIRMED','reason':'Zone touch + bearish 1H close below entry zone','candleClose':c,'candleHigh':h,'candleLow':l}
+        return {'status':'CONFIRMED','reason':'Zone touch + meaningful bearish 1H reaction + close below zone',
+                'candleOpen':o,'candleClose':c,'candleHigh':h,'candleLow':l,
+                'bodyATR':round(body_ratio,3),'closeBufferATR':0.05}
     if touched:
-        return {'status':'TOUCHED_WAIT_CONFIRMATION','reason':'Entry zone touched; bearish confirmation not yet present','candleClose':c,'candleHigh':h,'candleLow':l}
-    return {'status':'NOT_TRIGGERED','reason':'No completed 1H reaction from entry zone','candleClose':c,'candleHigh':h,'candleLow':l}
+        reasons=[]
+        if not bearish: reasons.append('1H candle not bearish')
+        if not close_below: reasons.append('close not sufficiently below entry zone')
+        if not lower_close: reasons.append('close did not fall below previous 1H close')
+        if body_ratio<0.25: reasons.append('1H body too weak')
+        return {'status':'TOUCHED_WAIT_CONFIRMATION','reason':'Entry zone touched; '+'; '.join(reasons),
+                'candleOpen':o,'candleClose':c,'candleHigh':h,'candleLow':l,
+                'bodyATR':round(body_ratio,3),'closeBufferATR':0.05}
+    return {'status':'NOT_TRIGGERED','reason':'No completed 1H reaction from entry zone',
+            'candleOpen':o,'candleClose':c,'candleHigh':h,'candleLow':l,
+            'bodyATR':round(body_ratio,3),'closeBufferATR':0.05}
+
+
+def build_trade_setup(m, tech, history=None):
+    """Construct a conditional setup with confirmation and risk-quality filters."""
+    price=float(m.get('price') or 0)
+    atrv=float(tech.get('atr') or 0)
+    e10=tech.get('ema10'); e20=tech.get('ema20')
+    s4=tech.get('structure4h') or {}; s1=tech.get('structure1d') or {}
+    signal=tech.get('signal'); score=float(tech.get('score') or 0)
+    extension=tech.get('extension','NORMAL')
+    hsrc=str(tech.get('historySource') or '')
+    futures='SWAP' in hsrc.upper()
+
+    # Guardrails: reject setups with an impractically wide structural stop.
+    MAX_STOP_ATR=3.5
+    MAX_RISK_PCT=8.0
+
+    setup=None
+    if signal=='LONG' and score>=7 and s4.get('trend')=='Rising' and s1.get('trend')!='Falling' and extension not in ('EXTREME_HIGH',):
+        if e10 and e20 and atrv and price:
+            lo=min(e10,e20); hi=max(e10,e20)
+            entry_low=max(0.0,lo-0.15*atrv); entry_high=hi+0.15*atrv
+            swing_low=float(s4.get('low') or 0)
+            sl=max(0.0,swing_low-0.10*atrv)
+            if sl>=entry_low: sl=max(0.0,entry_low-0.75*atrv)
+            risk=max(entry_high-sl,0.0)
+            risk_pct=(risk/entry_high*100) if entry_high else 999
+            stop_atr=risk/atrv if atrv else 999
+            if risk_pct > MAX_RISK_PCT or stop_atr > MAX_STOP_ATR:
+                return None
+            tp1=entry_high+1.5*risk; tp2=entry_high+2.5*risk
+            if price < entry_low: status='BELOW_ENTRY_ZONE'
+            elif price <= entry_high: status='INSIDE_ENTRY_ZONE'
+            else: status='ABOVE_ENTRY_ZONE'
+            confirmation=confirmation_from_history(history,'LONG',entry_low,entry_high,atrv) if history else {'status':'NO_DATA','reason':'History unavailable'}
+            if confirmation.get('status')=='CONFIRMED': entry_trigger='CONFIRMED'
+            elif status=='INSIDE_ENTRY_ZONE': entry_trigger='IN_ZONE_WAIT_CONFIRMATION'
+            else: entry_trigger='WAIT_PULLBACK'
+            setup={'direction':'LONG','entryLow':entry_low,'entryHigh':entry_high,'entryStatus':status,'entryTrigger':entry_trigger,
+                   'confirmation':confirmation,'stopLoss':sl,'tp1':tp1,'tp2':tp2,'riskPerUnit':risk,
+                   'riskPct':risk_pct,'stopDistanceATR':stop_atr,'riskQuality':'PASS',
+                   'rrTp1':1.5,'rrTp2':2.5,'setupType':'EMA pullback + structure continuation',
+                   'historyMarketType':'FUTURES' if futures else 'SPOT_FALLBACK'}
+    elif signal=='SHORT' and score<=4 and s4.get('trend')=='Falling' and s1.get('trend')!='Rising' and extension not in ('EXTREME_LOW',):
+        if e10 and e20 and atrv and price:
+            lo=min(e10,e20); hi=max(e10,e20)
+            entry_low=max(0.0,lo-0.15*atrv); entry_high=hi+0.15*atrv
+            swing_high=float(s4.get('high') or 0)
+            sl=swing_high+0.10*atrv
+            if sl<=entry_high: sl=entry_high+0.75*atrv
+            risk=max(sl-entry_low,0.0)
+            risk_pct=(risk/entry_low*100) if entry_low else 999
+            stop_atr=risk/atrv if atrv else 999
+            if risk_pct > MAX_RISK_PCT or stop_atr > MAX_STOP_ATR:
+                return None
+            tp1=max(0.0,entry_low-1.5*risk); tp2=max(0.0,entry_low-2.5*risk)
+            if price > entry_high: status='ABOVE_ENTRY_ZONE'
+            elif price >= entry_low: status='INSIDE_ENTRY_ZONE'
+            else: status='BELOW_ENTRY_ZONE'
+            confirmation=confirmation_from_history(history,'SHORT',entry_low,entry_high,atrv) if history else {'status':'NO_DATA','reason':'History unavailable'}
+            if confirmation.get('status')=='CONFIRMED': entry_trigger='CONFIRMED'
+            elif status=='INSIDE_ENTRY_ZONE': entry_trigger='IN_ZONE_WAIT_CONFIRMATION'
+            else: entry_trigger='WAIT_RETEST'
+            setup={'direction':'SHORT','entryLow':entry_low,'entryHigh':entry_high,'entryStatus':status,'entryTrigger':entry_trigger,
+                   'confirmation':confirmation,'stopLoss':sl,'tp1':tp1,'tp2':tp2,'riskPerUnit':risk,
+                   'riskPct':risk_pct,'stopDistanceATR':stop_atr,'riskQuality':'PASS',
+                   'rrTp1':1.5,'rrTp2':2.5,'setupType':'EMA retest + structure continuation',
+                   'historyMarketType':'FUTURES' if futures else 'SPOT_FALLBACK'}
+    return setup
+
 
 def build_trade_setup(m, tech, history=None):
     """Construct a conditional setup from already-calculated technicals.
@@ -560,6 +661,38 @@ for x in ranked:
         analysis.append(a)
 analysis.sort(key=lambda x:x.get('score',0),reverse=True)
 
+# Persistent setup lifecycle. This preserves state across 15-minute GitHub Action runs.
+STATE_FILE=DATA/'trade_state.json'
+try:
+    prior_state=json.loads(STATE_FILE.read_text()).get('setups',{})
+except Exception:
+    prior_state={}
+now_iso=NOW()
+current_state={}
+for a in analysis:
+    key=a.get('assetKey')
+    setup=a.get('setup')
+    if not key or not setup: continue
+    old=prior_state.get(key,{})
+    state=old.get('lifecycle','WAITING_ENTRY')
+    setup_status=a.get('setupStatus')
+    if setup_status=='READY_CONFIRMED':
+        state='CONFIRMED'
+    elif setup_status=='IN_ZONE_WAIT_CONFIRMATION':
+        state='ZONE_TOUCHED'
+    elif setup_status=='WAITING_ENTRY':
+        state='WAITING_ENTRY'
+    current_state[key]={
+        'assetKey':key,'symbol':a.get('symbol'),'direction':setup.get('direction'),
+        'lifecycle':state,'createdAt':old.get('createdAt',now_iso),
+        'lastSeenAt':now_iso,'entryLow':setup.get('entryLow'),'entryHigh':setup.get('entryHigh'),
+        'stopLoss':setup.get('stopLoss'),'tp1':setup.get('tp1'),'tp2':setup.get('tp2'),
+        'riskPct':setup.get('riskPct'),'stopDistanceATR':setup.get('stopDistanceATR'),
+        'setupStatus':setup_status,'confirmationStatus':(setup.get('confirmation') or {}).get('status')
+    }
+( DATA/'trade_state.json').write_text(json.dumps({'generated_at':now_iso,'setups':current_state},separators=(',',':')))
+
+
 # Make sure every core asset has an analysis if its history succeeded.
 ctx['engine_status']='OK' if rows else 'NO_MARKET_DATA'
 ctx['context_status']='COMPLETE' if all(k in ctx for k in ('fng','altseason','btcDom','totalMarketCap','btcCap','ethCap','total3','total3Btc')) else 'PARTIAL'
@@ -573,7 +706,9 @@ ctx['potentialTradeDefinition']='Directional signal + aligned 4H/1D structure + 
 ctx['coreWatchAssets']=['BTC','ETH','XRP','SOL']
 ctx['stageBOpportunitySlots']=8
 ctx['tradeSelectionRule']='Core assets are always monitored; potential trades require confluence plus a defined EMA pullback/retest setup'
-ctx['setupEngine']='EMA10-EMA20 pullback/retest with 4H structural invalidation; TP1=1.5R, TP2=2.5R; zone touch is insufficient; READY requires a completed 1H reaction/confirmation candle'
+ctx['setupEngine']='EMA10-EMA20 pullback/retest with 4H structural invalidation; TP1=1.5R, TP2=2.5R; zone touch is insufficient; READY requires meaningful completed 1H reaction; risk guardrails reject >8% stop distance or >3.5 ATR'
+ctx['setupRiskGuardrails']={'maxRiskPct':8.0,'maxStopDistanceATR':3.5,'tp1R':1.5,'tp2R':2.5}
+ctx['setupLifecycle']='WAITING_ENTRY → ZONE_TOUCHED → CONFIRMED → ACTIVE → TP1_HIT → TP2_HIT/SL_HIT → CLOSED; alternative exits EXPIRED/INVALIDATED/CANCELLED'
 ctx['oiDeltaDefinition']='snapshot-to-snapshot change versus previous market.json run, not 24h'
 ctx['derivativesMapping']='Only unique CMC ticker symbols are auto-enriched to avoid same-symbol collisions'
 ctx['historyProvider']='OKX 1H candles (futures-first, spot fallback; serialized + 1h cache)'
@@ -587,7 +722,8 @@ ctx['generated_at']=NOW()
 (DATA/'context.json').write_text(json.dumps(ctx,separators=(',',':')))
 
 print(f'Generated {len(rows)} broad market rows, {len(analysis)} Stage-B analyses')
-print('Setup confirmation: completed 1H zone reaction required before READY')
+print('Setup confirmation: meaningful completed 1H reaction required before READY')
+print(f'Persistent setup states: {len(current_state)}')
 print('Market source: CoinMarketCap listings')
 print('Derivatives source: CoinGecko aggregated derivatives' if derivs else 'Derivatives source: unavailable')
 print('Volume spike source: OKX 1H candles; timeframe=1H')
