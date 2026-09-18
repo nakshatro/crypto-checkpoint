@@ -10,10 +10,10 @@ DATA=ROOT/'data'; DATA.mkdir(exist_ok=True)
 CMC='https://pro-api.coinmarketcap.com/public-api'
 CG='https://api.coingecko.com/api/v3'
 NOW=lambda: datetime.now(timezone.utc).isoformat()
-HEADERS={'User-Agent':'Mozilla/5.0 CryptoCheckpoint/2.4','Accept':'application/json'}
+HEADERS={'User-Agent':'Mozilla/5.0 CryptoCheckpoint/2.7','Accept':'application/json'}
 
 
-def get_json(url, timeout=20, retries=2):
+def get_json(url, timeout=20, retries=3):
     last=None
     for i in range(retries+1):
         try:
@@ -23,7 +23,9 @@ def get_json(url, timeout=20, retries=2):
                 return json.loads(raw)
         except Exception as e:
             last=e
-            if i<retries: time.sleep(1.5*(i+1))
+            # CoinGecko commonly returns 429 when the free public endpoint is busy.
+            # Back off progressively instead of immediately retrying.
+            if i<retries: time.sleep(2.5*(i+1))
     raise last
 
 
@@ -113,8 +115,8 @@ def derivative_base(d):
 
 
 def fetch_coin_history(coin_id):
-    # 30d hourly is enough for 4H MA100 and 1D structure; one call per selected asset.
-    j=cg(f'/coins/{coin_id}/market_chart',{'vs_currency':'usd','days':'30','interval':'hourly'})
+    # 21d hourly is enough for 4H MA100 (100 x 4h = 16.7d) and 1D structure.
+    j=cg(f'/coins/{coin_id}/market_chart',{'vs_currency':'usd','days':'21','interval':'hourly'})
     prices=j.get('prices',[]); vols=j.get('total_volumes',[])
     vm={int(t/1000):float(v) for t,v in vols}
     rows=[]
@@ -228,6 +230,16 @@ if 'btcCap' in ctx and 'ethCap' in ctx and 'totalMarketCap' in ctx:
 else:
     ctx['total3Error']='BTC/ETH market cap unavailable from CMC listings'
 
+def is_non_crypto_asset(x):
+    """Exclude obvious tokenized equities/stocks from the crypto trading universe."""
+    tags=x.get('tags') or []
+    tag_text=' '.join(str(t.get('slug') if isinstance(t,dict) else t) for t in tags).lower()
+    name=str(x.get('name') or '').lower()
+    bad_terms=('tokenized-stock','tokenized-stock-representation','tokenized-stocks','equity-token')
+    if any(t in tag_text for t in bad_terms): return True
+    if 'tokenized stock' in name or 'tokenized stocks' in name: return True
+    return False
+
 # ---------------- CoinGecko derivatives ----------------
 derivs=[]; deriv_error=None
 try: derivs=cg('/derivatives') or []
@@ -235,7 +247,15 @@ except Exception as e: deriv_error=str(e)
 if deriv_error:ctx['derivativesError']=deriv_error
 
 # Build derivative lookup. Prefer USDT-like contracts and liquid markets.
-deriv_by_base={}
+# CMC can contain multiple assets with the same ticker symbol. To avoid attaching
+# one asset's derivative contract to another same-symbol asset, only auto-map
+# derivatives for CMC symbols that are unique in the filtered asset universe.
+filtered_listings=[x for x in listings if isinstance(x,dict) and not is_non_crypto_asset(x)]
+symbol_counts={}
+for a in filtered_listings:
+    b=str(a.get('symbol') or '').upper()
+    if b: symbol_counts[b]=symbol_counts.get(b,0)+1
+unique_symbols={b for b,n in symbol_counts.items() if n==1}
 for d in derivs if isinstance(derivs,list) else []:
     base=derivative_base(d)
     target=str(d.get('target') or '').upper()
@@ -244,7 +264,7 @@ for d in derivs if isinstance(derivs,list) else []:
     # Keep USD/USDT perpetual-like contracts; avoid dated futures when contract_type explicitly says futures.
     if target and target not in ('USDT','USD','USDC'): continue
     if not target and not any(q in symbol for q in ('USDT','USD')): continue
-    if not base: continue
+    if not base or base not in unique_symbols: continue
     try: vol=float(d.get('volume_24h') or 0); oi=float(d.get('open_interest') or 0)
     except: vol=0;oi=0
     item={'derivMarket':market_name,'derivSymbol':symbol,'oi':oi,'funding':float(d.get('funding_rate') or 0)*100 if d.get('funding_rate') is not None else None,'derivVolume':vol,'basis':float(d.get('basis') or 0) if d.get('basis') is not None else None,'derivPrice':float(d.get('price') or 0) if d.get('price') else None}
@@ -253,7 +273,7 @@ for d in derivs if isinstance(derivs,list) else []:
 
 # ---------------- Build broad market rows ----------------
 rows=[]
-for x in listings if isinstance(listings,list) else []:
+for x in filtered_listings:
     if not isinstance(x,dict): continue
     sym=str(x.get('symbol') or '').upper()+'USDT'
     if sym=='USDTUSDT':continue
@@ -262,38 +282,40 @@ for x in listings if isinstance(listings,list) else []:
     if price is None:continue
     base=str(x.get('symbol') or '').upper()
     d=deriv_by_base.get(base,{})
-    rows.append({'symbol':sym,'coinId':x.get('id'),'name':x.get('name'),'price':float(price),'change':float(q.get('percent_change_24h') or 0),'high':None,'low':None,'volume':float(q.get('volume_24h') or 0),'marketCap':float(q.get('market_cap') or 0),'oi':d.get('oi'),'funding':d.get('funding'),'oiDelta':None,'derivVolume':d.get('derivVolume'),'derivMarket':d.get('derivMarket'),'derivSymbol':d.get('derivSymbol'),'source':'CMC + CoinGecko derivatives','ts':int(time.time()*1000)})
+    rows.append({'assetKey':f"CMC:{x.get('id')}",'baseSymbol':base,'symbol':sym,'coinId':x.get('id'),'name':x.get('name'),'price':float(price),'change':float(q.get('percent_change_24h') or 0),'high':None,'low':None,'volume':float(q.get('volume_24h') or 0),'marketCap':float(q.get('market_cap') or 0),'oi':d.get('oi'),'funding':d.get('funding'),'oiDelta':None,'derivVolume':d.get('derivVolume'),'derivMarket':d.get('derivMarket'),'derivSymbol':d.get('derivSymbol'),'source':'CMC + CoinGecko derivatives','ts':int(time.time()*1000)})
 
 # Load previous snapshot for OI deltas.
 prev={}
-try: prev={x['symbol']:x for x in json.loads((DATA/'market.json').read_text()).get('symbols',[])}
+try: prev={x.get('assetKey') or f"CMC:{x.get('coinId')}":x for x in json.loads((DATA/'market.json').read_text()).get('symbols',[])}
 except Exception: pass
 for x in rows:
-    old=prev.get(x['symbol'],{});oldoi=old.get('oi');
+    old=prev.get(x.get('assetKey'),{});oldoi=old.get('oi');
     if x.get('oi') is not None and oldoi not in (None,0): x['oiDelta']=(x['oi']-float(oldoi))/float(oldoi)*100
 
 # Stage A: prioritize liquid/active names, while retaining core.
 rows.sort(key=lambda x:(x.get('derivVolume') or 0,x.get('volume') or 0),reverse=True)
-by_symbol={x['symbol']:x for x in rows}
+by_asset={x['assetKey']:x for x in rows}
+by_symbol={x['symbol']:x for x in rows if symbol_counts.get(x.get('baseSymbol'))==1}
 # Candidate pool: top 40 by 24h volume, plus top derivative volume names, plus core.
 vol_rank=sorted(rows,key=lambda x:x.get('volume') or 0,reverse=True)[:60]
 deriv_rank=sorted([x for x in rows if x.get('derivVolume')],key=lambda x:x.get('derivVolume') or 0,reverse=True)[:60]
-candidates={x['symbol'] for x in vol_rank+deriv_rank}
+candidates={x['assetKey'] for x in vol_rank+deriv_rank}
 for s in ['BTCUSDT','ETHUSDT','XRPUSDT','SOLUSDT']: 
-    if s in by_symbol:candidates.add(s)
+    if s in by_symbol:candidates.add(by_symbol[s]['assetKey'])
 
-# Fetch CoinGecko hourly history for up to 28 assets (20 broad + 4 core + derivative leaders).
-ranked=sorted([by_symbol[s] for s in candidates],key=lambda x:(x.get('derivVolume') or 0,x.get('volume') or 0),reverse=True)[:28]
+# Fetch history for a small Stage-B shortlist to stay within CoinGecko free-tier limits.
+# Four core assets are always retained when available.
+ranked=sorted([by_asset[s] for s in candidates],key=lambda x:(x.get('derivVolume') or 0,x.get('volume') or 0),reverse=True)[:12]
 for s in ['BTCUSDT','ETHUSDT','XRPUSDT','SOLUSDT']:
-    if s in by_symbol and all(x['symbol']!=s for x in ranked):ranked.append(by_symbol[s])
+    if s in by_symbol and all(x['assetKey']!=by_symbol[s]['assetKey'] for x in ranked):ranked.append(by_symbol[s])
 
 histories={}
-with ThreadPoolExecutor(max_workers=5) as ex:
+with ThreadPoolExecutor(max_workers=2) as ex:
     fut={ex.submit(fetch_coin_history,x['coinId']):x for x in ranked if x.get('coinId')}
     for f in as_completed(fut):
         x=fut[f]
         try:
-            h=f.result();histories[x['symbol']]=h
+            h=f.result();histories[x['assetKey']]=h
             sp=volume_spike(h)
             if sp:x.update(sp)
         except Exception as e:x['historyError']=str(e)
@@ -304,8 +326,8 @@ for x in rows:
 
 # Stage B targeted technicals.
 analysis=[]
-with ThreadPoolExecutor(max_workers=5) as ex:
-    fut={ex.submit(technical_from_history,x['symbol'],x,histories[x['symbol']]):x for x in ranked if x['symbol'] in histories}
+with ThreadPoolExecutor(max_workers=2) as ex:
+    fut={ex.submit(technical_from_history,x['symbol'],x,histories[x['assetKey']]):x for x in ranked if x['assetKey'] in histories}
     for f in as_completed(fut):
         a=f.result()
         if 'error' not in a:analysis.append(a)
@@ -318,6 +340,10 @@ ctx['marketSource']='CoinMarketCap listings'
 ctx['derivativesSource']='CoinGecko aggregated derivatives'
 ctx['volumeSource']='CoinGecko hourly market_chart'
 ctx['volumeSpikeTimeframe']='1H'
+ctx['assetUniverse']='CMC listings excluding obvious tokenized-stock assets; unique identity = coinId'
+ctx['stageBHistoryLimit']=12
+ctx['oiDeltaDefinition']='snapshot-to-snapshot change versus previous market.json run, not 24h'
+ctx['derivativesMapping']='Only unique CMC ticker symbols are auto-enriched to avoid same-symbol collisions'
 ctx['generated_at']=NOW()
 
 (DATA/'market.json').write_text(json.dumps({'generated_at':NOW(),'source':'CMC + CoinGecko','count':len(rows),'symbols':rows,'engine_status':'OK' if rows else 'NO_MARKET_DATA'},separators=(',',':')))
