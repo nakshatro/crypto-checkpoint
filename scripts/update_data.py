@@ -179,7 +179,32 @@ def fetch_coin_history(coin_id, base_symbol=None):
 
 
 
-def build_trade_setup(m, tech):
+def confirmation_from_history(history, direction, entry_low, entry_high):
+    # Use completed 1H candles only. A zone touch alone is not confirmation.
+    if not history or len(history) < 3:
+        return {'status':'NO_DATA','reason':'Insufficient completed candles'}
+    rows=history[-4:]
+    last=rows[-1]; prev=rows[-2]
+    o,h,l,c=map(float,last[1:5])
+    po,ph,pl,pc=map(float,prev[1:5])
+    touched= l <= entry_high and h >= entry_low
+    bullish=(c>o)
+    bearish=(c<o)
+    if direction=='LONG':
+        confirmed = touched and bullish and c > entry_high and c > pc
+        if confirmed:
+            return {'status':'CONFIRMED','reason':'Zone touch + bullish 1H close above entry zone','candleClose':c,'candleHigh':h,'candleLow':l}
+        if touched:
+            return {'status':'TOUCHED_WAIT_CONFIRMATION','reason':'Entry zone touched; bullish confirmation not yet present','candleClose':c,'candleHigh':h,'candleLow':l}
+        return {'status':'NOT_TRIGGERED','reason':'No completed 1H reaction from entry zone','candleClose':c,'candleHigh':h,'candleLow':l}
+    confirmed = touched and bearish and c < entry_low and c < pc
+    if confirmed:
+        return {'status':'CONFIRMED','reason':'Zone touch + bearish 1H close below entry zone','candleClose':c,'candleHigh':h,'candleLow':l}
+    if touched:
+        return {'status':'TOUCHED_WAIT_CONFIRMATION','reason':'Entry zone touched; bearish confirmation not yet present','candleClose':c,'candleHigh':h,'candleLow':l}
+    return {'status':'NOT_TRIGGERED','reason':'No completed 1H reaction from entry zone','candleClose':c,'candleHigh':h,'candleLow':l}
+
+def build_trade_setup(m, tech, history=None):
     """Construct a conditional setup from already-calculated technicals.
     This is a setup/entry engine, not proof of an exchange fill.
     """
@@ -204,14 +229,15 @@ def build_trade_setup(m, tech):
             if sl>=entry_low: sl=max(0.0,entry_low-0.75*atrv)
             risk=max(entry_high-sl,0.0)
             tp1=entry_high+1.5*risk; tp2=entry_high+2.5*risk
-            if price<entry_low:
-                status='ENTRY_BELOW_ZONE'
-            elif price<=entry_high:
-                status='ENTRY_IN_ZONE'
-            else:
-                status='WAIT_PULLBACK'
-            setup={'direction':'LONG','entryLow':entry_low,'entryHigh':entry_high,'entryStatus':status,
-                   'stopLoss':sl,'tp1':tp1,'tp2':tp2,'riskPerUnit':risk,
+            if price < entry_low: status='BELOW_ENTRY_ZONE'
+            elif price <= entry_high: status='INSIDE_ENTRY_ZONE'
+            else: status='ABOVE_ENTRY_ZONE'
+            confirmation=confirmation_from_history(history,'LONG',entry_low,entry_high) if history else {'status':'NO_DATA','reason':'History unavailable'}
+            if confirmation.get('status')=='CONFIRMED': entry_trigger='CONFIRMED'
+            elif status=='INSIDE_ENTRY_ZONE': entry_trigger='IN_ZONE_WAIT_CONFIRMATION'
+            else: entry_trigger='WAIT_PULLBACK'
+            setup={'direction':'LONG','entryLow':entry_low,'entryHigh':entry_high,'entryStatus':status,'entryTrigger':entry_trigger,
+                   'confirmation':confirmation, 'stopLoss':sl,'tp1':tp1,'tp2':tp2,'riskPerUnit':risk,
                    'rrTp1':1.5,'rrTp2':2.5,'setupType':'EMA pullback + structure continuation',
                    'historyMarketType':'FUTURES' if futures else 'SPOT_FALLBACK'}
     elif signal=='SHORT' and score<=4 and s4.get('trend')=='Falling' and s1.get('trend')!='Rising' and extension not in ('EXTREME_LOW',):
@@ -223,11 +249,15 @@ def build_trade_setup(m, tech):
             if sl<=entry_high: sl=entry_high+0.75*atrv
             risk=max(sl-entry_low,0.0)
             tp1=max(0.0,entry_low-1.5*risk); tp2=max(0.0,entry_low-2.5*risk)
-            if price>entry_high: status='ENTRY_ABOVE_ZONE'
-            elif price>=entry_low: status='ENTRY_IN_ZONE'
-            else: status='WAIT_RETEST'
-            setup={'direction':'SHORT','entryLow':entry_low,'entryHigh':entry_high,'entryStatus':status,
-                   'stopLoss':sl,'tp1':tp1,'tp2':tp2,'riskPerUnit':risk,
+            if price > entry_high: status='ABOVE_ENTRY_ZONE'
+            elif price >= entry_low: status='INSIDE_ENTRY_ZONE'
+            else: status='BELOW_ENTRY_ZONE'
+            confirmation=confirmation_from_history(history,'SHORT',entry_low,entry_high) if history else {'status':'NO_DATA','reason':'History unavailable'}
+            if confirmation.get('status')=='CONFIRMED': entry_trigger='CONFIRMED'
+            elif status=='INSIDE_ENTRY_ZONE': entry_trigger='IN_ZONE_WAIT_CONFIRMATION'
+            else: entry_trigger='WAIT_RETEST'
+            setup={'direction':'SHORT','entryLow':entry_low,'entryHigh':entry_high,'entryStatus':status,'entryTrigger':entry_trigger,
+                   'confirmation':confirmation, 'stopLoss':sl,'tp1':tp1,'tp2':tp2,'riskPerUnit':risk,
                    'rrTp1':1.5,'rrTp2':2.5,'setupType':'EMA retest + structure continuation',
                    'historyMarketType':'FUTURES' if futures else 'SPOT_FALLBACK'}
     return setup
@@ -299,19 +329,19 @@ def technical_from_history(symbol,m,history):
             'reasons':reasons,'historySource':m.get('historySource','OKX'),'extension':extension,
             'watchTier':m.get('watchTier','OPPORTUNITY_SCAN')
         }
-        setup=build_trade_setup(m,base_result)
+        setup=build_trade_setup(m,base_result,history)
         if setup:
             base_result['setup']=setup
             # A setup can be a valid potential trade while still waiting for its entry zone.
-            if setup['entryStatus']=='ENTRY_IN_ZONE':
-                base_result['tradeState']='TRADEABLE_'+setup['direction']
-                base_result['setupStatus']='READY'
-            elif setup['entryStatus'] in ('WAIT_PULLBACK','WAIT_RETEST'):
+            if setup['entryTrigger']=='CONFIRMED':
+                base_result['tradeState']='READY_'+setup['direction']
+                base_result['setupStatus']='READY_CONFIRMED'
+            elif setup['entryStatus']=='INSIDE_ENTRY_ZONE':
+                base_result['tradeState']='POTENTIAL_'+setup['direction']
+                base_result['setupStatus']='IN_ZONE_WAIT_CONFIRMATION'
+            else:
                 base_result['tradeState']='POTENTIAL_'+setup['direction']
                 base_result['setupStatus']='WAITING_ENTRY'
-            else:
-                base_result['tradeState']='WATCH'
-                base_result['setupStatus']='OUTSIDE_ENTRY_ZONE'
         else:
             base_result['tradeState']='WATCH' if signal!='NEUTRAL' else 'NEUTRAL'
             base_result['setupStatus']='NO_VALID_SETUP'
@@ -543,7 +573,7 @@ ctx['potentialTradeDefinition']='Directional signal + aligned 4H/1D structure + 
 ctx['coreWatchAssets']=['BTC','ETH','XRP','SOL']
 ctx['stageBOpportunitySlots']=8
 ctx['tradeSelectionRule']='Core assets are always monitored; potential trades require confluence plus a defined EMA pullback/retest setup'
-ctx['setupEngine']='EMA10-EMA20 pullback/retest with 4H structural invalidation; TP1=1.5R, TP2=2.5R; current price must enter the zone before READY'
+ctx['setupEngine']='EMA10-EMA20 pullback/retest with 4H structural invalidation; TP1=1.5R, TP2=2.5R; zone touch is insufficient; READY requires a completed 1H reaction/confirmation candle'
 ctx['oiDeltaDefinition']='snapshot-to-snapshot change versus previous market.json run, not 24h'
 ctx['derivativesMapping']='Only unique CMC ticker symbols are auto-enriched to avoid same-symbol collisions'
 ctx['historyProvider']='OKX 1H candles (futures-first, spot fallback; serialized + 1h cache)'
@@ -557,6 +587,7 @@ ctx['generated_at']=NOW()
 (DATA/'context.json').write_text(json.dumps(ctx,separators=(',',':')))
 
 print(f'Generated {len(rows)} broad market rows, {len(analysis)} Stage-B analyses')
+print('Setup confirmation: completed 1H zone reaction required before READY')
 print('Market source: CoinMarketCap listings')
 print('Derivatives source: CoinGecko aggregated derivatives' if derivs else 'Derivatives source: unavailable')
 print('Volume spike source: OKX 1H candles; timeframe=1H')
