@@ -109,6 +109,12 @@ background-size:38px 38px;position:relative;overflow:hidden}
 .footer{color:#53687b;font-size:10px;padding:18px 4px;text-align:right}
 @media(max-width:1150px){.context-grid{grid-template-columns:repeat(3,1fr)}.layout2{grid-template-columns:1fr}.analysis{grid-template-columns:1fr}.potential-grid,.confirmed-grid{grid-template-columns:1fr}}
 @media(max-width:700px){.topbar{padding:0 10px;gap:8px}.brand{min-width:auto}.brand div:not(.logo){display:none}.nav{overflow:auto}.nav button{padding:0 8px}.top-actions .search{display:none}main{padding:10px}.context-grid{grid-template-columns:repeat(2,1fr)}}
+
+.livebar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:9px 14px;border-top:1px solid var(--line);background:#07101a;color:#8da0b3;font-size:10px}
+.livepill{border:1px solid #1d3547;border-radius:999px;padding:5px 9px;background:#091722}
+.livepill.ok{color:var(--green);border-color:#12694f}.livepill.bad{color:var(--red);border-color:#642538}
+.wsdot{width:6px;height:6px;border-radius:50%;display:inline-block;margin-right:5px;background:var(--yellow)}
+.wsok{background:var(--green);box-shadow:0 0 8px var(--green)}
 </style>
 </head>
 <body>
@@ -140,6 +146,13 @@ background-size:38px 38px;position:relative;overflow:hidden}
   </section>
 
   <section class="card" style="margin-bottom:12px">
+    <div class="livebar">
+      <span class="livepill" id="restStatus">REST: connecting…</span>
+      <span class="livepill" id="wsStatus"><i class="wsdot"></i>WebSocket: connecting…</span>
+      <span class="livepill">SOURCE: BYBIT LINEAR PUBLIC DATA</span>
+      <span class="livepill" id="lastUpdate">Updated: —</span>
+      <span class="livepill">No API key required for public market data</span>
+    </div>
     <div class="section-head">
       <div><div class="title" id="pageTitle">SCANNER <small>REAL-TIME OPPORTUNITIES ACROSS USDT PAIRS</small></div></div>
       <div class="toolbar">
@@ -251,95 +264,458 @@ background-size:38px 38px;position:relative;overflow:hidden}
   </div>
 </div>
 
+
 <script>
-const rows=[
- {pair:'SOLUSDT',price:244.31,change:6.21,vol:'$3.4B',vdelta:145,oi:'$5.8B',oidelta:12.3,funding:'0.0081%',rsi:68.4,trend:'Rising',score:8.6,signal:'LONG',status:'Potential'},
- {pair:'WIFUSDT',price:.8921,change:12.3,vol:'$1.2B',vdelta:312,oi:'$890M',oidelta:48.7,funding:'0.0124%',rsi:72.1,trend:'Rising',score:8.1,signal:'LONG',status:'Potential'},
- {pair:'AVAXUSDT',price:32.14,change:8.9,vol:'$980M',vdelta:220,oi:'$1.4B',oidelta:25.4,funding:'0.0102%',rsi:66.8,trend:'Rising',score:7.8,signal:'LONG',status:'Potential'},
- {pair:'LINKUSDT',price:24.62,change:-2.1,vol:'$760M',vdelta:85,oi:'$1.1B',oidelta:10.3,funding:'0.0074%',rsi:54.2,trend:'Range',score:6.9,signal:'NEUTRAL',status:'Scanner'},
- {pair:'ARBUSDT',price:.5214,change:4.6,vol:'$620M',vdelta:96,oi:'$780M',oidelta:18.6,funding:'0.0091%',rsi:61.3,trend:'Rising',score:7.2,signal:'LONG',status:'Potential'},
- {pair:'ENAUSDT',price:.6812,change:-5.4,vol:'$580M',vdelta:210,oi:'$690M',oidelta:33.1,funding:'0.0113%',rsi:48.7,trend:'Falling',score:6.1,signal:'SHORT',status:'Scanner'},
- {pair:'SUIUSDT',price:3.214,change:9.8,vol:'$1.1B',vdelta:176,oi:'$1.6B',oidelta:28.9,funding:'0.0097%',rsi:69.5,trend:'Rising',score:7.7,signal:'LONG',status:'Potential'},
- {pair:'FETUSDT',price:1.284,change:7.2,vol:'$420M',vdelta:134,oi:'$520M',oidelta:22.7,funding:'0.0101%',rsi:63.9,trend:'Rising',score:7.4,signal:'LONG',status:'Potential'},
- {pair:'INJUSDT',price:31.24,change:-1.6,vol:'$380M',vdelta:92,oi:'$610M',oidelta:14.2,funding:'0.0089%',rsi:56.1,trend:'Range',score:6.5,signal:'NEUTRAL',status:'Scanner'},
- {pair:'RNDRUSDT',price:7.432,change:6.8,vol:'$410M',vdelta:118,oi:'$530M',oidelta:19.4,funding:'0.0096%',rsi:62.7,trend:'Rising',score:7.1,signal:'LONG',status:'Potential'}
-];
+/* ============================================================
+   CRYPTO CHECKPOINT — LIVE DATA ENGINE v0.2
+   Primary public market source: Bybit V5 Linear
+   REST: 15-minute scanner/context refresh
+   WebSocket: live monitoring for BTC/ETH/XRP + active setups
+   No API key is used for public market data.
+   ============================================================ */
 
-let potential=JSON.parse(localStorage.getItem('cc_potential')||'null')||[
- {id:1,pair:'SOLUSDT',dir:'LONG',score:8.6,entry:'$240.00 – $244.00',tp1:'$252.00',tp2:'$266.00',sl:'$232.00',expiry:72,reason:'4H EMA alignment + higher-low structure + volume/OI expansion'},
- {id:2,pair:'WIFUSDT',dir:'LONG',score:8.1,entry:'$0.865 – $0.885',tp1:'$0.925',tp2:'$0.980',sl:'$0.832',expiry:72,reason:'Volume expansion + OI confirmation; pullback preferred'},
- {id:3,pair:'SUIUSDT',dir:'LONG',score:7.7,entry:'$3.08 – $3.16',tp1:'$3.30',tp2:'$3.48',sl:'$2.98',expiry:72,reason:'1D/4H trend alignment + structure support'}
-];
-let confirmed=JSON.parse(localStorage.getItem('cc_confirmed')||'null')||[
- {id:99,pair:'ARBUSDT',dir:'LONG',score:7.2,entry:0.515,tp1:0.545,tp2:0.575,sl:0.492,current:0.5214,opened:Date.now()-1000*60*320,reason:'Entry zone observed on refresh'}
-];
-let journal=JSON.parse(localStorage.getItem('cc_journal')||'null')||[
- {date:'2026-09-17',pair:'BTCUSDT',dir:'LONG',score:8.3,entry:'115,200',exit:'117,840',result:'+2.29%',r:'+1.6R',hold:'18h',regime:'Risk-on',note:'TP1 hit; remainder manually closed'}
-];
+const BYBIT_REST = 'https://api.bybit.com';
+const BYBIT_WS = 'wss://stream.bybit.com/v5/public/linear';
+const REFRESH_MS = 15 * 60 * 1000;
 
-function persist(){localStorage.setItem('cc_potential',JSON.stringify(potential));localStorage.setItem('cc_confirmed',JSON.stringify(confirmed));localStorage.setItem('cc_journal',JSON.stringify(journal))}
-function scoreClass(s){return s>=7?'good':s>=6.5?'mid':'low'}
-function badge(s){return s==='LONG'?'long':s==='SHORT'?'short':'neutral'}
+let market = new Map();
+let candles = new Map();
+let potential = JSON.parse(localStorage.getItem('cc_potential') || 'null') || [];
+let confirmed = JSON.parse(localStorage.getItem('cc_confirmed') || 'null') || [];
+let journal = JSON.parse(localStorage.getItem('cc_journal') || 'null') || [];
+let manualContext = localStorage.getItem('cc_context') || 'Risk regime / macro note not entered yet.';
+let ws = null, wsSymbols = new Set(), reconnectTimer = null, lastRest = 0;
+let selectedAsset = 'BTC';
+
+const fmt = (n, d=2) => Number.isFinite(Number(n))
+  ? Number(n).toLocaleString(undefined,{minimumFractionDigits:d,maximumFractionDigits:d}) : '—';
+const pct = n => `${Number(n)>=0?'+':''}${fmt(Number(n),2)}%`;
+const scoreClass = s => s>=7?'good':s>=6.5?'mid':'low';
+const badge = s => s==='LONG'?'long':s==='SHORT'?'short':'neutral';
+const saveState = () => {
+  localStorage.setItem('cc_potential', JSON.stringify(potential));
+  localStorage.setItem('cc_confirmed', JSON.stringify(confirmed));
+  localStorage.setItem('cc_journal', JSON.stringify(journal));
+  localStorage.setItem('cc_context', manualContext);
+};
+
+function setStatus(id, text, ok=true){
+  const e=document.getElementById(id); if(!e)return;
+  e.textContent=text; e.className='livepill '+(ok?'ok':'bad');
+}
+function updateClock(){
+  const e=document.getElementById('lastUpdate');
+  if(e) e.textContent='Updated: '+new Date().toLocaleTimeString();
+}
+function apiUrl(path, params){
+  return `${BYBIT_REST}${path}?${new URLSearchParams(params)}`;
+}
+
+async function fetchJson(url){
+  const r=await fetch(url, {cache:'no-store'});
+  if(!r.ok) throw new Error(`${r.status} ${r.statusText}`);
+  const j=await r.json();
+  if(j.retCode!==0) throw new Error(j.retMsg || 'API error');
+  return j.result;
+}
+
+/* -------- Market-wide REST snapshot -------- */
+async function refreshMarket(){
+  try{
+    setStatus('restStatus','REST: updating…',true);
+    const result = await fetchJson('/v5/market/tickers',{category:'linear'});
+    const list = result.list || [];
+    const next = new Map();
+    for(const x of list){
+      if(!x.symbol.endsWith('USDT')) continue;
+      next.set(x.symbol,{
+        symbol:x.symbol,
+        price:Number(x.lastPrice),
+        mark:Number(x.markPrice),
+        change:Number(x.price24hPcnt)*100,
+        high:Number(x.highPrice24h),
+        low:Number(x.lowPrice24h),
+        volume:Number(x.volume24h),
+        turnover:Number(x.turnover24h),
+        oi:Number(x.openInterestValue || 0),
+        oiSize:Number(x.openInterest || 0),
+        funding:Number(x.fundingRate || 0)*100,
+        nextFunding:Number(x.nextFundingTime || 0),
+        bid:Number(x.bid1Price || 0),
+        ask:Number(x.ask1Price || 0),
+        ts:Date.now()
+      });
+    }
+
+    // Preserve previous values for delta calculations.
+    for(const [s,v] of next){
+      const old=market.get(s);
+      v.oiDelta = old && old.oi ? ((v.oi-old.oi)/old.oi)*100 : 0;
+      v.prevVolume = old?.volume || 0;
+      v.volDelta = old && old.volume ? ((v.volume-old.volume)/old.volume)*100 : 0;
+    }
+    market=next;
+    lastRest=Date.now();
+    setStatus('restStatus',`REST: ${market.size} USDT contracts`,true);
+    updateContextCards();
+    renderScanner();
+    renderPotential();
+    renderConfirmed();
+    updateClock();
+    reconcileActiveTrades();
+    ensureWebSocketSubscriptions();
+  }catch(e){
+    console.error(e);
+    setStatus('restStatus','REST: error / retrying',false);
+  }
+}
+
+/* -------- Klines + indicators -------- */
+async function getKlines(symbol, interval='240', limit=120){
+  const key=symbol+'|'+interval;
+  try{
+    const r=await fetchJson('/v5/market/kline',{category:'linear',symbol,interval,limit});
+    const arr=(r.list||[]).reverse().map(x=>({
+      time:+x[0], open:+x[1], high:+x[2], low:+x[3], close:+x[4], volume:+x[5]
+    }));
+    candles.set(key,arr);
+    return arr;
+  }catch(e){ console.warn('Kline failed',symbol,e); return []; }
+}
+function ema(values, period){
+  if(values.length<period)return null;
+  const k=2/(period+1);
+  let e=values.slice(0,period).reduce((a,b)=>a+b,0)/period;
+  for(let i=period;i<values.length;i++) e=values[i]*k+e*(1-k);
+  return e;
+}
+function sma(values, period){
+  return values.length>=period ? values.slice(-period).reduce((a,b)=>a+b,0)/period : null;
+}
+function rsi(values, period=14){
+  if(values.length<period+1)return null;
+  let gain=0,loss=0;
+  for(let i=values.length-period;i<values.length;i++){
+    const d=values[i]-values[i-1];
+    if(d>=0)gain+=d; else loss-=d;
+  }
+  if(loss===0)return 100;
+  return 100-(100/(1+gain/loss));
+}
+function atr(rows,period=14){
+  if(rows.length<period+1)return null;
+  const tr=[];
+  for(let i=1;i<rows.length;i++){
+    tr.push(Math.max(rows[i].high-rows[i].low,
+      Math.abs(rows[i].high-rows[i-1].close),
+      Math.abs(rows[i].low-rows[i-1].close)));
+  }
+  return sma(tr,period);
+}
+function structure(rows){
+  if(rows.length<10)return {high:null,low:null,trend:'Unknown'};
+  const last=rows.slice(-20);
+  const high=Math.max(...last.map(x=>x.high));
+  const low=Math.min(...last.map(x=>x.low));
+  const closes=last.map(x=>x.close);
+  const e20=ema(closes,20),e55=ema(closes,55);
+  return {high,low,trend:e20&&e55?(e20>e55?'Rising':'Falling'):'Range'};
+}
+
+async function enrich(symbol){
+  const rows=await getKlines(symbol,'240',120);
+  if(!rows.length)return null;
+  const closes=rows.map(x=>x.close);
+  const e10=ema(closes,10),e20=ema(closes,20),e55=ema(closes,55);
+  const ma200=sma(closes,200);
+  const r=rsi(closes,14), a=atr(rows,14), st=structure(rows);
+  const m=market.get(symbol)||{};
+  let score=5;
+  if(e10&&e20&&e55&&e10>e20&&e20>e55)score+=1.2;
+  if(e10&&e20&&e55&&e10<e20&&e20<e55)score-=1.2;
+  if(r>=55&&r<=70)score+=0.7;
+  if(r<=45)score-=0.7;
+  if(m.change>3)score+=0.5;
+  if(m.change<-3)score-=0.5;
+  if(m.oiDelta>5)score+=0.6;
+  if(m.oiDelta<-5)score-=0.2;
+  if(m.volDelta>20)score+=0.7;
+  if(m.volDelta<-20)score-=0.2;
+  score=Math.max(0,Math.min(10,score));
+  const signal=score>=7.0?'LONG':score<=4.0?'SHORT':'NEUTRAL';
+  const dir=signal;
+  let entryLo=m.price,entryHi=m.price,tp1=m.price,tp2=m.price,sl=m.price;
+  if(a && m.price){
+    if(dir==='LONG'){
+      entryLo=Math.max(st.low,m.price-a*.5); entryHi=m.price;
+      sl=Math.min(st.low,m.price-a*1.25);
+      tp1=Math.max(st.high,m.price+a*1.0); tp2=m.price+a*2.0;
+    }else if(dir==='SHORT'){
+      entryLo=m.price; entryHi=Math.min(st.high,m.price+a*.5);
+      sl=Math.max(st.high,m.price+a*1.25);
+      tp1=Math.min(st.low,m.price-a*1.0); tp2=m.price-a*2.0;
+    }
+  }
+  return {symbol,score,signal,rsi:r,ema10:e10,ema20:e20,ema55:e55,ma200,atr:a,structure:st,entryLo,entryHi,tp1,tp2,sl};
+}
+
+/* -------- Scanner: cheap Stage A, targeted Stage B -------- */
+let scanCache=[];
+async function runDeepScan(){
+  const shortlist=[...market.values()]
+    .filter(x=>x.volume>1e7)
+    .sort((a,b)=>(Math.abs(b.volDelta||0)+Math.abs(b.change||0)*5)-(Math.abs(a.volDelta||0)+Math.abs(a.change||0)*5))
+    .slice(0,30);
+  const out=[];
+  for(let i=0;i<shortlist.length;i+=5){
+    const batch=shortlist.slice(i,i+5);
+    const vals=await Promise.all(batch.map(x=>enrich(x.symbol)));
+    out.push(...vals.filter(Boolean));
+  }
+  scanCache=out;
+  renderScanner();
+  renderPotential();
+  autoCreatePotential();
+}
+
+function autoCreatePotential(){
+  const active=new Set([...potential,...confirmed].map(x=>x.symbol));
+  for(const s of scanCache){
+    if(s.score<7 || s.signal==='NEUTRAL' || active.has(s.symbol))continue;
+    const m=market.get(s.symbol); if(!m)continue;
+    potential.push({
+      id:crypto.randomUUID(), symbol:s.symbol, dir:s.signal, score:+s.score.toFixed(1),
+      entryLo:s.entryLo,entryHi:s.entryHi,tp1:s.tp1,tp2:s.tp2,sl:s.sl,
+      created:Date.now(),expiry:Date.now()+72*3600000,
+      reason:`4H EMA/structure + volume/OI context · ATR ${fmt(s.atr,4)}`
+    });
+    active.add(s.symbol);
+  }
+  saveState();renderPotential();ensureWebSocketSubscriptions();
+}
+
+/* -------- WebSocket: live prices for active symbols -------- */
+function wsSubscribe(symbols){
+  if(!ws || ws.readyState!==WebSocket.OPEN)return;
+  const args=[...symbols].map(s=>`tickers.${s}`);
+  if(!args.length)return;
+  ws.send(JSON.stringify({op:'subscribe',args}));
+}
+function connectWS(){
+  if(ws && (ws.readyState===WebSocket.OPEN||ws.readyState===WebSocket.CONNECTING))return;
+  try{ws=new WebSocket(BYBIT_WS)}catch(e){scheduleWSReconnect();return}
+  ws.onopen=()=>{
+    setStatus('wsStatus','WebSocket: connected',true);
+    wsSymbols.clear();ensureWebSocketSubscriptions();
+  };
+  ws.onmessage=(ev)=>{
+    try{
+      const msg=JSON.parse(ev.data);
+      if(!msg.topic?.startsWith('tickers.'))return;
+      const x=Array.isArray(msg.data)?msg.data[0]:msg.data;
+      if(!x?.symbol)return;
+      const s=x.symbol;
+      const old=market.get(s)||{};
+      const v={...old,symbol:s,price:Number(x.lastPrice||old.price),mark:Number(x.markPrice||old.mark),
+        change:Number(x.price24hPcnt||0)*100,high:Number(x.highPrice24h||old.high),
+        low:Number(x.lowPrice24h||old.low),volume:Number(x.volume24h||old.volume),
+        turnover:Number(x.turnover24h||old.turnover),oi:Number(x.openInterestValue||old.oi||0),
+        oiSize:Number(x.openInterest||old.oiSize||0),funding:Number(x.fundingRate||0)*100,
+        bid:Number(x.bid1Price||old.bid),ask:Number(x.ask1Price||old.ask),ts:Date.now()};
+      market.set(s,v);
+      handlePriceEvent(s,v.price);
+      updateLiveAssetCards();
+      renderPotential();
+      renderConfirmed();
+    }catch(e){console.warn('WS parse',e)}
+  };
+  ws.onerror=()=>setStatus('wsStatus','WebSocket: error',false);
+  ws.onclose=()=>{setStatus('wsStatus','WebSocket: disconnected',false);scheduleWSReconnect()};
+}
+function scheduleWSReconnect(){
+  clearTimeout(reconnectTimer);
+  reconnectTimer=setTimeout(connectWS,5000);
+}
+function ensureWebSocketSubscriptions(){
+  connectWS();
+  const wanted=new Set(['BTCUSDT','ETHUSDT','XRPUSDT']);
+  potential.forEach(t=>wanted.add(t.symbol));
+  confirmed.forEach(t=>wanted.add(t.symbol));
+  if(!ws||ws.readyState!==WebSocket.OPEN)return;
+  const fresh=[...wanted].filter(s=>!wsSymbols.has(s));
+  if(fresh.length){wsSubscribe(fresh);fresh.forEach(s=>wsSymbols.add(s))}
+}
+
+/* -------- Entry / TP / SL event engine -------- */
+function between(p,lo,hi){return p>=Math.min(lo,hi)&&p<=Math.max(lo,hi)}
+function handlePriceEvent(symbol,price){
+  if(!Number.isFinite(price))return;
+
+  // Potential -> Confirmed when live price enters the planned zone.
+  for(const t of [...potential]){
+    if(t.symbol!==symbol)continue;
+    if(Date.now()>t.expiry){expirePotential(t);continue}
+    if(between(price,t.entryLo,t.entryHi)){
+      const confirmedTrade={...t,id:crypto.randomUUID(),entry:+price.toFixed(8),
+        current:price,opened:Date.now(),entryObservedAt:Date.now(),state:'LIVE',
+        entrySource:'WebSocket observed price'};
+      potential=potential.filter(x=>x.id!==t.id);
+      confirmed.push(confirmedTrade);
+      saveState();
+      addEvent(`ENTRY DETECTED · ${symbol} · ${fmt(price,8)}`);
+      ensureWebSocketSubscriptions();
+    }
+  }
+
+  // Confirmed trade event monitoring.
+  for(const t of [...confirmed]){
+    if(t.symbol!==symbol)continue;
+    t.current=price;
+    const long=t.dir==='LONG';
+    const hitTP1=long?price>=t.tp1:price<=t.tp1;
+    const hitTP2=long?price>=t.tp2:price<=t.tp2;
+    const hitSL=long?price<=t.sl:price>=t.sl;
+
+    if(!t.tp1Hit && hitTP1){
+      t.tp1Hit=true;t.tp1ObservedAt=Date.now();
+      addEvent(`TP1 TOUCHED · ${symbol} · ${fmt(price,8)}`);
+    }
+    if(hitTP2){ closeObservedTrade(t,'TP2',price); }
+    else if(hitSL){ closeObservedTrade(t,'SL',price); }
+  }
+  saveState();
+}
+function expirePotential(t){
+  potential=potential.filter(x=>x.id!==t.id);
+  journal.unshift({date:new Date().toISOString().slice(0,10),pair:t.symbol,dir:t.dir,score:t.score,
+    entry:'—',exit:'—',result:'EXPIRED',r:'—',hold:'—',regime:'Recorded context',note:'Entry zone not observed before 72h expiry'});
+  addEvent(`SETUP EXPIRED · ${t.symbol}`);
+  saveState();renderPotential();renderJournal();
+}
+function closeObservedTrade(t,reason,price){
+  if(t.closed)return;
+  t.closed=true;
+  const raw=((price-t.entry)/t.entry*100)*(t.dir==='LONG'?1:-1);
+  const risk=Math.abs(t.entry-t.sl);
+  const r=risk?(((price-t.entry)*(t.dir==='LONG'?1:-1))/risk):0;
+  journal.unshift({date:new Date().toISOString().slice(0,10),pair:t.symbol,dir:t.dir,score:t.score,
+    entry:fmt(t.entry,8),exit:fmt(price,8),result:(raw>=0?'+':'')+raw.toFixed(2)+'%',
+    r:(r>=0?'+':'')+r.toFixed(2)+'R',hold:formatHold(Date.now()-t.opened),regime:'Recorded context',
+    note:`${reason} automatically observed by WebSocket${t.tp1Hit?' · TP1 was touched':''}`});
+  confirmed=confirmed.filter(x=>x.id!==t.id);
+  addEvent(`${reason} DETECTED · ${t.symbol} · ${fmt(price,8)}`);
+  saveState();renderConfirmed();renderJournal();
+}
+function reconcileActiveTrades(){
+  // REST snapshot reconciliation after reconnect/page load.
+  for(const t of [...potential]){
+    const m=market.get(t.symbol);if(m)handlePriceEvent(t.symbol,m.price);
+  }
+  for(const t of [...confirmed]){
+    const m=market.get(t.symbol);if(m)handlePriceEvent(t.symbol,m.price);
+  }
+}
+function formatHold(ms){
+  const h=Math.floor(ms/3600000),m=Math.floor((ms%3600000)/60000);
+  return h?`${h}h ${m}m`:`${Math.max(1,m)}m`;
+}
+function addEvent(msg){
+  const e=document.getElementById('scanStatus');if(e)e.textContent=msg+' · '+new Date().toLocaleTimeString();
+}
+
+/* -------- UI -------- */
 function renderScanner(){
- const q=document.getElementById('globalSearch').value.toUpperCase();
- const min=+document.getElementById('minScore').value;
- const body=document.querySelector('#scannerTable tbody');body.innerHTML='';
- rows.filter(r=>r.pair.includes(q)&&r.score>=min).forEach((r,i)=>{
-  body.insertAdjacentHTML('beforeend',`<tr>
-   <td>${i+1}</td><td class="pair">${r.pair}</td><td>$${r.price<1?r.price.toFixed(4):r.price.toLocaleString()}</td>
-   <td class="${r.change>=0?'up':'down'}">${r.change>=0?'+':''}${r.change.toFixed(2)}%</td><td>${r.vol}</td>
-   <td class="up">+${r.vdelta}%</td><td>${r.oi}</td><td class="${r.oidelta>=0?'up':'down'}">+${r.oidelta}%</td>
-   <td class="${parseFloat(r.funding)>0.011?'warn':'up'}">${r.funding}</td><td>${r.rsi}</td><td><span class="${r.trend==='Falling'?'down':r.trend==='Rising'?'up':''}">${r.trend}</span></td>
-   <td><span class="score ${scoreClass(r.score)}">${r.score}</span></td><td><span class="badge ${badge(r.signal)}">${r.signal}</span></td>
-   <td><span class="sub">${r.status}</span></td></tr>`);
- });
+  const q=(document.getElementById('globalSearch')?.value||'').toUpperCase();
+  const min=+(document.getElementById('minScore')?.value||0);
+  const body=document.querySelector('#scannerTable tbody');if(!body)return;
+  const base=[...market.values()].filter(x=>x.symbol.includes(q)&&x.volume>1e7)
+    .sort((a,b)=>(b.volume-a.volume)).slice(0,100);
+  const enriched=new Map(scanCache.map(x=>[x.symbol,x]));
+  body.innerHTML=base.map((r,i)=>{
+    const s=enriched.get(r.symbol);
+    const score=s?s.score:null, signal=s?s.signal:'—';
+    return `<tr>
+      <td>${i+1}</td><td class="pair">${r.symbol}</td>
+      <td>$${fmt(r.price,r.price<1?5:2)}</td><td class="${r.change>=0?'up':'down'}">${pct(r.change)}</td>
+      <td>$${r.volume>=1e9?(r.volume/1e9).toFixed(2)+'B':(r.volume/1e6).toFixed(0)+'M'}</td>
+      <td class="${(r.volDelta||0)>=0?'up':'down'}">${pct(r.volDelta||0)}</td>
+      <td>$${r.oi>=1e9?(r.oi/1e9).toFixed(2)+'B':(r.oi/1e6).toFixed(0)+'M'}</td>
+      <td class="${(r.oiDelta||0)>=0?'up':'down'}">${pct(r.oiDelta||0)}</td>
+      <td class="${Math.abs(r.funding)>0.01?'warn':'up'}">${fmt(r.funding,4)}%</td>
+      <td>${s?.rsi?fmt(s.rsi,1):'—'}</td><td>${s?.structure?.trend||'—'}</td>
+      <td>${score!==null?`<span class="score ${scoreClass(score)}">${score.toFixed(1)}</span>`:'—'}</td>
+      <td>${signal!=='—'?`<span class="badge ${badge(signal)}">${signal}</span>`:'—'}</td>
+      <td><span class="sub">${potential.some(x=>x.symbol===r.symbol)?'Potential':confirmed.some(x=>x.symbol===r.symbol)?'Confirmed':'Scanner'}</span></td>
+    </tr>`;
+  }).join('');
 }
 function renderPotential(){
- const el=document.getElementById('potentialGrid');
- if(!potential.length){el.innerHTML='<div class="empty">No active potential setups.</div>';return}
- el.innerHTML=potential.map(t=>`<div class="card trade-card">
-   <div class="trade-head"><div><h3>${t.pair}</h3><div class="sub">${t.reason}</div></div><span class="badge ${badge(t.dir)}">${t.dir}</span></div>
-   <div><span class="score ${scoreClass(t.score)}">${t.score}/10</span> <span class="countdown">VALID · ${t.expiry}h</span></div>
-   <div class="levels"><div class="level"><span>Entry Zone</span><b>${t.entry}</b></div><div class="level"><span>Stop Loss</span><b class="down">${t.sl}</b></div><div class="level"><span>TP1</span><b class="up">${t.tp1}</b></div><div class="level"><span>TP2</span><b class="up">${t.tp2}</b></div></div>
-   <div class="sub">AUTO LEVELS · SWING STRUCTURE + ATR · EDITABLE</div>
-   <div class="progress"><i></i></div>
-   <div class="actions"><button class="ghost" onclick="editSetup(${t.id})">EDIT LEVELS</button><button class="success" onclick="promote(${t.id})">CONFIRM ENTRY</button></div>
- </div>`).join('');
+  const el=document.getElementById('potentialGrid');if(!el)return;
+  if(!potential.length){el.innerHTML='<div class="empty">No active potential setups. Run a scan and wait for score ≥ 7.</div>';return}
+  el.innerHTML=potential.map(t=>{
+    const m=market.get(t.symbol);const p=m?.price;
+    return `<div class="card trade-card"><div class="trade-head"><div><h3>${t.symbol}</h3><div class="sub">${t.reason}</div></div><span class="badge ${badge(t.dir)}">${t.dir}</span></div>
+      <div><span class="score ${scoreClass(t.score)}">${t.score}/10</span> <span class="countdown">${p?`LIVE $${fmt(p,p<1?5:2)}`:'WAITING FOR DATA'}</span></div>
+      <div class="levels"><div class="level"><span>Entry Zone</span><b>$${fmt(t.entryLo, t.entryLo<1?6:2)} – $${fmt(t.entryHi,t.entryHi<1?6:2)}</b></div>
+      <div class="level"><span>Stop Loss</span><b class="down">$${fmt(t.sl,t.sl<1?6:2)}</b></div>
+      <div class="level"><span>TP1</span><b class="up">$${fmt(t.tp1,t.tp1<1?6:2)}</b></div>
+      <div class="level"><span>TP2</span><b class="up">$${fmt(t.tp2,t.tp2<1?6:2)}</b></div></div>
+      <div class="sub">AUTO: STRUCTURE + ATR · ENTRY DETECTION: WEBSOCKET</div>
+      <div class="actions"><button class="ghost" onclick="editSetup('${t.id}')">EDIT LEVELS</button><button class="success" onclick="manualConfirm('${t.id}')">MANUAL CONFIRM</button></div></div>`;
+  }).join('');
 }
 function renderConfirmed(){
- const el=document.getElementById('confirmedGrid');
- if(!confirmed.length){el.innerHTML='<div class="empty">No confirmed positions.</div>';return}
- el.innerHTML=confirmed.map(t=>{
-  const pnl=((t.current-t.entry)/t.entry*100)*(t.dir==='LONG'?1:-1);
-  const mins=Math.max(1,Math.floor((Date.now()-t.opened)/60000));const hold=mins<60?mins+'m':Math.floor(mins/60)+'h '+mins%60+'m';
-  return `<div class="card trade-card"><div class="trade-head"><div><h3>${t.pair}</h3><div class="sub">OPEN ${hold} · SCORE ${t.score}</div></div><span class="badge ${badge(t.dir)}">${t.dir}</span></div>
-  <div class="bigprice">$${Number(t.current).toLocaleString(undefined,{maximumFractionDigits:4})} <span class="${pnl>=0?'up':'down'}" style="font-size:13px">${pnl>=0?'+':''}${pnl.toFixed(2)}%</span></div>
-  <div class="levels"><div class="level"><span>Entry</span><b>${t.entry}</b></div><div class="level"><span>OI Δ</span><b class="up">+${(10+ t.score).toFixed(1)}%</b></div><div class="level"><span>TP1</span><b class="up">${t.tp1}</b></div><div class="level"><span>TP2</span><b class="up">${t.tp2}</b></div><div class="level"><span>SL</span><b class="down">${t.sl}</b></div><div class="level"><span>Funding</span><b>0.0087%</b></div></div>
-  <div class="actions"><button class="manual" onclick="closeTrade(${t.id},'TP1')">TP1 HIT</button><button class="manual" onclick="closeTrade(${t.id},'TP2')">TP2 HIT</button><button class="danger" onclick="closeTrade(${t.id},'SL')">SL HIT</button><button class="ghost" onclick="closeTrade(${t.id},'MANUAL')">CLOSE</button></div></div>`}).join('');
+  const el=document.getElementById('confirmedGrid');if(!el)return;
+  if(!confirmed.length){el.innerHTML='<div class="empty">No confirmed positions. Potential entries are monitored automatically.</div>';return}
+  el.innerHTML=confirmed.map(t=>{
+    const m=market.get(t.symbol),p=m?.price||t.current||t.entry;
+    const pnl=((p-t.entry)/t.entry*100)*(t.dir==='LONG'?1:-1);
+    return `<div class="card trade-card"><div class="trade-head"><div><h3>${t.symbol}</h3><div class="sub">OPEN ${formatHold(Date.now()-t.opened)} · SCORE ${t.score}</div></div><span class="badge ${badge(t.dir)}">${t.dir}</span></div>
+      <div class="bigprice">$${fmt(p,p<1?6:2)} <span class="${pnl>=0?'up':'down'}" style="font-size:13px">${pnl>=0?'+':''}${pnl.toFixed(2)}%</span></div>
+      <div class="levels"><div class="level"><span>Entry observed</span><b>${fmt(t.entry,t.entry<1?6:2)}</b></div><div class="level"><span>OI Δ</span><b>${m?fmt(m.oiDelta,2)+'%':'—'}</b></div>
+      <div class="level"><span>TP1</span><b class="up">${fmt(t.tp1,t.tp1<1?6:2)} ${t.tp1Hit?'✓':''}</b></div><div class="level"><span>TP2</span><b class="up">${fmt(t.tp2,t.tp2<1?6:2)}</b></div>
+      <div class="level"><span>SL</span><b class="down">${fmt(t.sl,t.sl<1?6:2)}</b></div><div class="level"><span>Funding</span><b>${m?fmt(m.funding,4)+'%':'—'}</b></div></div>
+      <div class="sub">${t.entrySource} · TP/SL auto-monitored · page must remain open for tick-level detection</div>
+      <div class="actions"><button class="ghost" onclick="manualClose('${t.id}')">MANUAL CLOSE</button></div></div>`;
+  }).join('');
 }
 function renderJournal(){
- const body=document.querySelector('#journalTable tbody');body.innerHTML=journal.map(j=>`<tr><td>${j.date}</td><td class="pair">${j.pair}</td><td><span class="badge ${badge(j.dir)}">${j.dir}</span></td><td><span class="score good">${j.score}</span></td><td>${j.entry}</td><td>${j.exit}</td><td class="${String(j.result).startsWith('+')?'up':'down'}">${j.result}</td><td>${j.r}</td><td>${j.hold}</td><td>${j.regime}</td><td>${j.note}</td></tr>`).join('')||'<tr><td colspan="11" class="empty">No journal records yet.</td></tr>';
+  const body=document.querySelector('#journalTable tbody');if(!body)return;
+  body.innerHTML=journal.map(j=>`<tr><td>${j.date}</td><td class="pair">${j.pair}</td><td><span class="badge ${badge(j.dir)}">${j.dir}</span></td><td><span class="score good">${j.score}</span></td><td>${j.entry}</td><td>${j.exit}</td><td class="${String(j.result).startsWith('+')?'up':'down'}">${j.result}</td><td>${j.r}</td><td>${j.hold}</td><td>${j.regime}</td><td>${j.note}</td></tr>`).join('')||'<tr><td colspan="11" class="empty">No journal records yet.</td></tr>';
 }
-function promote(id){
- const t=potential.find(x=>x.id===id);if(!t)return;
- const nums=t.entry.match(/[0-9]*\.?[0-9]+/g).map(Number);const entry=(nums[0]+nums[1])/2;
- const p=rows.find(x=>x.pair===t.pair);confirmed.push({id:Date.now(),pair:t.pair,dir:t.dir,score:t.score,entry,tp1:Number(t.tp1.replace(/[$,]/g,'')),tp2:Number(t.tp2.replace(/[$,]/g,'')),sl:Number(t.sl.replace(/[$,]/g,'')),current:p?p.price:entry,opened:Date.now(),reason:'Entry zone confirmed'});
- potential=potential.filter(x=>x.id!==id);persist();renderPotential();renderConfirmed();
+function updateContextCards(){
+ const b=market.get('BTCUSDT'),e=market.get('ETHUSDT'),x=market.get('XRPUSDT');
+ if(b){document.querySelector('.metric:nth-child(1) .value').textContent='$'+fmt(b.price,2);document.querySelector('.metric:nth-child(1) .mini').textContent=pct(b.change)}
+ if(e){document.querySelector('.metric:nth-child(2) .value').textContent='$'+fmt(e.price,2);document.querySelector('.metric:nth-child(2) .mini').textContent=pct(e.change)}
+ if(x){document.querySelector('.metric:nth-child(3) .value').textContent='$'+fmt(x.price,4);document.querySelector('.metric:nth-child(3) .mini').textContent=pct(x.change)}
 }
-function closeTrade(id,reason){
- const t=confirmed.find(x=>x.id===id);if(!t)return;
- let exit=t.current;if(reason==='TP1')exit=t.tp1;if(reason==='TP2')exit=t.tp2;if(reason==='SL')exit=t.sl;
- const raw=(exit-t.entry)/t.entry*(t.dir==='LONG'?1:-1);const r=(reason==='SL'?-1:raw/.025);
- journal.unshift({date:new Date().toISOString().slice(0,10),pair:t.pair,dir:t.dir,score:t.score,entry:Number(t.entry).toLocaleString(),exit:Number(exit).toLocaleString(),result:(raw>=0?'+':'')+raw.toFixed(2)+'%',r:(r>=0?'+':'')+r.toFixed(2)+'R',hold:Math.max(1,Math.floor((Date.now()-t.opened)/3600000))+'h',regime:'Recorded context',note:reason==='MANUAL'?'Manually closed':reason+' confirmed'});
- confirmed=confirmed.filter(x=>x.id!==id);persist();renderConfirmed();renderJournal();
+function updateLiveAssetCards(){
+ const m=market.get(selectedAsset+'USDT');if(!m)return;
+ document.getElementById('assetName').textContent=selectedAsset+'USDT';
+ document.getElementById('assetPrice').textContent='$'+fmt(m.price,m.price<1?6:2);
+ const ch=document.getElementById('assetChange');ch.textContent=pct(m.change);ch.className='mini '+(m.change>=0?'up':'down');
+ const s=scanCache.find(x=>x.symbol===selectedAsset+'USDT');if(s)document.getElementById('assetScore').textContent=s.score.toFixed(1);
 }
 function editSetup(id){
  const t=potential.find(x=>x.id===id);if(!t)return;
- const entry=prompt('Entry zone:',t.entry);if(entry!==null)t.entry=entry;
- const sl=prompt('Stop loss:',t.sl);if(sl!==null)t.sl=sl;
- const tp1=prompt('TP1:',t.tp1);if(tp1!==null)t.tp1=tp1;
- const tp2=prompt('TP2:',t.tp2);if(tp2!==null)t.tp2=tp2;
- persist();renderPotential();
+ const a=prompt('Entry LOW:',t.entryLo);if(a!==null)t.entryLo=+a;
+ const b=prompt('Entry HIGH:',t.entryHi);if(b!==null)t.entryHi=+b;
+ const sl=prompt('Stop loss:',t.sl);if(sl!==null)t.sl=+sl;
+ const tp1=prompt('TP1:',t.tp1);if(tp1!==null)t.tp1=+tp1;
+ const tp2=prompt('TP2:',t.tp2);if(tp2!==null)t.tp2=+tp2;
+ saveState();renderPotential();ensureWebSocketSubscriptions();
+}
+function manualConfirm(id){
+ const t=potential.find(x=>x.id===id);if(!t)return;
+ const m=market.get(t.symbol);const p=m?.price||((t.entryLo+t.entryHi)/2);
+ potential=potential.filter(x=>x.id!==id);
+ confirmed.push({...t,id:crypto.randomUUID(),entry:p,current:p,opened:Date.now(),entryObservedAt:Date.now(),state:'LIVE',entrySource:'Manual confirmation'});
+ saveState();renderPotential();renderConfirmed();ensureWebSocketSubscriptions();
+}
+function manualClose(id){
+ const t=confirmed.find(x=>x.id===id);if(!t)return;
+ const m=market.get(t.symbol),p=m?.price||t.current||t.entry;
+ closeObservedTrade(t,'MANUAL',p);
 }
 document.querySelectorAll('#nav button').forEach(b=>b.onclick=()=>{
  document.querySelectorAll('#nav button').forEach(x=>x.classList.remove('active'));b.classList.add('active');
@@ -350,18 +726,26 @@ document.querySelectorAll('#nav button').forEach(b=>b.onclick=()=>{
 });
 document.getElementById('globalSearch').oninput=renderScanner;
 document.getElementById('minScore').onchange=renderScanner;
-document.getElementById('refresh').onclick=()=>{document.getElementById('scanStatus').textContent='Last refresh: '+new Date().toLocaleTimeString();renderScanner();renderPotential();renderConfirmed()};
-document.getElementById('scan').onclick=()=>{document.getElementById('scanStatus').textContent='Stage A + Stage B completed: '+new Date().toLocaleTimeString();renderScanner();renderPotential()};
+document.getElementById('refresh').onclick=()=>{refreshMarket();runDeepScan()};
+document.getElementById('scan').onclick=()=>{runDeepScan()};
 document.querySelectorAll('#assetTabs button').forEach(b=>b.onclick=()=>{
- document.querySelectorAll('#assetTabs button').forEach(x=>x.classList.remove('active'));b.classList.add('active');
- const data={BTC:['BTCUSDT','$116,248','+2.34%','8.3'],ETH:['ETHUSDT','$4,512','+3.12%','8.0'],XRP:['XRPUSDT','$3.02','-0.45%','7.4']}[b.dataset.asset];
- document.getElementById('assetName').textContent=data[0];document.getElementById('assetPrice').textContent=data[1];document.getElementById('assetChange').textContent=data[2];document.getElementById('assetChange').className='mini '+(data[2].startsWith('+')?'up':'down');document.getElementById('assetScore').textContent=data[3];
+ document.querySelectorAll('#assetTabs button').forEach(x=>x.classList.remove('active'));b.classList.add('active');selectedAsset=b.dataset.asset;updateLiveAssetCards();
 });
-document.getElementById('editNote').onclick=()=>{document.getElementById('noteInput').value=document.getElementById('marketNote').textContent;document.getElementById('modal').classList.add('show')};
+document.getElementById('editNote').onclick=()=>{document.getElementById('noteInput').value=manualContext;document.getElementById('modal').classList.add('show')};
 document.getElementById('cancelModal').onclick=()=>document.getElementById('modal').classList.remove('show');
-document.getElementById('saveNote').onclick=()=>{document.getElementById('marketNote').textContent=document.getElementById('noteInput').value;document.getElementById('modal').classList.remove('show')};
-document.getElementById('clearJournal').onclick=()=>{if(confirm('Clear demo journal records?')){journal=[];persist();renderJournal()}};
+document.getElementById('saveNote').onclick=()=>{
+ manualContext=document.getElementById('noteInput').value;document.getElementById('marketNote').textContent=manualContext;
+ document.getElementById('modal').classList.remove('show');saveState();
+};
+document.getElementById('clearJournal').onclick=()=>{if(confirm('Clear journal records?')){journal=[];saveState();renderJournal()}};
+
+document.getElementById('marketNote').textContent=manualContext;
 renderScanner();renderPotential();renderConfirmed();renderJournal();
+connectWS();
+refreshMarket().then(()=>runDeepScan());
+setInterval(refreshMarket,REFRESH_MS);
+setInterval(()=>{renderConfirmed();renderPotential()},15000);
 </script>
+
 </body>
 </html>
