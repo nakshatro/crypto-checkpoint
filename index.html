@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Crypto Checkpoint — Live Trading Intelligence v0.3</title>
+<title>Crypto Checkpoint — Live Trading Intelligence v0.5</title>
 <style>
 :root{
   --bg:#05090f; --panel:#09111b; --panel2:#0c1622; --line:#182635;
@@ -140,9 +140,9 @@ background-size:38px 38px;position:relative;overflow:hidden}
     <div class="card metric"><div class="label">BTC Price</div><div class="value" id="btcCardValue">—</div><div class="mini" id="btcCardChange">WAITING FOR LIVE DATA</div><div class="spark">⌁⌁⌁</div></div>
     <div class="card metric"><div class="label">ETH Price</div><div class="value" id="ethCardValue">—</div><div class="mini" id="ethCardChange">WAITING FOR LIVE DATA</div><div class="spark">⌁⌁⌁</div></div>
     <div class="card metric"><div class="label">XRP Price</div><div class="value" id="xrpCardValue">—</div><div class="mini" id="xrpCardChange">WAITING FOR LIVE DATA</div><div class="spark">⌁⌁⌁</div></div>
-    <div class="card metric"><div class="label">BTC Dominance</div><div class="value">—</div><div class="mini">Not connected</div><div class="spark">⌁⌁</div></div>
-    <div class="card metric"><div class="label">TOTAL3 / BTC</div><div class="value">—</div><div class="mini">Not connected</div><div class="spark">⌁⌁</div></div>
-    <div class="card metric"><div class="label">Fear & Greed</div><div class="value warn">—</div><div class="mini warn">Context only · not connected</div></div>
+    <div class="card metric"><div class="label">BTC Dominance</div><div class="value" id="btcDomValue">—</div><div class="mini" id="btcDomChange">Loading…</div><div class="spark">⌁⌁</div></div>
+    <div class="card metric"><div class="label">TOTAL3 / BTC</div><div class="value" id="total3BtcValue">—</div><div class="mini" id="total3BtcChange">Loading…</div><div class="spark">⌁⌁</div></div>
+    <div class="card metric"><div class="label">Fear & Greed</div><div class="value warn" id="fgValue">—</div><div class="mini warn" id="fgLabel">Loading…</div></div>
   </section>
 
   <section class="card" style="margin-bottom:12px">
@@ -195,9 +195,9 @@ background-size:38px 38px;position:relative;overflow:hidden}
         <div class="analysis">
           <div class="asset">
             <h3 id="assetName">BTCUSDT</h3><div class="bigprice" id="assetPrice">—</div><div class="mini" id="assetChange">WAITING FOR LIVE DATA</div>
-            <div style="margin-top:15px" class="kv"><span>Trend</span><b class="up">BULLISH</b></div>
-            <div class="kv"><span>RSI (4H)</span><b>64.2</b></div><div class="kv"><span>EMA</span><b>20 / 55</b></div>
-            <div class="kv"><span>Structure</span><b>Higher Highs</b></div><div class="kv"><span>Score</span><b class="up" id="assetScore">8.3</b></div>
+            <div style="margin-top:15px" class="kv"><span>Trend</span><b id="assetTrend">—</b></div>
+            <div class="kv"><span>RSI (4H)</span><b id="assetRsi">—</b></div><div class="kv"><span>EMA 10 / 20 / 55</span><b id="assetEma">—</b><div class="kv"><span>MA 50 / 100</span><b id="assetMa">—</b></div></div>
+            <div class="kv"><span>Structure</span><b id="assetStructure">—</b></div><div class="kv"><span>Score</span><b id="assetScore">—</b></div>
           </div>
           <div>
             <div class="chart">
@@ -210,10 +210,10 @@ background-size:38px 38px;position:relative;overflow:hidden}
           </div>
           <div class="regime">
             <div class="label" style="color:#718397">MARKET REGIME</div>
-            <div class="regime-row"><span>BTC.D</span><b>57.4%</b></div>
-            <div class="regime-row"><span>TOTAL3/BTC</span><b class="up">+1.8%</b></div>
-            <div class="regime-row"><span>F&G</span><b class="warn">62</b></div>
-            <div class="regime-row"><span>Derivatives</span><b class="up">Constructive</b></div>
+            <div class="regime-row"><span>BTC.D</span><b id="regimeBtcDom">—</b></div>
+            <div class="regime-row"><span>TOTAL3/BTC</span><b id="regimeTotal3">—</b></div>
+            <div class="regime-row"><span>F&G</span><b id="regimeFg">—</b></div>
+            <div class="regime-row"><span>Derivatives</span><b id="regimeDeriv">—</b></div>
           </div>
         </div>
       </div>
@@ -292,6 +292,8 @@ let journal = JSON.parse(localStorage.getItem('cc_journal') || 'null') || [];
 let manualContext = localStorage.getItem('cc_context') || 'Risk regime / macro note not entered yet.';
 let ws = null, wsSymbols = new Set(), reconnectTimer = null, lastRest = 0, binanceWs=null, binanceReconnectTimer=null;
 let selectedAsset = 'BTC';
+let marketContext = {btcDom:null,total3Btc:null,fng:null,fngLabel:null};
+let analysisCache = new Map();
 
 const fmt = (n, d=2) => Number.isFinite(Number(n))
   ? Number(n).toLocaleString(undefined,{minimumFractionDigits:d,maximumFractionDigits:d}) : '—';
@@ -337,6 +339,57 @@ function setDiag(msg, bad=false){
   const e=document.getElementById('diagText'); if(e){e.textContent=msg;e.style.color=bad?'var(--red)':'var(--muted)'}
 }
 
+
+/* -------- Global market context -------- */
+async function refreshGlobalContext(){
+  const jobs = await Promise.allSettled([
+    fetchJson('https://api.alternative.me/v2/global/'),
+    fetchJson('https://api.alternative.me/fng/?limit=1')
+  ]);
+  try{
+    if(jobs[0].status==='fulfilled'){
+      const d=jobs[0].value?.data||jobs[0].value;
+      if(d && Number.isFinite(Number(d.bitcoin_percentage_of_market_cap))){
+        marketContext.btcDom=Number(d.bitcoin_percentage_of_market_cap);
+      }
+    }
+  }catch(e){console.warn('BTC dominance parse',e)}
+  try{
+    if(jobs[1].status==='fulfilled'){
+      const d=jobs[1].value?.data?.[0] || jobs[1].value?.data?.[0];
+      if(d){
+        marketContext.fng=Number(d.value);
+        marketContext.fngLabel=d.value_classification||'';
+      }
+    }
+  }catch(e){console.warn('F&G parse',e)}
+
+  // Approximate TOTAL3/BTC from the live Bybit universe using quote turnover-weighted
+  // market breadth proxy only when full market-cap data is unavailable.
+  // This is intentionally labeled as a proxy, not true TOTAL3.
+  updateGlobalContextUI();
+}
+function updateGlobalContextUI(){
+  const dom=document.getElementById('btcDomValue'), domSub=document.getElementById('btcDomChange');
+  if(dom){
+    dom.textContent=Number.isFinite(marketContext.btcDom)?fmt(marketContext.btcDom,2)+'%':'—';
+    if(domSub) domSub.textContent=Number.isFinite(marketContext.btcDom)?'Alternative.me':'Unavailable';
+  }
+  const fg=document.getElementById('fgValue'), fgl=document.getElementById('fgLabel');
+  if(fg) fg.textContent=Number.isFinite(marketContext.fng)?String(marketContext.fng):'—';
+  if(fgl) fgl.textContent=marketContext.fngLabel||'Unavailable';
+
+  // Do not invent TOTAL3. Leave it explicitly unavailable until a market-cap source is added.
+  const t=document.getElementById('total3BtcValue'), ts=document.getElementById('total3BtcChange');
+  if(t) t.textContent='—';
+  if(ts) ts.textContent='Market-cap source not connected';
+
+  const rd=document.getElementById('regimeBtcDom'), rt=document.getElementById('regimeTotal3'), rf=document.getElementById('regimeFg');
+  if(rd) rd.textContent=Number.isFinite(marketContext.btcDom)?fmt(marketContext.btcDom,2)+'%':'—';
+  if(rt) rt.textContent='—';
+  if(rf) rf.textContent=Number.isFinite(marketContext.fng)?`${marketContext.fng} ${marketContext.fngLabel||''}`.trim():'—';
+}
+
 /* -------- Market-wide REST snapshot -------- */
 async function refreshMarket(){
   try{
@@ -359,14 +412,14 @@ async function refreshMarket(){
     }
     for(const [sym,v] of next){
       const old=market.get(sym);
-      v.oiDelta=old&&old.oi?((v.oi-old.oi)/old.oi)*100:0;
+      v.oiDelta=old&&old.oi?((v.oi-old.oi)/old.oi)*100:null;
       v.prevVolume=old?.volume||0;
-      v.volDelta=old&&old.volume?((v.volume-old.volume)/old.volume)*100:0;
+      v.volDelta=old&&old.volume?((v.volume-old.volume)/old.volume)*100:null;
     }
     market=next; lastRest=Date.now();
     setStatus('restStatus',`REST: Bybit · ${market.size} USDT contracts`,true);
-    setDiag(`LIVE · Bybit linear REST connected · ${market.size} USDT contracts · last snapshot ${new Date().toLocaleTimeString()}`);
-    updateContextCards(); renderScanner(); renderPotential(); renderConfirmed();
+    setDiag(`LIVE · Bybit linear REST connected · ${market.size} USDT contracts · Stage A ready · last snapshot ${new Date().toLocaleTimeString()}`);
+    updateContextCards(); updateGlobalContextUI(); updateLiveAssetCards(); renderScanner(); renderPotential(); renderConfirmed();
     updateClock(); reconcileActiveTrades(); ensureWebSocketSubscriptions();
   }catch(bybitErr){
     console.warn('Bybit REST failed:',bybitErr);
@@ -395,7 +448,7 @@ async function refreshBinanceFallback(){
     market=next; lastRest=Date.now();
     setStatus('restStatus',`REST: Binance fallback · ${market.size} spot pairs`,true);
     setDiag(`LIVE · Binance public spot fallback · ${market.size} USDT pairs. Bybit OI/funding remain unavailable until Bybit REST is reachable.`,false);
-    updateContextCards(); renderScanner(); renderPotential(); renderConfirmed();
+    updateContextCards(); updateGlobalContextUI(); updateLiveAssetCards(); renderScanner(); renderPotential(); renderConfirmed();
     updateClock(); reconcileActiveTrades(); ensureWebSocketSubscriptions();
   }catch(e){
     console.error('All REST sources failed',e);
@@ -405,7 +458,7 @@ async function refreshBinanceFallback(){
 }
 
 /* -------- Klines + indicators -------- */
-async function getKlines(symbol, interval='240', limit=120){
+async function getKlines(symbol, interval='240', limit=220){
   const key=symbol+'|'+interval;
   try{
     const r=await fetchJson(`${BYBIT_REST}/v5/market/kline?category=linear&symbol=${encodeURIComponent(symbol)}&interval=${interval}&limit=${limit}`);
@@ -461,11 +514,11 @@ function structure(rows){
 }
 
 async function enrich(symbol){
-  const rows=await getKlines(symbol,'240',120);
+  const rows=await getKlines(symbol,'240',220);
   if(!rows.length)return null;
   const closes=rows.map(x=>x.close);
   const e10=ema(closes,10),e20=ema(closes,20),e55=ema(closes,55);
-  const ma200=sma(closes,200);
+  const ma50=sma(closes,50),ma100=sma(closes,100);
   const r=rsi(closes,14), a=atr(rows,14), st=structure(rows);
   const m=market.get(symbol)||{};
   let score=5;
@@ -475,10 +528,10 @@ async function enrich(symbol){
   if(r<=45)score-=0.7;
   if(m.change>3)score+=0.5;
   if(m.change<-3)score-=0.5;
-  if(m.oiDelta>5)score+=0.6;
-  if(m.oiDelta<-5)score-=0.2;
-  if(m.volDelta>20)score+=0.7;
-  if(m.volDelta<-20)score-=0.2;
+  if(m.oiDelta!=null && m.oiDelta>5)score+=0.6;
+  if(m.oiDelta!=null && m.oiDelta<-5)score-=0.2;
+  if(m.volDelta!=null && m.volDelta>20)score+=0.7;
+  if(m.volDelta!=null && m.volDelta<-20)score-=0.2;
   score=Math.max(0,Math.min(10,score));
   const signal=score>=7.0?'LONG':score<=4.0?'SHORT':'NEUTRAL';
   const dir=signal;
@@ -494,7 +547,7 @@ async function enrich(symbol){
       tp1=Math.min(st.low,m.price-a*1.0); tp2=m.price-a*2.0;
     }
   }
-  return {symbol,score,signal,rsi:r,ema10:e10,ema20:e20,ema55:e55,ma200,atr:a,structure:st,entryLo,entryHi,tp1,tp2,sl};
+  return {symbol,score,signal,rsi:r,ema10:e10,ema20:e20,ema55:e55,ma50,ma100,atr:a,structure:st,entryLo,entryHi,tp1,tp2,sl};
 }
 
 /* -------- Scanner: cheap Stage A, targeted Stage B -------- */
@@ -504,13 +557,29 @@ async function runDeepScan(){
     .filter(x=>x.volume>1e7)
     .sort((a,b)=>(Math.abs(b.volDelta||0)+Math.abs(b.change||0)*5)-(Math.abs(a.volDelta||0)+Math.abs(a.change||0)*5))
     .slice(0,30);
-  const out=[];
+
+  if(!shortlist.length){
+    setDiag('No market symbols available for Stage B.',true);
+    return;
+  }
+
+  scanCache=[];
+  renderScanner();
+  const total=shortlist.length;
+  let completed=0;
+
   for(let i=0;i<shortlist.length;i+=5){
     const batch=shortlist.slice(i,i+5);
-    const vals=await Promise.all(batch.map(x=>enrich(x.symbol)));
-    out.push(...vals.filter(Boolean));
+    const vals=await Promise.allSettled(batch.map(x=>enrich(x.symbol)));
+    const good=vals.filter(x=>x.status==='fulfilled'&&x.value).map(x=>x.value);
+    scanCache.push(...good);
+    completed+=batch.length;
+    document.getElementById('scanStatus').textContent=`Stage B: ${Math.min(completed,total)}/${total} pairs analyzed · ${new Date().toLocaleTimeString()}`;
+    renderScanner();
   }
-  scanCache=out;
+
+  document.getElementById('scanStatus').textContent=`Stage B complete: ${scanCache.length}/${total} pairs analyzed · ${new Date().toLocaleTimeString()}`;
+  setDiag(`LIVE · Stage B technical scan complete · ${scanCache.length} pairs enriched with 4H RSI/EMA/structure.`);
   renderScanner();
   renderPotential();
   autoCreatePotential();
@@ -708,11 +777,11 @@ function renderScanner(){
       <td>${i+1}</td><td class="pair">${r.symbol}</td>
       <td>$${fmt(r.price,r.price<1?5:2)}</td><td class="${r.change>=0?'up':'down'}">${pct(r.change)}</td>
       <td>$${r.volume>=1e9?(r.volume/1e9).toFixed(2)+'B':(r.volume/1e6).toFixed(0)+'M'}</td>
-      <td class="${(r.volDelta||0)>=0?'up':'down'}">${pct(r.volDelta||0)}</td>
+      <td class="${(r.volDelta||0)>=0?'up':'down'}">${r.volDelta==null?'—':pct(r.volDelta)}</td>
       <td>$${r.oi>=1e9?(r.oi/1e9).toFixed(2)+'B':(r.oi/1e6).toFixed(0)+'M'}</td>
-      <td class="${(r.oiDelta||0)>=0?'up':'down'}">${pct(r.oiDelta||0)}</td>
+      <td class="${(r.oiDelta||0)>=0?'up':'down'}">${r.oiDelta==null?'—':pct(r.oiDelta)}</td>
       <td class="${Math.abs(r.funding)>0.01?'warn':'up'}">${fmt(r.funding,4)}%</td>
-      <td>${s?.rsi?fmt(s.rsi,1):'—'}</td><td>${s?.structure?.trend||'—'}</td>
+      <td>${s&&Number.isFinite(s.rsi)?fmt(s.rsi,1):'—'}</td><td>${s?.structure?.trend||'—'}</td>
       <td>${score!==null?`<span class="score ${scoreClass(score)}">${score.toFixed(1)}</span>`:'—'}</td>
       <td>${signal!=='—'?`<span class="badge ${badge(signal)}">${signal}</span>`:'—'}</td>
       <td><span class="sub">${potential.some(x=>x.symbol===r.symbol)?'Potential':confirmed.some(x=>x.symbol===r.symbol)?'Confirmed':'Scanner'}</span></td>
@@ -763,13 +832,35 @@ function updateContextCards(){
  set('ethCardValue','ethCardChange',e,2);
  set('xrpCardValue','xrpCardChange',x,4);
 }
-function updateLiveAssetCards(){
- const m=market.get(selectedAsset+'USDT');if(!m)return;
+async function updateLiveAssetCards(){
+ const m=market.get(selectedAsset+'USDT');
+ if(!m)return;
  document.getElementById('assetName').textContent=selectedAsset+'USDT';
  document.getElementById('assetPrice').textContent='$'+fmt(m.price,m.price<1?6:2);
- const ch=document.getElementById('assetChange');ch.textContent=pct(m.change);ch.className='mini '+(m.change>=0?'up':'down');
- const s=scanCache.find(x=>x.symbol===selectedAsset+'USDT');if(s)document.getElementById('assetScore').textContent=s.score.toFixed(1);
+ const ch=document.getElementById('assetChange');
+ ch.textContent=pct(m.change);ch.className='mini '+(m.change>=0?'up':'down');
+
+ let s=analysisCache.get(selectedAsset+'USDT')||scanCache.find(x=>x.symbol===selectedAsset+'USDT');
+ if(!s){
+   s=await enrich(selectedAsset+'USDT');
+   if(s) analysisCache.set(selectedAsset+'USDT',s);
+ }
+ if(!s){
+   document.getElementById('assetTrend').textContent='—';
+   document.getElementById('assetRsi').textContent='—';
+   document.getElementById('assetEma').textContent='—';
+   document.getElementById('assetStructure').textContent='—';
+   document.getElementById('assetScore').textContent='—';
+   return;
+ }
+ const trend=s.signal==='LONG'?'Bullish':s.signal==='SHORT'?'Bearish':(s.structure?.trend||'Range');
+ const trendEl=document.getElementById('assetTrend'); trendEl.textContent=trend; trendEl.className=trend==='Bullish'?'up':trend==='Bearish'?'down':'';
+ document.getElementById('assetRsi').textContent=Number.isFinite(s.rsi)?fmt(s.rsi,1):'—';
+ document.getElementById('assetEma').textContent=[s.ema10,s.ema20,s.ema55].every(Number.isFinite)?`${fmt(s.ema10,2)} / ${fmt(s.ema20,2)} / ${fmt(s.ema55,2)}`:'—';
+ document.getElementById('assetStructure').textContent=s.structure?.trend||'—';
+ const scoreEl=document.getElementById('assetScore');scoreEl.textContent=fmt(s.score,1);scoreEl.className=s.score>=7?'up':s.score<=4?'down':'';
 }
+
 function editSetup(id){
  const t=potential.find(x=>x.id===id);if(!t)return;
  const a=prompt('Entry LOW:',t.entryLo);if(a!==null)t.entryLo=+a;
@@ -817,8 +908,9 @@ document.getElementById('marketNote').textContent=manualContext;
 renderScanner();renderPotential();renderConfirmed();renderJournal();
 connectWS();
 connectBinanceWS();
+refreshGlobalContext();
 refreshMarket().then(()=>runDeepScan());
-setInterval(refreshMarket,REFRESH_MS);
+setInterval(()=>{refreshMarket();refreshGlobalContext()},REFRESH_MS);
 setInterval(()=>{renderConfirmed();renderPotential()},15000);
 </script>
 
