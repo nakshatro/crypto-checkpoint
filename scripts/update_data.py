@@ -9,7 +9,7 @@ DATA=ROOT/'data'; DATA.mkdir(exist_ok=True)
 CMC='https://pro-api.coinmarketcap.com/public-api'
 CG='https://api.coingecko.com/api/v3'
 NOW=lambda: datetime.now(timezone.utc).isoformat()
-HEADERS={'User-Agent':'Mozilla/5.0 CryptoCheckpoint/2.9','Accept':'application/json'}
+HEADERS={'User-Agent':'Mozilla/5.0 CryptoCheckpoint/2.12','Accept':'application/json'}
 OKX='https://www.okx.com'
 
 
@@ -179,6 +179,59 @@ def fetch_coin_history(coin_id, base_symbol=None):
 
 
 
+def build_trade_setup(m, tech):
+    """Construct a conditional setup from already-calculated technicals.
+    This is a setup/entry engine, not proof of an exchange fill.
+    """
+    price=float(m.get('price') or 0)
+    atrv=float(tech.get('atr') or 0)
+    e10=tech.get('ema10'); e20=tech.get('ema20')
+    s4=tech.get('structure4h') or {}; s1=tech.get('structure1d') or {}
+    signal=tech.get('signal'); score=float(tech.get('score') or 0)
+    extension=tech.get('extension','NORMAL')
+    hsrc=str(tech.get('historySource') or '')
+    futures='SWAP' in hsrc.upper()
+
+    setup=None
+    if signal=='LONG' and score>=7 and s4.get('trend')=='Rising' and s1.get('trend')!='Falling' and extension not in ('EXTREME_HIGH',):
+        if e10 and e20 and atrv and price:
+            lo=min(e10,e20); hi=max(e10,e20)
+            # Entry zone is the EMA10-EMA20 pullback band, widened by 0.15 ATR.
+            entry_low=max(0.0,lo-0.15*atrv); entry_high=hi+0.15*atrv
+            # Invalidation uses the latest 4H structural low with a small ATR buffer.
+            swing_low=float(s4.get('low') or 0)
+            sl=max(0.0,swing_low-0.10*atrv)
+            if sl>=entry_low: sl=max(0.0,entry_low-0.75*atrv)
+            risk=max(entry_high-sl,0.0)
+            tp1=entry_high+1.5*risk; tp2=entry_high+2.5*risk
+            if price<entry_low:
+                status='ENTRY_BELOW_ZONE'
+            elif price<=entry_high:
+                status='ENTRY_IN_ZONE'
+            else:
+                status='WAIT_PULLBACK'
+            setup={'direction':'LONG','entryLow':entry_low,'entryHigh':entry_high,'entryStatus':status,
+                   'stopLoss':sl,'tp1':tp1,'tp2':tp2,'riskPerUnit':risk,
+                   'rrTp1':1.5,'rrTp2':2.5,'setupType':'EMA pullback + structure continuation',
+                   'historyMarketType':'FUTURES' if futures else 'SPOT_FALLBACK'}
+    elif signal=='SHORT' and score<=4 and s4.get('trend')=='Falling' and s1.get('trend')!='Rising' and extension not in ('EXTREME_LOW',):
+        if e10 and e20 and atrv and price:
+            lo=min(e10,e20); hi=max(e10,e20)
+            entry_low=max(0.0,lo-0.15*atrv); entry_high=hi+0.15*atrv
+            swing_high=float(s4.get('high') or 0)
+            sl=swing_high+0.10*atrv
+            if sl<=entry_high: sl=entry_high+0.75*atrv
+            risk=max(sl-entry_low,0.0)
+            tp1=max(0.0,entry_low-1.5*risk); tp2=max(0.0,entry_low-2.5*risk)
+            if price>entry_high: status='ENTRY_ABOVE_ZONE'
+            elif price>=entry_low: status='ENTRY_IN_ZONE'
+            else: status='WAIT_RETEST'
+            setup={'direction':'SHORT','entryLow':entry_low,'entryHigh':entry_high,'entryStatus':status,
+                   'stopLoss':sl,'tp1':tp1,'tp2':tp2,'riskPerUnit':risk,
+                   'rrTp1':1.5,'rrTp2':2.5,'setupType':'EMA retest + structure continuation',
+                   'historyMarketType':'FUTURES' if futures else 'SPOT_FALLBACK'}
+    return setup
+
 def technical_from_history(symbol,m,history):
     try:
         h4=aggregate_hourly(history,4); d1=aggregate_hourly(history,24)
@@ -236,21 +289,33 @@ def technical_from_history(symbol,m,history):
 
         score=max(0,min(10,score))
         signal='LONG' if score>=7 else 'SHORT' if score<=4 else 'NEUTRAL'
-        # Tradeable is deliberately stricter than signal. A high score can mean
-        # directional interest without meaning that chasing the current price is valid.
-        long_ok=(score>=7 and s4.get('trend')=='Rising' and extension not in ('HIGH','EXTREME_HIGH'))
-        short_ok=(score<=4 and s4.get('trend')=='Falling' and extension not in ('LOW','EXTREME_LOW'))
-        if long_ok: trade_state='TRADEABLE_LONG'
-        elif short_ok: trade_state='TRADEABLE_SHORT'
-        elif signal!='NEUTRAL': trade_state='WATCH'
-        else: trade_state='NEUTRAL'
-        return {
+        # Directional signal and trade setup are separate. A LONG/SHORT bias
+        # does not mean an entry is available at the current price.
+        base_result={
             'symbol':symbol,'score':round(score,2),'signal':signal,
             'rsi':rr,'ema10':e10,'ema20':e20,'ema55':e55,
             'ma50':ma50,'ma100':ma100,'atr':aa,
             'structure4h':s4,'structure1d':s1,'trend':s4['trend'],
-            'reasons':reasons,'historySource':m.get('historySource','OKX'),'extension':extension,'tradeState':trade_state,'watchTier':m.get('watchTier','OPPORTUNITY_SCAN')
+            'reasons':reasons,'historySource':m.get('historySource','OKX'),'extension':extension,
+            'watchTier':m.get('watchTier','OPPORTUNITY_SCAN')
         }
+        setup=build_trade_setup(m,base_result)
+        if setup:
+            base_result['setup']=setup
+            # A setup can be a valid potential trade while still waiting for its entry zone.
+            if setup['entryStatus']=='ENTRY_IN_ZONE':
+                base_result['tradeState']='TRADEABLE_'+setup['direction']
+                base_result['setupStatus']='READY'
+            elif setup['entryStatus'] in ('WAIT_PULLBACK','WAIT_RETEST'):
+                base_result['tradeState']='POTENTIAL_'+setup['direction']
+                base_result['setupStatus']='WAITING_ENTRY'
+            else:
+                base_result['tradeState']='WATCH'
+                base_result['setupStatus']='OUTSIDE_ENTRY_ZONE'
+        else:
+            base_result['tradeState']='WATCH' if signal!='NEUTRAL' else 'NEUTRAL'
+            base_result['setupStatus']='NO_VALID_SETUP'
+        return base_result
     except Exception as e:
         return {'symbol':symbol,'error':str(e)}
 
@@ -474,9 +539,11 @@ ctx['volumeSource']='OKX 1H candles (futures-first, spot fallback)'
 ctx['volumeSpikeTimeframe']='1H'
 ctx['assetUniverse']='CMC listings excluding obvious tokenized-stock assets; unique identity = coinId'
 ctx['stageBHistoryLimit']=12
+ctx['potentialTradeDefinition']='Directional signal + aligned 4H/1D structure + non-extreme extension + defined entry zone/SL/TP; setup may remain WAITING_ENTRY'
 ctx['coreWatchAssets']=['BTC','ETH','XRP','SOL']
 ctx['stageBOpportunitySlots']=8
-ctx['tradeSelectionRule']='Core assets are always monitored but only assets passing tradeState qualification can become trade candidates'
+ctx['tradeSelectionRule']='Core assets are always monitored; potential trades require confluence plus a defined EMA pullback/retest setup'
+ctx['setupEngine']='EMA10-EMA20 pullback/retest with 4H structural invalidation; TP1=1.5R, TP2=2.5R; current price must enter the zone before READY'
 ctx['oiDeltaDefinition']='snapshot-to-snapshot change versus previous market.json run, not 24h'
 ctx['derivativesMapping']='Only unique CMC ticker symbols are auto-enriched to avoid same-symbol collisions'
 ctx['historyProvider']='OKX 1H candles (futures-first, spot fallback; serialized + 1h cache)'
@@ -486,7 +553,7 @@ ctx['historyStats']=history_stats
 ctx['generated_at']=NOW()
 
 (DATA/'market.json').write_text(json.dumps({'generated_at':NOW(),'source':'CMC + CoinGecko','count':len(rows),'symbols':rows,'engine_status':'OK' if rows else 'NO_MARKET_DATA'},separators=(',',':')))
-(DATA/'analysis.json').write_text(json.dumps({'generated_at':NOW(),'source':'OKX hourly → 4H/1D','count':len(analysis),'analysis':analysis},separators=(',',':')))
+(DATA/'analysis.json').write_text(json.dumps({'generated_at':NOW(),'source':'OKX hourly → 4H/1D + setup engine','count':len(analysis),'analysis':analysis},separators=(',',':')))
 (DATA/'context.json').write_text(json.dumps(ctx,separators=(',',':')))
 
 print(f'Generated {len(rows)} broad market rows, {len(analysis)} Stage-B analyses')
