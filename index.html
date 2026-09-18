@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Crypto Checkpoint — Live Trading Intelligence v0.9</title>
+<title>Crypto Checkpoint — Live Trading Intelligence v1.1</title>
 <style>
 :root{
   --bg:#111315; --panel:#171a1d; --panel2:#1c2024; --line:#30363d;
@@ -49,7 +49,7 @@ main{padding:18px 22px 30px;max-width:1700px;margin:auto}
 .mini{font-size:11px;margin-top:4px}
 .metric .spark{position:absolute;right:9px;bottom:9px;color:var(--green);opacity:.9;font-size:23px}
 .section-head{display:flex;align-items:center;justify-content:space-between;padding:15px 15px 11px}
-.title{font-size:20px;font-weight:800;letter-spacing:.08em;font-family:'Orbitron','Share Tech Mono',monospace}
+.title{font-size:20px;font-weight:800;letter-spacing:.08em;font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif}
 .title small{font-size:10px;color:var(--muted);font-weight:500;margin-left:10px;letter-spacing:.1em}
 .toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 select,.input{background:#07111b;border:1px solid #203244;color:#cbd8e6;border-radius:6px;padding:8px 10px;outline:none}
@@ -452,14 +452,15 @@ background-size:38px 38px;position:relative;overflow:hidden}
    No API key is used for public market data.
    ============================================================ */
 
+const BINANCE_FAPI = 'https://fapi.binance.com';
+const BINANCE_WS = 'wss://fstream.binance.com/ws/!ticker@arr';
+const BINANCE_SPOT = 'https://api.binance.com';
+const BINANCE_SPOT_WS = 'wss://stream.binance.com:9443/ws/!ticker@arr';
 const BYBIT_REST = 'https://api.bybit.com';
 const BYBIT_REST_BACKUP = 'https://api.bytick.com';
 const BYBIT_WS = 'wss://stream.bybit.com/v5/public/linear';
-const BINANCE_REST = 'https://data-api.binance.vision';
-const BINANCE_DATA = 'https://data-api.binance.vision';
-const BINANCE_WS = 'wss://data-stream.binance.vision/ws/!ticker@arr';
-const BINANCE_FAPI = 'https://fapi.binance.com';
 const REFRESH_MS = 15 * 60 * 1000;
+
 
 let market = new Map();
 let candles = new Map();
@@ -527,6 +528,15 @@ async function refreshGlobalContext(){
     fetchJson(`${CMC}/v1/global-metrics/quotes/latest?convert=USD`),
     fetchJson(`${CMC}/v3/cryptocurrency/quotes/latest?id=1,1027&convert=USD`)
   ]);
+
+  // CMC may reject browser-origin requests; use public Alternative.me F&G as fallback.
+  if(jobs[0].status!=='fulfilled'){
+    try{
+      const alt=await fetchJson('https://api.alternative.me/fng/?limit=1',8000);
+      const d=alt?.data?.[0];
+      if(d){marketContext.fng=Number(d.value);marketContext.fngLabel=d.value_classification||'';marketContext.fngUpdated=d.timestamp?new Date(Number(d.timestamp)*1000).toISOString():null;}
+    }catch(e){console.warn('F&G fallback failed',e.message)}
+  }
 
   try{
     if(jobs[0].status==='fulfilled'){
@@ -610,132 +620,110 @@ function updateGlobalContextUI(){
 /* -------- Market-wide REST snapshot -------- */
 async function refreshMarket(){
   setStatus('restStatus','REST: connecting…',true);
-  const hosts=[BYBIT_REST,BYBIT_REST_BACKUP];
-  let lastErr=null;
-  for(const host of hosts){
+  // Binance USD-M Futures is the browser-facing primary feed. It provides
+  // the broad USDT-perpetual universe needed by Stage A.
+  try{
+    setDiag('Trying Binance USD-M Futures market data…');
+    const [tickerRes,premiumRes]=await Promise.all([
+      fetchJson(`${BINANCE_FAPI}/fapi/v1/ticker/24hr`,10000),
+      fetchJson(`${BINANCE_FAPI}/fapi/v1/premiumIndex`,10000)
+    ]);
+    if(!Array.isArray(tickerRes)||!tickerRes.length) throw new Error('Binance Futures returned no tickers');
+    const premiums=new Map((Array.isArray(premiumRes)?premiumRes:[]).map(x=>[x.symbol,x]));
+    const next=new Map();
+    for(const x of tickerRes){
+      if(!x.symbol?.endsWith('USDT')) continue;
+      const p=premiums.get(x.symbol)||{};
+      next.set(x.symbol,{
+        symbol:x.symbol,price:Number(x.lastPrice),mark:Number(p.markPrice||x.lastPrice),
+        change:Number(x.priceChangePercent),high:Number(x.highPrice),low:Number(x.lowPrice),
+        volume:Number(x.quoteVolume||0),turnover:Number(x.quoteVolume||0),
+        oi:0,oiSize:0,funding:Number(p.lastFundingRate||0)*100,
+        nextFunding:Number(p.nextFundingTime||0),bid:Number(x.bidPrice||0),ask:Number(x.askPrice||0),
+        ts:Date.now(),source:'Binance USD-M Futures',oiDelta:null,volDelta:null,prevVolume:0
+      });
+    }
+    if(!next.size) throw new Error('No USDT futures contracts found');
+    for(const [sym,v] of next){
+      const old=market.get(sym);
+      v.oi=old?.oi||0; v.oiSize=old?.oiSize||0;
+      v.oiDelta=old&&old.oi?((v.oi-old.oi)/old.oi)*100:null;
+      v.prevVolume=old?.volume||0;
+      v.volDelta=old&&old.volume?((v.volume-old.volume)/old.volume)*100:null;
+    }
+    market=next; lastRest=Date.now();
+    setStatus('restStatus',`REST: Binance Futures · ${market.size} USDT contracts`,true);
+    setDiag(`LIVE · Binance USD-M Futures connected · ${market.size} USDT contracts · Stage A ready · ${new Date().toLocaleTimeString()}`);
+    await enrichCoreDerivatives();
+    updateContextCards(); updateGlobalContextUI(); updateLiveAssetCards(); renderScanner(); renderPotential(); renderConfirmed(); updateDashboard();
+    updateClock(); reconcileActiveTrades(); ensureWebSocketSubscriptions();
+    return;
+  }catch(e){
+    console.warn('Binance Futures primary failed:',e);
+    setDiag(`Binance Futures unavailable (${e.message}). Trying Bybit…`,true);
+  }
+
+  // Bybit fallback.
+  for(const host of [BYBIT_REST,BYBIT_REST_BACKUP]){
     try{
-      setDiag(`Trying Bybit V5 public market data · ${new URL(host).host}…`);
       const result=await fetchJson(`${host}/v5/market/tickers?category=linear`,9000);
       const list=result.list||[];
       if(!list.length) throw new Error('Bybit returned no linear tickers');
       const next=new Map();
       for(const x of list){
         if(!x.symbol?.endsWith('USDT')) continue;
-        next.set(x.symbol,{
-          symbol:x.symbol,price:Number(x.lastPrice),mark:Number(x.markPrice),
-          change:Number(x.price24hPcnt)*100,high:Number(x.highPrice24h),low:Number(x.lowPrice24h),
-          volume:Number(x.volume24h),turnover:Number(x.turnover24h),
-          oi:Number(x.openInterestValue||0),oiSize:Number(x.openInterest||0),
-          funding:Number(x.fundingRate||0)*100,nextFunding:Number(x.nextFundingTime||0),
-          bid:Number(x.bid1Price||0),ask:Number(x.ask1Price||0),ts:Date.now(),source:'Bybit Linear'
-        });
+        const old=market.get(x.symbol);
+        const v={symbol:x.symbol,price:Number(x.lastPrice),mark:Number(x.markPrice),change:Number(x.price24hPcnt)*100,
+          high:Number(x.highPrice24h),low:Number(x.lowPrice24h),volume:Number(x.turnover24h||0),turnover:Number(x.turnover24h||0),
+          oi:Number(x.openInterestValue||0),oiSize:Number(x.openInterest||0),funding:Number(x.fundingRate||0)*100,
+          nextFunding:Number(x.nextFundingTime||0),bid:Number(x.bid1Price||0),ask:Number(x.ask1Price||0),ts:Date.now(),source:'Bybit Linear'};
+        v.oiDelta=old?.oi?((v.oi-old.oi)/old.oi)*100:null;
+        v.prevVolume=old?.volume||0; v.volDelta=old?.volume?((v.volume-old.volume)/old.volume)*100:null;
+        next.set(x.symbol,v);
       }
-      for(const [sym,v] of next){
-        const old=market.get(sym);
-        v.oiDelta=old&&old.oi?((v.oi-old.oi)/old.oi)*100:null;
-        v.prevVolume=old?.volume||0;
-        v.volDelta=old&&old.volume?((v.volume-old.volume)/old.volume)*100:null;
-      }
-      market=next; lastRest=Date.now();
+      market=next;lastRest=Date.now();
       setStatus('restStatus',`REST: Bybit · ${market.size} USDT contracts`,true);
-      setDiag(`LIVE · Bybit linear REST connected via ${new URL(host).host} · ${market.size} USDT contracts · Stage A ready · last snapshot ${new Date().toLocaleTimeString()}`);
-      updateContextCards(); updateGlobalContextUI(); updateLiveAssetCards(); renderScanner(); renderPotential(); renderConfirmed();
-      updateClock(); reconcileActiveTrades(); ensureWebSocketSubscriptions();
+      setDiag(`LIVE · Bybit Linear connected via ${new URL(host).host} · ${market.size} USDT contracts`);
+      updateContextCards();updateGlobalContextUI();updateLiveAssetCards();renderScanner();renderPotential();renderConfirmed();updateDashboard();updateClock();reconcileActiveTrades();ensureWebSocketSubscriptions();
       return;
-    }catch(e){
-      lastErr=e;
-      console.warn('Bybit REST host failed:',host,e);
-    }
+    }catch(e){console.warn('Bybit fallback failed',host,e)}
   }
-  setStatus('restStatus','REST: Bybit unavailable · using fallback',false);
-  setDiag(`Bybit REST failed on both official mainnet endpoints (${lastErr?.message||'unknown error'}). Falling back to public market data.`,true);
-  await refreshBinanceFallback();
+  setStatus('restStatus','REST: OFFLINE',false);
+  setDiag('No exchange REST endpoint is reachable from this browser. Check browser/network blocking.',true);
 }
 
-async function refreshBinanceFallback(){
-  try{
-    // Binance USD-M futures first: preserves price, OI and funding when Bybit is unreachable.
-    const [tickerRes, oiRes] = await Promise.allSettled([
-      fetchJson(`${BINANCE_FAPI}/fapi/v1/ticker/24hr`,9000),
-      fetchJson(`${BINANCE_FAPI}/fapi/v1/openInterest?symbol=BTCUSDT`,9000)
-    ]);
-    const list=tickerRes.status==='fulfilled'?tickerRes.value:null;
-    if(Array.isArray(list)){
-      const next=new Map();
-      for(const x of list){
-        if(!x.symbol?.endsWith('USDT')) continue;
-        next.set(x.symbol,{
-          symbol:x.symbol,price:Number(x.lastPrice),mark:Number(x.lastPrice),
-          change:Number(x.priceChangePercent),high:Number(x.highPrice),low:Number(x.lowPrice),
-          volume:Number(x.quoteVolume||0),turnover:Number(x.quoteVolume||0),
-          oi:0,oiSize:0,funding:0,bid:Number(x.bidPrice||0),ask:Number(x.askPrice||0),
-          ts:Date.now(),source:'Binance USD-M Futures',oiDelta:0,volDelta:0,prevVolume:0
-        });
-      }
-      if(next.size){
-        market=next; lastRest=Date.now();
-        setStatus('restStatus',`REST: Binance Futures fallback · ${market.size} USDT contracts`,true);
-        setDiag(`LIVE · Binance USD-M Futures fallback · ${market.size} USDT contracts. Bybit OI/funding fields are unavailable in this fallback mode until exchange-specific enrichment succeeds.`);
-        updateContextCards(); updateGlobalContextUI(); updateLiveAssetCards(); renderScanner(); renderPotential(); renderConfirmed();
-        updateClock(); reconcileActiveTrades(); ensureWebSocketSubscriptions();
-        return;
-      }
-    }
-    throw new Error('Binance Futures returned no USDT contracts');
-  }catch(futuresErr){
-    console.warn('Binance Futures fallback failed:',futuresErr);
+async function enrichCoreDerivatives(){
+  const core=['ETHUSDT','XRPUSDT','SOLUSDT'];
+  await Promise.allSettled(core.map(async sym=>{
     try{
-      const list=await fetchJson(`${BINANCE_REST}/api/v3/ticker/24hr`,9000);
-      if(!Array.isArray(list)) throw new Error('Binance Spot returned an unexpected response');
-      const next=new Map();
-      for(const x of list){
-        if(!x.symbol?.endsWith('USDT')) continue;
-        next.set(x.symbol,{
-          symbol:x.symbol,price:Number(x.lastPrice),mark:Number(x.lastPrice),
-          change:Number(x.priceChangePercent),high:Number(x.highPrice),low:Number(x.lowPrice),
-          volume:Number(x.quoteVolume||0),turnover:Number(x.quoteVolume||0),
-          oi:0,oiSize:0,funding:0,bid:Number(x.bidPrice||0),ask:Number(x.askPrice||0),
-          ts:Date.now(),source:'Binance Spot fallback',oiDelta:0,volDelta:0,prevVolume:0
-        });
+      const x=await fetchJson(`${BINANCE_FAPI}/fapi/v1/openInterest?symbol=${sym}`,7000);
+      const m=market.get(sym); if(!m)return;
+      const oi=Number(x.openInterest);
+      if(Number.isFinite(oi)){
+        const old=m.oi;
+        m.oi=oi;
+        m.oiSize=oi;
+        m.oiDelta=old?((oi-old)/old)*100:null;
       }
-      if(!next.size) throw new Error('No USDT pairs received');
-      market=next; lastRest=Date.now();
-      setStatus('restStatus',`REST: Binance Spot fallback · ${market.size} pairs`,true);
-      setDiag(`LIVE · Binance public spot fallback · ${market.size} USDT pairs. Derivatives fields remain unavailable.`,false);
-      updateContextCards(); updateGlobalContextUI(); updateLiveAssetCards(); renderScanner(); renderPotential(); renderConfirmed();
-      updateClock(); reconcileActiveTrades(); ensureWebSocketSubscriptions();
-    }catch(e){
-      console.error('All REST sources failed',e);
-      setStatus('restStatus','REST: OFFLINE',false);
-      setDiag(`No public market source is reachable from this browser. Last errors: Bybit and Binance. ${e.message}`,true);
-    }
-  }
+    }catch(e){console.warn('OI failed',sym,e.message)}
+  }));
 }
 
 /* -------- Klines + indicators -------- */
 async function getKlines(symbol, interval='240', limit=200){
   const key=symbol+'|'+interval;
-  // Bybit first. Keep requests below the public endpoint's practical browser limits.
   try{
-    const r=await fetchJson(`${BYBIT_REST}/v5/market/kline?category=linear&symbol=${encodeURIComponent(symbol)}&interval=${interval}&limit=${limit}`);
-    const arr=(r.list||[]).reverse().map(x=>({time:+x[0],open:+x[1],high:+x[2],low:+x[3],close:+x[4],volume:+x[5]}));
-    if(arr.length>=100){candles.set(key,arr);return arr}
-  }catch(e){console.warn('Bybit kline failed',symbol,e.message)}
-  // Binance's market-data-only host is used before the general API host.
-  try{
-    const map={'240':'4h','60':'1h','30':'30m','15':'15m'};
-    const iv=map[interval]||'4h';
-    const arr=await fetchJson(`${BINANCE_DATA}/api/v3/klines?symbol=${encodeURIComponent(symbol)}&interval=${iv}&limit=${limit}`);
+    const arr=await fetchJson(`${BINANCE_FAPI}/fapi/v1/klines?symbol=${encodeURIComponent(symbol)}&interval=${interval==='240'?'4h':interval==='60'?'1h':interval==='30'?'30m':'15m'}&limit=${limit}`,10000);
     const rows=(arr||[]).map(x=>({time:+x[0],open:+x[1],high:+x[2],low:+x[3],close:+x[4],volume:+x[5]}));
     if(rows.length>=100){candles.set(key,rows);return rows}
-  }catch(e){console.warn('Binance data-api kline failed',symbol,e.message)}
-  try{
-    const map={'240':'4h','60':'1h','30':'30m','15':'15m'};
-    const iv=map[interval]||'4h';
-    const arr=await fetchJson(`${BINANCE_REST}/api/v3/klines?symbol=${encodeURIComponent(symbol)}&interval=${iv}&limit=${limit}`);
-    const rows=(arr||[]).map(x=>({time:+x[0],open:+x[1],high:+x[2],low:+x[3],close:+x[4],volume:+x[5]}));
-    if(rows.length>=100){candles.set(key,rows);return rows}
-  }catch(e){console.warn('Binance kline fallback failed',symbol,e.message)}
+  }catch(e){console.warn('Binance Futures kline failed',symbol,e.message)}
+  for(const host of [BYBIT_REST,BYBIT_REST_BACKUP]){
+    try{
+      const r=await fetchJson(`${host}/v5/market/kline?category=linear&symbol=${encodeURIComponent(symbol)}&interval=${interval}&limit=${limit}`,9000);
+      const arr=(r.list||[]).reverse().map(x=>({time:+x[0],open:+x[1],high:+x[2],low:+x[3],close:+x[4],volume:+x[5]}));
+      if(arr.length>=100){candles.set(key,arr);return arr}
+    }catch(e){console.warn('Bybit kline failed',symbol,e.message)}
+  }
   return [];
 }
 function ema(values, period){
@@ -1171,14 +1159,14 @@ function updateDashboard(){
     const ch=get(prefix+'Change'); if(ch)ch.className='core-change '+(m.change>=0?'up':'down');
     set(prefix+'Oi',fmtLarge(m.oi));
     set(prefix+'OiD',Number.isFinite(m.oiDelta)?pct(m.oiDelta):'—');
-    set(prefix+'Funding',Number.isFinite(m.funding)?(m.funding*100).toFixed(4)+'%':'—');
+    set(prefix+'Funding',Number.isFinite(m.funding)?m.funding.toFixed(4)+'%':'—');
     set(prefix+'Vol',fmtLarge(m.volume));
     const a=analysisCache.get(sym);
     if(a){
       set(prefix+'Trend',a.trend||a.structure?.trend||'—');
       set(prefix+'Rsi',Number.isFinite(a.rsi)?fmt(a.rsi,1):'—');
-      set(prefix+'Ema',a.ema?`${fmt(a.ema.e10,2)} / ${fmt(a.ema.e20,2)} / ${fmt(a.ema.e55,2)}`:'—');
-      set(prefix+'Ma',a.ma?`${fmt(a.ma.m50,2)} / ${fmt(a.ma.m100,2)}`:'—');
+      set(prefix+'Ema',[a.ema10,a.ema20,a.ema55].every(Number.isFinite)?`${fmt(a.ema10,2)} / ${fmt(a.ema20,2)} / ${fmt(a.ema55,2)}`:'—');
+      set(prefix+'Ma',[a.ma50,a.ma100].every(Number.isFinite)?`${fmt(a.ma50,2)} / ${fmt(a.ma100,2)}`:'—');
       set(prefix+'State',a.signal||'NEUTRAL');
     }
   };
@@ -1222,7 +1210,7 @@ function updateDashboard(){
     const p=sym==='ETH'?'Eth':sym==='XRP'?'Xrp':'Sol';
     set('d'+p+'Oi',fmtLarge(market.get(sym+'USDT')?.oi));
     set('d'+p+'OiD',Number.isFinite(market.get(sym+'USDT')?.oiDelta)?pct(market.get(sym+'USDT').oiDelta):'—');
-    set('d'+p+'Funding',Number.isFinite(market.get(sym+'USDT')?.funding)?(market.get(sym+'USDT').funding*100).toFixed(4)+'%':'—');
+    set('d'+p+'Funding',Number.isFinite(market.get(sym+'USDT')?.funding)?market.get(sym+'USDT').funding.toFixed(4)+'%':'—');
     set('d'+p+'Vol',fmtLarge(market.get(sym+'USDT')?.volume));
   });
 }
@@ -1233,7 +1221,7 @@ function renderDashboardScanner(){
   body.innerHTML=rows.map(r=>{
     const m=market.get(r.symbol)||{};
     const spike=(Number.isFinite(r.volSpike)?r.volSpike:(Number.isFinite(m.volDelta)?1+m.volDelta/100:null));
-    return `<tr><td class="pair">${r.symbol}</td><td>$${fmt(m.price,m.price<1?6:2)}</td><td class="${m.change>=0?'up':'down'}">${pct(m.change)}</td><td class="warn">${Number.isFinite(spike)?spike.toFixed(1)+'×':'—'}</td><td>${Number.isFinite(m.oiDelta)?pct(m.oiDelta):'—'}</td><td>${Number.isFinite(m.funding)?(m.funding*100).toFixed(4)+'%':'—'}</td><td>${Number.isFinite(r.rsi)?fmt(r.rsi,1):'—'}</td><td>${r.trend||'—'}</td><td><span class="score ${scoreClass(r.score)}">${Number.isFinite(r.score)?fmt(r.score,1):'—'}</span></td><td><span class="badge ${badge(r.signal)}">${r.signal||'NEUTRAL'}</span></td><td>Futures</td></tr>`;
+    return `<tr><td class="pair">${r.symbol}</td><td>$${fmt(m.price,m.price<1?6:2)}</td><td class="${m.change>=0?'up':'down'}">${pct(m.change)}</td><td class="warn">${Number.isFinite(spike)?spike.toFixed(1)+'×':'—'}</td><td>${Number.isFinite(m.oiDelta)?pct(m.oiDelta):'—'}</td><td>${Number.isFinite(m.funding)?m.funding.toFixed(4)+'%':'—'}</td><td>${Number.isFinite(r.rsi)?fmt(r.rsi,1):'—'}</td><td>${r.trend||'—'}</td><td><span class="score ${scoreClass(r.score)}">${Number.isFinite(r.score)?fmt(r.score,1):'—'}</span></td><td><span class="badge ${badge(r.signal)}">${r.signal||'NEUTRAL'}</span></td><td>Futures</td></tr>`;
   }).join('');
 }
 
