@@ -188,33 +188,68 @@ def technical_from_history(symbol,m,history):
         rr=rsi(c); aa=atr(h4)
         s4=structure(h4); s1=structure(d1)
         score=5.0; reasons=[]
+        # Directional trend alignment.
         if e10 and e20 and e55:
             if e10>e20>e55: score+=1.2; reasons.append('EMA bullish')
             elif e10<e20<e55: score-=1.2; reasons.append('EMA bearish')
         if ma50 and ma100:
-            if ma50>ma100: score+=0.5; reasons.append('MA50 > MA100')
-            elif ma50<ma100: score-=0.5; reasons.append('MA50 < MA100')
-        if rr is not None:
-            if 55<=rr<=70: score+=0.7; reasons.append('RSI bullish zone')
-            elif rr<=45: score-=0.7; reasons.append('RSI weak')
+            if ma50>ma100: score+=0.6; reasons.append('MA50 > MA100')
+            elif ma50<ma100: score-=0.6; reasons.append('MA50 < MA100')
+
+        # 4H/1D structure adds directional confirmation instead of being display-only.
+        if s4.get('trend')=='Rising': score+=0.6; reasons.append('4H structure rising')
+        elif s4.get('trend')=='Falling': score-=0.6; reasons.append('4H structure falling')
+        if s1.get('trend')=='Rising': score+=0.4; reasons.append('1D structure rising')
+        elif s1.get('trend')=='Falling': score-=0.4; reasons.append('1D structure falling')
+
+        # Momentum / extension: strong momentum can help, but extreme RSI is penalized
+        # so the engine does not equate overextension with a fresh trade entry.
         ch=m.get('change',0)
         if ch>3: score+=0.4; reasons.append('positive 24h momentum')
         elif ch<-3: score-=0.4; reasons.append('negative 24h momentum')
+        extension='NORMAL'
+        if rr is not None:
+            if rr>90:
+                score-=0.8; extension='EXTREME_HIGH'; reasons.append('RSI extreme high')
+            elif rr>80:
+                score-=0.5; extension='HIGH'; reasons.append('RSI extended high')
+            elif rr>70:
+                score+=0.1; extension='ELEVATED_HIGH'; reasons.append('RSI elevated')
+            elif 55<=rr<=70:
+                score+=0.5; reasons.append('RSI bullish zone')
+            elif rr<20:
+                score+=0.8; extension='EXTREME_LOW'; reasons.append('RSI extreme low')
+            elif rr<30:
+                score+=0.5; extension='LOW'; reasons.append('RSI oversold')
+            elif rr<=45:
+                score-=0.5; reasons.append('RSI weak')
+
         oi=m.get('oiDelta')
         if oi is not None:
-            if oi>5: score+=0.5; reasons.append('OI expansion')
-            elif oi<-5: score-=0.2; reasons.append('OI contraction')
+            if oi>5 and ch>0: score+=0.5; reasons.append('OI expansion with price')
+            elif oi>5 and ch<0: score-=0.5; reasons.append('OI expansion against price')
+            elif oi<-5 and ch<0: score+=0.2; reasons.append('OI contraction')
+            elif oi<-5 and ch>0: score-=0.1; reasons.append('OI contraction')
         vr=m.get('volRatio') or 0
-        if vr>=1.75: score+=0.8; reasons.append(f'{vr:.1f}x 1H volume spike')
-        elif vr>=1.25: score+=0.3; reasons.append('elevated 1H volume')
+        if vr>=1.75: score+=0.6; reasons.append(f'{vr:.1f}x 1H volume spike')
+        elif vr>=1.25: score+=0.25; reasons.append('elevated 1H volume')
+
         score=max(0,min(10,score))
         signal='LONG' if score>=7 else 'SHORT' if score<=4 else 'NEUTRAL'
+        # Tradeable is deliberately stricter than signal. A high score can mean
+        # directional interest without meaning that chasing the current price is valid.
+        long_ok=(score>=7 and s4.get('trend')=='Rising' and extension not in ('HIGH','EXTREME_HIGH'))
+        short_ok=(score<=4 and s4.get('trend')=='Falling' and extension not in ('LOW','EXTREME_LOW'))
+        if long_ok: trade_state='TRADEABLE_LONG'
+        elif short_ok: trade_state='TRADEABLE_SHORT'
+        elif signal!='NEUTRAL': trade_state='WATCH'
+        else: trade_state='NEUTRAL'
         return {
             'symbol':symbol,'score':round(score,2),'signal':signal,
             'rsi':rr,'ema10':e10,'ema20':e20,'ema55':e55,
             'ma50':ma50,'ma100':ma100,'atr':aa,
             'structure4h':s4,'structure1d':s1,'trend':s4['trend'],
-            'reasons':reasons,'historySource':m.get('historySource','OKX')
+            'reasons':reasons,'historySource':m.get('historySource','OKX'),'extension':extension,'tradeState':trade_state,'watchTier':m.get('watchTier','OPPORTUNITY_SCAN')
         }
     except Exception as e:
         return {'symbol':symbol,'error':str(e)}
@@ -361,24 +396,30 @@ for x in rows:
 rows.sort(key=lambda x:(x.get('derivVolume') or 0,x.get('volume') or 0),reverse=True)
 by_asset={x['assetKey']:x for x in rows}
 by_symbol={x['symbol']:x for x in rows if symbol_counts.get(x.get('baseSymbol'))==1}
-# Candidate pool: top 40 by 24h volume, plus top derivative volume names, plus core.
+by_core_id={str(x.get('coinId')):x for x in rows}
+core_ids={'BTC':'1','ETH':'1027','XRP':'52','SOL':'5426'}
+# Candidate pool is broad; core assets are monitored separately and do not consume
+# opportunity-selection logic. Duplicate tickers are handled by coinId.
 vol_rank=sorted(rows,key=lambda x:x.get('volume') or 0,reverse=True)[:60]
 deriv_rank=sorted([x for x in rows if x.get('derivVolume')],key=lambda x:x.get('derivVolume') or 0,reverse=True)[:60]
 candidates={x['assetKey'] for x in vol_rank+deriv_rank}
-for s in ['BTCUSDT','ETHUSDT','XRPUSDT','SOLUSDT']: 
-    if s in by_symbol:candidates.add(by_symbol[s]['assetKey'])
+for cid in core_ids.values():
+    if cid in by_core_id: candidates.add(by_core_id[cid]['assetKey'])
 
-# Fetch history for a small Stage-B shortlist to keep the GitHub Action lightweight.
-# Four core assets are always retained when available.
+# Stage B has two separate purposes:
+# 1) Core Watch: always analyze BTC/ETH/XRP/SOL when history is available.
+# 2) Opportunity Scan: analyze the top 8 non-core Stage-A candidates.
+# A core asset therefore gets analysis coverage even when it is not tradeable,
+# but it is never forced into Potential Trades.
 ranked_all=sorted([by_asset[s] for s in candidates],key=lambda x:(x.get('derivVolume') or 0,x.get('volume') or 0),reverse=True)
-ranked=[]
-# Reserve four slots for the core watchlist, then fill remaining slots by Stage-A activity.
-for s in ['BTCUSDT','ETHUSDT','XRPUSDT','SOLUSDT']:
-    if s in by_symbol:
-        ranked.append(by_symbol[s])
-for x in ranked_all:
-    if len(ranked)>=12: break
-    if all(x['assetKey']!=y['assetKey'] for y in ranked): ranked.append(x)
+core_ranked=[]
+for cid in core_ids.values():
+    if cid in by_core_id: core_ranked.append(by_core_id[cid])
+core_keys={x['assetKey'] for x in core_ranked}
+opportunity_ranked=[x for x in ranked_all if x['assetKey'] not in core_keys]
+ranked=core_ranked[:4] + opportunity_ranked[:8]
+for x in core_ranked[:4]: x['watchTier']='CORE_WATCH'
+for x in opportunity_ranked[:8]: x['watchTier']='OPPORTUNITY_SCAN'
 
 histories={}
 history_stats={'requested':0,'cacheHits':0,'freshFetches':0,'errors':0}
@@ -391,6 +432,7 @@ for x in ranked:
         h,cache_hit,hsrc=fetch_coin_history(x['coinId'],x.get('baseSymbol'))
         histories[x['assetKey']]=h
         x['historySource']=hsrc
+        x['historyMarketType']='FUTURES' if 'SWAP' in str(hsrc).upper() else 'SPOT_FALLBACK'
         history_stats['cacheHits']+=1 if cache_hit else 0
         history_stats['freshFetches']+=0 if cache_hit else 1
         sp=volume_spike(h)
@@ -432,6 +474,9 @@ ctx['volumeSource']='OKX 1H candles (futures-first, spot fallback)'
 ctx['volumeSpikeTimeframe']='1H'
 ctx['assetUniverse']='CMC listings excluding obvious tokenized-stock assets; unique identity = coinId'
 ctx['stageBHistoryLimit']=12
+ctx['coreWatchAssets']=['BTC','ETH','XRP','SOL']
+ctx['stageBOpportunitySlots']=8
+ctx['tradeSelectionRule']='Core assets are always monitored but only assets passing tradeState qualification can become trade candidates'
 ctx['oiDeltaDefinition']='snapshot-to-snapshot change versus previous market.json run, not 24h'
 ctx['derivativesMapping']='Only unique CMC ticker symbols are auto-enriched to avoid same-symbol collisions'
 ctx['historyProvider']='OKX 1H candles (futures-first, spot fallback; serialized + 1h cache)'
