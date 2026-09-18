@@ -8,8 +8,17 @@ from urllib.error import HTTPError, URLError
 
 ROOT=Path(__file__).resolve().parents[1]
 DATA=ROOT/'data'; DATA.mkdir(exist_ok=True)
-BINANCE='https://fapi.binance.com'
-BYBIT='https://api.bybit.com'
+BINANCE_BASES=[
+    'https://fapi.binance.com',
+    'https://fapi1.binance.com',
+    'https://fapi2.binance.com',
+    'https://fapi3.binance.com',
+    'https://fapi4.binance.com',
+]
+BYBIT_BASES=[
+    'https://api.bytick.com',
+    'https://api.bybit.com',
+]
 CMC='https://pro-api.coinmarketcap.com/public-api'
 NOW=datetime.now(timezone.utc).isoformat()
 
@@ -31,8 +40,19 @@ def api(base,path,params=None,timeout=15):
     q=('?'+urlencode(params)) if params else ''
     return get_json(base+path+q,timeout=timeout)
 
-def binance(path,params=None): return api(BINANCE,path,params)
-def bybit(path,params=None): return api(BYBIT,path,params)
+def first_working(bases,path,params=None,timeout=15):
+    errors=[]
+    for base in bases:
+        try:
+            return api(base,path,params,timeout=timeout),base
+        except Exception as e:
+            errors.append(f"{base}: {type(e).__name__}: {e}")
+    raise RuntimeError("All endpoints failed: " + " | ".join(errors))
+
+def binance(path,params=None): return first_working(BINANCE_BASES,path,params)[0]
+def binance_with_source(path,params=None): return first_working(BINANCE_BASES,path,params)
+def bybit(path,params=None): return first_working(BYBIT_BASES,path,params)[0]
+def bybit_with_source(path,params=None): return first_working(BYBIT_BASES,path,params)
 
 def ema(vals,p):
     if len(vals)<p:return None
@@ -133,12 +153,14 @@ try:
     old=json.loads((DATA/'market.json').read_text()); prev={x['symbol']:x for x in old.get('symbols',[])}
 except Exception:pass
 
-# Binance Futures is primary because the GitHub Actions runner receives HTTP 403 from Bybit.
+market_source='UNAVAILABLE'
+# Try Binance Futures mirror hosts first; fall back to Bybit's official alternative mainnet REST host.
 try:
-    info=binance('/fapi/v1/exchangeInfo')
+    info,market_base=binance_with_source('/fapi/v1/exchangeInfo')
+    market_source=f'Binance USD-M Futures ({market_base})'
     eligible={x['symbol'] for x in info.get('symbols',[]) if x.get('quoteAsset')=='USDT' and x.get('contractType')=='PERPETUAL' and x.get('status')=='TRADING'}
-    tickers=binance('/fapi/v1/ticker/24hr')
-    premium=binance('/fapi/v1/premiumIndex')
+    tickers=api(market_base,'/fapi/v1/ticker/24hr')
+    premium=api(market_base,'/fapi/v1/premiumIndex')
     prem={x.get('symbol'):x for x in premium}
     rows=[]
     for x in tickers:
@@ -148,10 +170,12 @@ try:
         if price<=0:continue
         p=prem.get(s,{})
         old=prev.get(s,{})
-        rows.append({'symbol':s,'price':price,'change':float(x.get('priceChangePercent') or 0),'high':float(x.get('highPrice') or 0),'low':float(x.get('lowPrice') or 0),'volume':float(x.get('quoteVolume') or 0),'oi':old.get('oi'),'funding':float(p.get('lastFundingRate') or 0)*100,'nextFunding':int(p.get('nextFundingTime') or 0),'oiDelta':None,'ts':int(time.time()*1000),'source':'Binance USD-M Futures'})
+        rows.append({'symbol':s,'price':price,'change':float(x.get('priceChangePercent') or 0),'high':float(x.get('highPrice') or 0),'low':float(x.get('lowPrice') or 0),'volume':float(x.get('quoteVolume') or 0),'oi':old.get('oi'),'funding':float(p.get('lastFundingRate') or 0)*100,'nextFunding':int(p.get('nextFundingTime') or 0),'oiDelta':None,'ts':int(time.time()*1000),'source':f'Binance USD-M Futures ({market_base})'})
 except Exception as e:
-    # Last-resort Bybit if Binance is unavailable.
-    tickers=bybit('/v5/market/tickers',{'category':'linear'}).get('result',{}).get('list',[])
+    # Last-resort Bybit. Official V3 docs list api.bytick.com as an alternative mainnet REST endpoint.
+    tickers,bybit_base=bybit_with_source('/v5/market/tickers',{'category':'linear'})
+    market_source=f'Bybit Linear ({bybit_base})'
+    tickers=tickers.get('result',{}).get('list',[])
     rows=[]
     for x in tickers:
         s=x.get('symbol','')
@@ -160,7 +184,7 @@ except Exception as e:
         if price<=0:continue
         old=prev.get(s,{})
         oi=float(x.get('openInterestValue') or 0); oldoi=float(old.get('oi') or 0)
-        rows.append({'symbol':s,'price':price,'change':float(x.get('price24hPcnt') or 0)*100,'high':float(x.get('highPrice24h') or 0),'low':float(x.get('lowPrice24h') or 0),'volume':float(x.get('turnover24h') or 0),'oi':oi,'funding':float(x.get('fundingRate') or 0)*100,'nextFunding':int(x.get('nextFundingTime') or 0),'oiDelta':((oi-oldoi)/oldoi*100 if oldoi else None),'ts':int(time.time()*1000),'source':'Bybit Linear'})
+        rows.append({'symbol':s,'price':price,'change':float(x.get('price24hPcnt') or 0)*100,'high':float(x.get('highPrice24h') or 0),'low':float(x.get('lowPrice24h') or 0),'volume':float(x.get('turnover24h') or 0),'oi':oi,'funding':float(x.get('fundingRate') or 0)*100,'nextFunding':int(x.get('nextFundingTime') or 0),'oiDelta':((oi-oldoi)/oldoi*100 if oldoi else None),'ts':int(time.time()*1000),'source':f'Bybit Linear ({bybit_base})'})
 
 rows.sort(key=lambda x:x['volume'],reverse=True)
 
@@ -215,8 +239,10 @@ try:
     ctx['total3']=ctx.get('totalMarketCap',0)-ctx['btcCap']-ctx['ethCap'];ctx['total3Btc']=ctx['total3']/ctx['btcCap'] if ctx['btcCap'] else None
 except Exception as e:ctx['assetError']=str(e)
 
-(DATA/'market.json').write_text(json.dumps({'generated_at':NOW,'source':'Binance USD-M Futures','count':len(rows),'symbols':rows},separators=(',',':')))
-(DATA/'analysis.json').write_text(json.dumps({'generated_at':NOW,'source':'Binance 4H/1D','analysis':analysis},separators=(',',':')))
+(DATA/'market.json').write_text(json.dumps({'generated_at':NOW,'source':market_source,'count':len(rows),'symbols':rows,'engine_status':'OK' if rows else 'NO_MARKET_DATA'},separators=(',',':')))
+(DATA/'analysis.json').write_text(json.dumps({'generated_at':NOW,'source':'Binance/Bybit 4H/1D','count':len(analysis),'analysis':analysis},separators=(',',':')))
+ctx['engine_status']='OK' if rows else 'NO_MARKET_DATA'
 (DATA/'context.json').write_text(json.dumps(ctx,separators=(',',':')))
 print(f'Generated {len(rows)} market rows, {len(analysis)} analysis rows')
+print('Market source:', market_source)
 print('Context:',{k:ctx.get(k) for k in ('fng','fngLabel','altseason','btcDom','totalMarketCap','total3','total3Btc')})
