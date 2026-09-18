@@ -1,5 +1,4 @@
 import json, math, statistics, time, re
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 from pathlib import Path
 from urllib.request import Request, urlopen
@@ -13,7 +12,7 @@ NOW=lambda: datetime.now(timezone.utc).isoformat()
 HEADERS={'User-Agent':'Mozilla/5.0 CryptoCheckpoint/2.7','Accept':'application/json'}
 
 
-def get_json(url, timeout=20, retries=3):
+def get_json(url, timeout=20, retries=2):
     last=None
     for i in range(retries+1):
         try:
@@ -23,9 +22,14 @@ def get_json(url, timeout=20, retries=3):
                 return json.loads(raw)
         except Exception as e:
             last=e
-            # CoinGecko commonly returns 429 when the free public endpoint is busy.
-            # Back off progressively instead of immediately retrying.
-            if i<retries: time.sleep(2.5*(i+1))
+            if i<retries:
+                # Public CoinGecko is rate-limited. Respect Retry-After when exposed;
+                # otherwise use a conservative backoff.
+                wait=8*(i+1)
+                if hasattr(e,'headers') and e.headers:
+                    try: wait=max(wait,int(e.headers.get('Retry-After') or 0))
+                    except Exception: pass
+                time.sleep(wait)
     raise last
 
 
@@ -114,15 +118,37 @@ def derivative_base(d):
     return parse_symbol(d.get('symbol'))
 
 
+HISTORY_CACHE=DATA/'history_cache.json'
+HISTORY_TTL=3600  # hourly history is cached for 1 hour; workflow itself runs every 15 min.
+
+def load_history_cache():
+    try:
+        return json.loads(HISTORY_CACHE.read_text())
+    except Exception:
+        return {}
+
+def save_history_cache(cache):
+    HISTORY_CACHE.write_text(json.dumps(cache,separators=(',',':')))
+
+history_cache=load_history_cache()
+
 def fetch_coin_history(coin_id):
+    key=str(coin_id)
+    now=time.time()
+    cached=history_cache.get(key)
+    if isinstance(cached,dict) and cached.get('fetched_at') and now-float(cached['fetched_at']) < HISTORY_TTL and cached.get('rows'):
+        return cached['rows'], True
+
     # 21d hourly is enough for 4H MA100 (100 x 4h = 16.7d) and 1D structure.
+    # Requests are deliberately serialized because CoinGecko public access is rate-limited.
     j=cg(f'/coins/{coin_id}/market_chart',{'vs_currency':'usd','days':'21','interval':'hourly'})
     prices=j.get('prices',[]); vols=j.get('total_volumes',[])
     vm={int(t/1000):float(v) for t,v in vols}
     rows=[]
     for p in prices:
         ts=int(p[0]/1000); rows.append([ts,float(p[1]),float(p[1]),float(p[1]),float(p[1]),vm.get(ts,0)])
-    return rows
+    history_cache[key]={'fetched_at':now,'rows':rows}
+    return rows, False
 
 
 def technical_from_history(symbol,m,history):
@@ -311,15 +337,30 @@ for s in ['BTCUSDT','ETHUSDT','XRPUSDT','SOLUSDT']:
     if s in by_symbol and all(x['assetKey']!=by_symbol[s]['assetKey'] for x in ranked):ranked.append(by_symbol[s])
 
 histories={}
-with ThreadPoolExecutor(max_workers=2) as ex:
-    fut={ex.submit(fetch_coin_history,x['coinId']):x for x in ranked if x.get('coinId')}
-    for f in as_completed(fut):
-        x=fut[f]
-        try:
-            h=f.result();histories[x['assetKey']]=h
-            sp=volume_spike(h)
-            if sp:x.update(sp)
-        except Exception as e:x['historyError']=str(e)
+history_stats={'requested':0,'cacheHits':0,'freshFetches':0,'errors':0}
+# Fetch sequentially. CoinGecko's public API is only about 5–15 calls/minute, so
+# parallel requests were causing the 429s seen in previous runs. Cached histories
+# are reused for 1 hour, while the dashboard can still refresh every 15 minutes.
+for x in ranked:
+    if not x.get('coinId'): continue
+    history_stats['requested']+=1
+    try:
+        h,cache_hit=fetch_coin_history(x['coinId'])
+        histories[x['assetKey']]=h
+        history_stats['cacheHits']+=1 if cache_hit else 0
+        history_stats['freshFetches']+=0 if cache_hit else 1
+        sp=volume_spike(h)
+        if sp:x.update(sp)
+        # Small pacing delay between fresh public requests. Cached assets do not wait.
+        if not cache_hit: time.sleep(8)
+    except Exception as e:
+        history_stats['errors']+=1
+        x['historyError']=str(e)
+
+# Keep only the current Stage-B cache universe so the committed cache stays small.
+keep_ids={str(x.get('coinId')) for x in ranked if x.get('coinId')}
+history_cache={k:v for k,v in history_cache.items() if k in keep_ids}
+save_history_cache(history_cache)
 
 for x in rows:
     vr=x.get('volRatio') or 0
@@ -327,11 +368,14 @@ for x in rows:
 
 # Stage B targeted technicals.
 analysis=[]
-with ThreadPoolExecutor(max_workers=2) as ex:
-    fut={ex.submit(technical_from_history,x['symbol'],x,histories[x['assetKey']]):x for x in ranked if x['assetKey'] in histories}
-    for f in as_completed(fut):
-        a=f.result()
-        if 'error' not in a:analysis.append(a)
+for x in ranked:
+    if x['assetKey'] not in histories: continue
+    a=technical_from_history(x['symbol'],x,histories[x['assetKey']])
+    if 'error' not in a:
+        a['assetKey']=x['assetKey']
+        a['coinId']=x['coinId']
+        a['baseSymbol']=x['baseSymbol']
+        analysis.append(a)
 analysis.sort(key=lambda x:x.get('score',0),reverse=True)
 
 # Make sure every core asset has an analysis if its history succeeded.
@@ -345,6 +389,10 @@ ctx['assetUniverse']='CMC listings excluding obvious tokenized-stock assets; uni
 ctx['stageBHistoryLimit']=12
 ctx['oiDeltaDefinition']='snapshot-to-snapshot change versus previous market.json run, not 24h'
 ctx['derivativesMapping']='Only unique CMC ticker symbols are auto-enriched to avoid same-symbol collisions'
+ctx['historyProvider']='CoinGecko market_chart (serialized + 1h cache)'
+ctx['historyCacheTTLSeconds']=HISTORY_TTL
+ctx['historyFetchPacingSeconds']=8
+ctx['historyStats']=history_stats
 ctx['generated_at']=NOW()
 
 (DATA/'market.json').write_text(json.dumps({'generated_at':NOW(),'source':'CMC + CoinGecko','count':len(rows),'symbols':rows,'engine_status':'OK' if rows else 'NO_MARKET_DATA'},separators=(',',':')))
