@@ -3,17 +3,17 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Crypto Checkpoint — Live Trading Intelligence v0.5</title>
+<title>Crypto Checkpoint — Live Trading Intelligence v0.9</title>
 <style>
 :root{
-  --bg:#05090f; --panel:#09111b; --panel2:#0c1622; --line:#182635;
-  --text:#dce7f2; --muted:#718396; --cyan:#36e4ff; --blue:#5b8cff;
-  --green:#18e7a0; --red:#ff4d67; --yellow:#f6c945; --purple:#a978ff;
-  --orange:#ff9f43; --shadow:0 12px 35px rgba(0,0,0,.28);
+  --bg:#111315; --panel:#171a1d; --panel2:#1c2024; --line:#30363d;
+  --text:#f2f5f7; --muted:#98a3ad; --cyan:#27e7ff; --blue:#62a0ff;
+  --green:#20f0a0; --red:#ff536d; --yellow:#ffd34d; --purple:#b98cff;
+  --orange:#ffad4d; --shadow:0 10px 30px rgba(0,0,0,.38);
 }
 *{box-sizing:border-box}
 body{
-  margin:0;background:radial-gradient(circle at 70% -20%,#102039 0,#05090f 42%);
+  margin:0;background:#111315;
   color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif;
   font-size:13px;letter-spacing:.01em;
 }
@@ -21,7 +21,7 @@ button,input,select,textarea{font:inherit}
 button{cursor:pointer}
 .topbar{
   height:68px;border-bottom:1px solid var(--line);display:flex;align-items:center;
-  padding:0 24px;gap:25px;background:rgba(5,9,15,.94);position:sticky;top:0;z-index:20;
+  padding:0 24px;gap:25px;background:#0f1113;position:sticky;top:0;z-index:20;
   backdrop-filter:blur(12px)
 }
 .brand{display:flex;align-items:center;gap:11px;min-width:260px}
@@ -49,7 +49,7 @@ main{padding:18px 22px 30px;max-width:1700px;margin:auto}
 .mini{font-size:11px;margin-top:4px}
 .metric .spark{position:absolute;right:9px;bottom:9px;color:var(--green);opacity:.9;font-size:23px}
 .section-head{display:flex;align-items:center;justify-content:space-between;padding:15px 15px 11px}
-.title{font-size:20px;font-weight:750;letter-spacing:.04em}
+.title{font-size:20px;font-weight:800;letter-spacing:.08em;font-family:'Orbitron','Share Tech Mono',monospace}
 .title small{font-size:10px;color:var(--muted);font-weight:500;margin-left:10px;letter-spacing:.1em}
 .toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 select,.input{background:#07111b;border:1px solid #203244;color:#cbd8e6;border-radius:6px;padding:8px 10px;outline:none}
@@ -107,6 +107,7 @@ background-size:38px 38px;position:relative;overflow:hidden}
 .modal.show{display:flex}.modal-box{width:min(520px,92vw);background:#09131f;border:1px solid #294156;border-radius:9px;padding:18px;box-shadow:0 30px 80px #000}
 .modal-box h2{margin-top:0}.formgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.formgrid label{font-size:10px;color:#718397}.formgrid input,.formgrid textarea{width:100%;margin-top:5px}.formgrid textarea{min-height:80px}.full{grid-column:1/-1}
 .footer{color:#53687b;font-size:10px;padding:18px 4px;text-align:right}
+.altseason-card{padding:14px 16px;margin-bottom:14px}.altseason-head{display:flex;align-items:center;justify-content:space-between;gap:16px}.altseason-title{font-size:11px;letter-spacing:.12em;color:#8294a8;text-transform:uppercase}.altseason-sub{font-size:12px;color:#9dafc1;margin-top:4px}.altseason-value{font-size:25px;font-weight:750}.altseason-track{height:14px;border-radius:999px;position:relative;margin:13px 3px 7px;background:linear-gradient(90deg,#ff4d67 0 25%,#f6c945 25% 75%,#18e7a0 75% 100%);box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}.altmarker{position:absolute;top:50%;left:50%;width:20px;height:20px;border-radius:50%;transform:translate(-50%,-50%);background:#fff;border:3px solid #36e4ff;box-shadow:0 0 0 2px rgba(54,228,255,.22),0 0 16px rgba(54,228,255,.6)}.altseason-scale,.altseason-foot{display:flex;justify-content:space-between;gap:8px;font-size:10px;color:#718396}.altseason-scale{color:#9dafc1}.altseason-foot{margin-top:5px}
 @media(max-width:1150px){.context-grid{grid-template-columns:repeat(3,1fr)}.layout2{grid-template-columns:1fr}.analysis{grid-template-columns:1fr}.potential-grid,.confirmed-grid{grid-template-columns:1fr}}
 @media(max-width:700px){.topbar{padding:0 10px;gap:8px}.brand{min-width:auto}.brand div:not(.logo){display:none}.nav{overflow:auto}.nav button{padding:0 8px}.top-actions .search{display:none}main{padding:10px}.context-grid{grid-template-columns:repeat(2,1fr)}}
 
@@ -115,6 +116,58 @@ background-size:38px 38px;position:relative;overflow:hidden}
 .livepill.ok{color:var(--green);border-color:#12694f}.livepill.bad{color:var(--red);border-color:#642538}
 .wsdot{width:6px;height:6px;border-radius:50%;display:inline-block;margin-right:5px;background:var(--yellow)}
 .wsok{background:var(--green);box-shadow:0 0 8px var(--green)}
+
+/* v0.8 dashboard */
+.dash-section{margin-bottom:14px}
+.dash-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 4px 9px}
+.dash-title{font-size:19px;font-weight:750;letter-spacing:.06em;color:#f4f7f9}
+.dash-sub{color:#8996a1;font-size:11px;letter-spacing:.06em;margin-top:3px}
+.regime-badge{padding:8px 15px;border:1px solid #158e69;border-radius:999px;color:var(--green);font-weight:750;font-size:11px;background:#09251e}
+.regime-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:9px}
+.metric{background:#191d20;border-color:#333a40}
+.metric .value{font-size:22px;font-weight:700;color:#f4f7f9}
+.fg-card{display:flex;flex-direction:column}
+.fg-gauge{margin:auto;text-align:center;padding-top:6px}
+.fg-number{font-size:29px;font-weight:750;color:var(--yellow)}
+.fg-label{color:var(--yellow);font-size:11px;margin-top:3px;letter-spacing:.1em}
+.alt-number{font-size:25px;font-weight:750;text-align:center;margin:6px 0}
+.alt-card .altseason-track{height:10px;margin:7px 0 4px;background:linear-gradient(90deg,#e55365 0 25%,#606a73 25% 75%,#25d99a 75% 100%);border-radius:20px;position:relative}
+.altseason-scale{display:flex;justify-content:space-between;font-size:8px;color:#a7b1ba;letter-spacing:.05em}
+.altmarker{position:absolute;top:50%;width:13px;height:13px;border-radius:50%;background:#ffd34d;border:2px solid #fff;transform:translate(-50%,-50%);left:50%}
+.regime-strip{display:grid;grid-template-columns:1.4fr 1.2fr 1fr 1fr;gap:1px;background:#333a40;border:1px solid #333a40;margin-top:9px}
+.regime-strip>div{background:#171a1d;padding:11px 14px}
+.strip-label{display:block;color:#75818b;font-size:9px;letter-spacing:.1em;margin-bottom:4px}
+.regime-strip strong{font-family:'Share Tech Mono',monospace;font-size:12px;color:#dce4e9}
+.core-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.core-card{padding:13px 14px;background:#191d20;border-color:#343b41}
+.core-top{display:flex;align-items:flex-start;justify-content:space-between}
+.core-top b{display:block;font-size:18px;font-weight:750;letter-spacing:.08em}
+.core-top span{display:block;color:#77838d;font-size:9px;margin-top:2px}
+.core-price{font-size:21px;font-weight:700}
+.core-change{font-family:'Share Tech Mono',monospace;font-size:13px;color:var(--green);margin:2px 0 10px}
+.core-grid2{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid #30363d}
+.core-grid2>div{padding:7px 4px;border-bottom:1px solid #2a3035}
+.core-grid2 span{display:block;color:#74818b;font-size:8px;letter-spacing:.08em}
+.core-grid2 b{display:block;margin-top:3px;font-size:11px;color:#e5ebef}
+.core-state{margin-top:10px;border:1px solid #1b9c76;color:var(--green);background:#09251e;border-radius:5px;text-align:center;padding:6px;font-size:9px;font-weight:700;letter-spacing:.08em}
+.bottom-grid{display:grid;grid-template-columns:1.15fr 1fr;gap:10px}
+.panel{background:#191d20;border-color:#343b41}
+.intel-list{padding:2px 14px 14px}
+.intel-list>div{display:flex;align-items:center;gap:9px;padding:9px 2px;border-top:1px solid #2c3339}
+.intel-list i{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 7px rgba(32,240,160,.4)}
+.intel-list span{color:#9ba7b0;flex:1}
+.intel-list b{font-family:'Share Tech Mono',monospace;color:#e9eef2;font-size:10px}
+.empty{text-align:center;color:#7e8a94;padding:22px}
+@media(max-width:1100px){
+ .regime-grid{grid-template-columns:repeat(3,1fr)}
+ .core-grid{grid-template-columns:1fr}
+ .bottom-grid{grid-template-columns:1fr}
+ .regime-strip{grid-template-columns:1fr 1fr}
+}
+@media(max-width:700px){
+ .regime-grid{grid-template-columns:1fr 1fr}
+ .regime-strip{grid-template-columns:1fr}
+}
 </style>
 </head>
 <body>
@@ -124,10 +177,12 @@ background-size:38px 38px;position:relative;overflow:hidden}
     <div><strong>CRYPTO CHECKPOINT</strong><span>SCAN · ANALYZE · TRADE · IMPROVE</span></div>
   </div>
   <nav class="nav" id="nav">
-    <button class="active" data-view="scanner">SCANNER</button>
+    <button class="active" data-view="dashboard">DASHBOARD</button>
+    <button data-view="scanner">SCANNER</button>
     <button data-view="potential">POTENTIAL TRADES</button>
     <button data-view="confirmed">CONFIRMED TRADES</button>
     <button data-view="journal">JOURNAL</button>
+    <button data-view="intelligence">MARKET INTELLIGENCE</button>
   </nav>
   <div class="top-actions">
     <input id="globalSearch" class="search" placeholder="Search coin, pair...">
@@ -136,16 +191,134 @@ background-size:38px 38px;position:relative;overflow:hidden}
 </header>
 
 <main>
-  <section class="context-grid">
-    <div class="card metric"><div class="label">BTC Price</div><div class="value" id="btcCardValue">—</div><div class="mini" id="btcCardChange">WAITING FOR LIVE DATA</div><div class="spark">⌁⌁⌁</div></div>
-    <div class="card metric"><div class="label">ETH Price</div><div class="value" id="ethCardValue">—</div><div class="mini" id="ethCardChange">WAITING FOR LIVE DATA</div><div class="spark">⌁⌁⌁</div></div>
-    <div class="card metric"><div class="label">XRP Price</div><div class="value" id="xrpCardValue">—</div><div class="mini" id="xrpCardChange">WAITING FOR LIVE DATA</div><div class="spark">⌁⌁⌁</div></div>
-    <div class="card metric"><div class="label">BTC Dominance</div><div class="value" id="btcDomValue">—</div><div class="mini" id="btcDomChange">Loading…</div><div class="spark">⌁⌁</div></div>
-    <div class="card metric"><div class="label">TOTAL3 / BTC</div><div class="value" id="total3BtcValue">—</div><div class="mini" id="total3BtcChange">Loading…</div><div class="spark">⌁⌁</div></div>
-    <div class="card metric"><div class="label">Fear & Greed</div><div class="value warn" id="fgValue">—</div><div class="mini warn" id="fgLabel">Loading…</div></div>
-  </section>
+  
+<section id="dashboardView" class="view">
+  <div class="dash-section">
+    <div class="dash-head">
+      <div>
+        <div class="dash-title">MARKET REGIME</div>
+        <div class="dash-sub">Global context for the trading environment</div>
+      </div>
+      <div class="regime-badge" id="dashboardRegime">ANALYZING</div>
+    </div>
 
-  <section class="card" style="margin-bottom:12px">
+    <div class="regime-grid">
+      <div class="card metric"><div class="label">BTC PRICE</div><div class="value" id="btcCardValue">—</div><div class="mini" id="btcCardChange">WAITING</div><div class="spark">⌁⌁⌁</div></div>
+      <div class="card metric"><div class="label">BTC DOMINANCE</div><div class="value" id="btcDomValue">—</div><div class="mini" id="btcDomChange">WAITING</div><div class="spark">⌁⌁</div></div>
+      <div class="card metric fg-card"><div class="label">FEAR & GREED · CMC</div><div class="fg-gauge"><div class="fg-number" id="fgValue">—</div><div class="fg-label" id="fgLabel">WAITING</div></div></div>
+      <div class="card metric alt-card"><div class="label">ALTCOIN SEASON · CMC</div><div class="alt-number" id="altseasonValue">—</div><div class="altseason-track"><div class="altmarker" id="altseasonMarker"></div></div><div class="altseason-scale"><span>BTC</span><span>NEUTRAL</span><span>ALT</span></div><div class="mini" id="altseasonLabel">WAITING</div></div>
+      <div class="card metric"><div class="label">ETH / BTC</div><div class="value" id="ethBtcValue">—</div><div class="mini" id="ethBtcChange">WAITING</div><div class="spark">⌁⌁⌁</div></div>
+      <div class="card metric"><div class="label">TOTAL3 · EXCL BTC/ETH</div><div class="value" id="total3Value">—</div><div class="mini" id="total3Change">WAITING</div><div class="spark">⌁⌁⌁</div></div>
+    </div>
+
+    <div class="regime-strip">
+      <div><span class="strip-label">MARKET STATE</span><strong id="marketState">WAITING FOR DATA</strong></div>
+      <div><span class="strip-label">MACRO / NEWS</span><strong id="macroState">MANUAL CONTEXT</strong></div>
+      <div><span class="strip-label">DERIVATIVES</span><strong id="derivState">SCANNING</strong></div>
+      <div><span class="strip-label">DATA</span><strong id="dashDataState">CONNECTING</strong></div>
+    </div>
+  </div>
+
+  <div class="dash-section">
+    <div class="dash-head">
+      <div><div class="dash-title">CORE FUTURES WATCH</div><div class="dash-sub">ETH · XRP · SOL — your regular futures instruments</div></div>
+      <button class="primary" onclick="document.querySelector('[data-view=scanner]').click()">OPEN FULL SCANNER</button>
+    </div>
+
+    <div class="core-grid">
+      <div class="core-card card" data-core="ETHUSDT">
+        <div class="core-top"><div><b>ETH</b><span>ETHUSDT</span></div><div class="core-price" id="coreEthPrice">—</div></div>
+        <div class="core-change" id="coreEthChange">—</div>
+        <div class="core-grid2">
+          <div><span>4H TREND</span><b id="coreEthTrend">—</b></div>
+          <div><span>RSI 4H</span><b id="coreEthRsi">—</b></div>
+          <div><span>EMA 10 / 20 / 55</span><b id="coreEthEma">—</b></div>
+          <div><span>MA 50 / 100</span><b id="coreEthMa">—</b></div>
+          <div><span>OI</span><b id="coreEthOi">—</b></div>
+          <div><span>OI Δ</span><b id="coreEthOiD">—</b></div>
+          <div><span>FUNDING</span><b id="coreEthFunding">—</b></div>
+          <div><span>24H VOL</span><b id="coreEthVol">—</b></div>
+        </div>
+        <div class="core-state" id="coreEthState">ANALYZING</div>
+      </div>
+
+      <div class="core-card card" data-core="XRPUSDT">
+        <div class="core-top"><div><b>XRP</b><span>XRPUSDT</span></div><div class="core-price" id="coreXrpPrice">—</div></div>
+        <div class="core-change" id="coreXrpChange">—</div>
+        <div class="core-grid2">
+          <div><span>4H TREND</span><b id="coreXrpTrend">—</b></div>
+          <div><span>RSI 4H</span><b id="coreXrpRsi">—</b></div>
+          <div><span>EMA 10 / 20 / 55</span><b id="coreXrpEma">—</b></div>
+          <div><span>MA 50 / 100</span><b id="coreXrpMa">—</b></div>
+          <div><span>OI</span><b id="coreXrpOi">—</b></div>
+          <div><span>OI Δ</span><b id="coreXrpOiD">—</b></div>
+          <div><span>FUNDING</span><b id="coreXrpFunding">—</b></div>
+          <div><span>24H VOL</span><b id="coreXrpVol">—</b></div>
+        </div>
+        <div class="core-state" id="coreXrpState">ANALYZING</div>
+      </div>
+
+      <div class="core-card card" data-core="SOLUSDT">
+        <div class="core-top"><div><b>SOL</b><span>SOLUSDT</span></div><div class="core-price" id="coreSolPrice">—</div></div>
+        <div class="core-change" id="coreSolChange">—</div>
+        <div class="core-grid2">
+          <div><span>4H TREND</span><b id="coreSolTrend">—</b></div>
+          <div><span>RSI 4H</span><b id="coreSolRsi">—</b></div>
+          <div><span>EMA 10 / 20 / 55</span><b id="coreSolEma">—</b></div>
+          <div><span>MA 50 / 100</span><b id="coreSolMa">—</b></div>
+          <div><span>OI</span><b id="coreSolOi">—</b></div>
+          <div><span>OI Δ</span><b id="coreSolOiD">—</b></div>
+          <div><span>FUNDING</span><b id="coreSolFunding">—</b></div>
+          <div><span>24H VOL</span><b id="coreSolVol">—</b></div>
+        </div>
+        <div class="core-state" id="coreSolState">ANALYZING</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="dash-section">
+    <div class="dash-head">
+      <div><div class="dash-title">⚡ OPPORTUNITY SCANNER</div><div class="dash-sub">All eligible USDT pairs — unusual volume + technical confluence</div></div>
+      <div class="toolbar"><button class="ghost" onclick="document.querySelector('[data-view=scanner]').click()">VIEW ALL</button><button class="primary" id="dashboardScanBtn">SCAN NOW</button></div>
+    </div>
+    <div class="card scanner">
+      <div class="table-wrap">
+        <table id="dashboardScannerTable">
+          <thead><tr><th>PAIR</th><th>PRICE</th><th>24H</th><th>VOL SPIKE</th><th>OI Δ</th><th>FUNDING</th><th>RSI 4H</th><th>TREND</th><th>SCORE</th><th>SIGNAL</th><th>TYPE</th></tr></thead>
+          <tbody><tr><td colspan="11" class="empty">Run the live scanner to populate opportunities.</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="bottom-grid">
+    <div class="card panel">
+      <div class="section-head"><div class="title" style="font-size:15px">DERIVATIVES OVERVIEW</div><div class="sub">CORE FUTURES</div></div>
+      <div class="table-wrap">
+        <table><thead><tr><th>METRIC</th><th>ETH</th><th>XRP</th><th>SOL</th></tr></thead>
+        <tbody>
+          <tr><td>Open Interest</td><td id="dEthOi">—</td><td id="dXrpOi">—</td><td id="dSolOi">—</td></tr>
+          <tr><td>OI Δ</td><td id="dEthOiD">—</td><td id="dXrpOiD">—</td><td id="dSolOiD">—</td></tr>
+          <tr><td>Funding</td><td id="dEthFunding">—</td><td id="dXrpFunding">—</td><td id="dSolFunding">—</td></tr>
+          <tr><td>24H Volume</td><td id="dEthVol">—</td><td id="dXrpVol">—</td><td id="dSolVol">—</td></tr>
+        </tbody></table>
+      </div>
+    </div>
+
+    <div class="card panel">
+      <div class="section-head"><div class="title" style="font-size:15px">MARKET INTELLIGENCE</div><div class="sub">MACRO · NEWS · EVENTS</div></div>
+      <div class="intel-list">
+        <div><i></i><span>News / macro context</span><b id="intelNews">MANUAL / NOT CONNECTED</b></div>
+        <div><i></i><span>Fear & Greed</span><b id="intelFg">—</b></div>
+        <div><i></i><span>Altcoin Season</span><b id="intelAlt">—</b></div>
+        <div><i></i><span>Market data</span><b id="intelData">—</b></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="scannerHost" class="view hidden">
+<section class="card" style="margin-bottom:12px">
     <div class="livebar">
       <span class="livepill" id="restStatus">REST: connecting…</span>
       <span class="livepill" id="wsStatus"><i class="wsdot"></i>WebSocket: connecting…</span>
@@ -188,9 +361,9 @@ background-size:38px 38px;position:relative;overflow:hidden}
 
     <div class="layout2">
       <div class="card panel">
-        <div class="section-head"><div class="title" style="font-size:15px">BTC / ETH / XRP ANALYSIS</div><div class="sub up">● ALWAYS ON</div></div>
+        <div class="section-head"><div class="title" style="font-size:15px">BTC / ETH / XRP / SOL ANALYSIS</div><div class="sub up">● ALWAYS ON</div></div>
         <div class="tabs" id="assetTabs">
-          <button class="active" data-asset="BTC">BTC</button><button data-asset="ETH">ETH</button><button data-asset="XRP">XRP</button>
+          <button class="active" data-asset="BTC">BTC</button><button data-asset="ETH">ETH</button><button data-asset="XRP">XRP</button><button data-asset="SOL">SOL</button>
         </div>
         <div class="analysis">
           <div class="asset">
@@ -206,7 +379,7 @@ background-size:38px 38px;position:relative;overflow:hidden}
                 <polyline points="0,149 600,149" fill="none" stroke="#203344"/>
               </svg>
             </div>
-            <div class="note" style="margin-top:10px">Holding above <b>$115K</b>. Next structural resistance: <b>$118.5K–$120K</b>. Entry should wait for defined setup conditions.</div>
+            <div class="note" style="margin-top:10px">Live technical levels and structure are populated from the selected asset's 4H candle data. No hard-coded market commentary.</div>
           </div>
           <div class="regime">
             <div class="label" style="color:#718397">MARKET REGIME</div>
@@ -229,6 +402,7 @@ background-size:38px 38px;position:relative;overflow:hidden}
       </div>
     </div>
   </section>
+</section>
 
   <section id="potentialView" class="view hidden">
     <div class="card" style="padding:14px;margin-bottom:12px">
@@ -292,8 +466,8 @@ let journal = JSON.parse(localStorage.getItem('cc_journal') || 'null') || [];
 let manualContext = localStorage.getItem('cc_context') || 'Risk regime / macro note not entered yet.';
 let ws = null, wsSymbols = new Set(), reconnectTimer = null, lastRest = 0, binanceWs=null, binanceReconnectTimer=null;
 let selectedAsset = 'BTC';
-let marketContext = {btcDom:null,total3Btc:null,fng:null,fngLabel:null};
-let analysisCache = new Map();
+let marketContext = {btcDom:null,total3Btc:null,total3:null,totalMarketCap:null,totalMarketCapChange:null,fng:null,fngLabel:null,fngUpdated:null,altseason:null,altseasonUpdated:null};
+let analysisCache = new Map(); window.scanCache = [];
 
 const fmt = (n, d=2) => Number.isFinite(Number(n))
   ? Number(n).toLocaleString(undefined,{minimumFractionDigits:d,maximumFractionDigits:d}) : '—';
@@ -341,55 +515,95 @@ function setDiag(msg, bad=false){
 
 
 /* -------- Global market context -------- */
+
 async function refreshGlobalContext(){
+  const CMC='https://pro-api.coinmarketcap.com/public-api';
   const jobs = await Promise.allSettled([
-    fetchJson('https://api.alternative.me/v2/global/'),
-    fetchJson('https://api.alternative.me/fng/?limit=1')
+    fetchJson(`${CMC}/v3/fear-and-greed/latest`),
+    fetchJson(`${CMC}/v1/altcoin-season-index/latest`),
+    fetchJson(`${CMC}/v1/global-metrics/quotes/latest?convert=USD`),
+    fetchJson(`${CMC}/v3/cryptocurrency/quotes/latest?id=1,1027&convert=USD`)
   ]);
+
   try{
     if(jobs[0].status==='fulfilled'){
-      const d=jobs[0].value?.data||jobs[0].value;
-      if(d && Number.isFinite(Number(d.bitcoin_percentage_of_market_cap))){
-        marketContext.btcDom=Number(d.bitcoin_percentage_of_market_cap);
-      }
+      const d=jobs[0].value?.data;
+      if(d){ marketContext.fng=Number(d.value); marketContext.fngLabel=d.value_classification||''; marketContext.fngUpdated=d.update_time||null; }
     }
-  }catch(e){console.warn('BTC dominance parse',e)}
+  }catch(e){console.warn('CMC F&G parse',e)}
+
   try{
     if(jobs[1].status==='fulfilled'){
-      const d=jobs[1].value?.data?.[0] || jobs[1].value?.data?.[0];
+      const d=jobs[1].value?.data;
       if(d){
-        marketContext.fng=Number(d.value);
-        marketContext.fngLabel=d.value_classification||'';
+        marketContext.altseason=Number(d.altcoin_index ?? d.value ?? d.index);
+        marketContext.altseasonUpdated=d.snapshot_time||d.update_time||null;
       }
     }
-  }catch(e){console.warn('F&G parse',e)}
+  }catch(e){console.warn('CMC altseason parse',e)}
 
-  // Approximate TOTAL3/BTC from the live Bybit universe using quote turnover-weighted
-  // market breadth proxy only when full market-cap data is unavailable.
-  // This is intentionally labeled as a proxy, not true TOTAL3.
+  try{
+    if(jobs[2].status==='fulfilled'){
+      const d=jobs[2].value?.data;
+      const q=d?.quote?.USD;
+      const dom=Number(d?.btc_dominance);
+      const total=Number(q?.total_market_cap);
+      const totalChange=Number(q?.total_market_cap_yesterday_percentage_change);
+      if(Number.isFinite(dom)) marketContext.btcDom=dom;
+      if(Number.isFinite(total)) marketContext.totalMarketCap=total;
+      if(Number.isFinite(totalChange)) marketContext.totalMarketCapChange=totalChange;
+    }
+  }catch(e){console.warn('CMC global metrics parse',e)}
+
+  try{
+    if(jobs[3].status==='fulfilled'){
+      const d=jobs[3].value?.data||{};
+      const btc=Number(d['1']?.quote?.USD?.market_cap);
+      const eth=Number(d['1027']?.quote?.USD?.market_cap);
+      if(Number.isFinite(marketContext.totalMarketCap)&&Number.isFinite(btc)&&Number.isFinite(eth)){
+        marketContext.total3=marketContext.totalMarketCap-btc-eth;
+        marketContext.total3Btc=btc>0 ? marketContext.total3/btc : null;
+      }
+    }
+  }catch(e){console.warn('CMC asset market-cap parse',e)}
+
   updateGlobalContextUI();
+  updateDashboard();
 }
+
 function updateGlobalContextUI(){
   const dom=document.getElementById('btcDomValue'), domSub=document.getElementById('btcDomChange');
   if(dom){
     dom.textContent=Number.isFinite(marketContext.btcDom)?fmt(marketContext.btcDom,2)+'%':'—';
-    if(domSub) domSub.textContent=Number.isFinite(marketContext.btcDom)?'Alternative.me':'Unavailable';
+    if(domSub) domSub.textContent=Number.isFinite(marketContext.btcDom)?'CMC':'Unavailable';
   }
+
   const fg=document.getElementById('fgValue'), fgl=document.getElementById('fgLabel');
   if(fg) fg.textContent=Number.isFinite(marketContext.fng)?String(marketContext.fng):'—';
   if(fgl) fgl.textContent=marketContext.fngLabel||'Unavailable';
+  const intelFg=document.getElementById('intelFg');
+  if(intelFg) intelFg.textContent=Number.isFinite(marketContext.fng)?`${marketContext.fng} · ${marketContext.fngLabel||''}`.trim():'Unavailable';
 
-  // Do not invent TOTAL3. Leave it explicitly unavailable until a market-cap source is added.
+  const av=document.getElementById('altseasonValue'), al=document.getElementById('altseasonLabel'), am=document.getElementById('altseasonMarker');
+  if(av) av.textContent=Number.isFinite(marketContext.altseason)?String(marketContext.altseason):'—';
+  if(al){
+    const x=marketContext.altseason;
+    al.textContent=Number.isFinite(x)?(x>=75?'Altcoin Season':x<=25?'Bitcoin Season':'Neutral / Transition'):'Unavailable';
+  }
+  if(am) am.style.left=(Number.isFinite(marketContext.altseason)?Math.max(0,Math.min(100,marketContext.altseason)):50)+'%';
+  const intelAlt=document.getElementById('intelAlt');
+  if(intelAlt) intelAlt.textContent=Number.isFinite(marketContext.altseason)?`${marketContext.altseason} · ${marketContext.altseason>=75?'Altcoin Season':marketContext.altseason<=25?'Bitcoin Season':'Neutral'}`:'Unavailable';
+
+  const totalEl=document.getElementById('total3Value');
+  const totalCh=document.getElementById('total3Change');
+  if(totalEl) totalEl.textContent=Number.isFinite(marketContext.total3)?fmtLarge(marketContext.total3):'—';
+  if(totalCh) totalCh.textContent=Number.isFinite(marketContext.totalMarketCapChange)?`Market cap ${pct(marketContext.totalMarketCapChange)}`:'CMC';
+
+  // Legacy scanner context elements, if present.
   const t=document.getElementById('total3BtcValue'), ts=document.getElementById('total3BtcChange');
-  if(t) t.textContent='—';
-  if(ts) ts.textContent='Market-cap source not connected';
-
-  const rd=document.getElementById('regimeBtcDom'), rt=document.getElementById('regimeTotal3'), rf=document.getElementById('regimeFg');
-  if(rd) rd.textContent=Number.isFinite(marketContext.btcDom)?fmt(marketContext.btcDom,2)+'%':'—';
-  if(rt) rt.textContent='—';
-  if(rf) rf.textContent=Number.isFinite(marketContext.fng)?`${marketContext.fng} ${marketContext.fngLabel||''}`.trim():'—';
+  if(t) t.textContent=Number.isFinite(marketContext.total3Btc)?marketContext.total3Btc.toFixed(3):'—';
+  if(ts) ts.textContent=Number.isFinite(marketContext.total3Btc)?'TOTAL3 / BTC':'Unavailable';
 }
-
 /* -------- Market-wide REST snapshot -------- */
 async function refreshMarket(){
   try{
@@ -458,20 +672,30 @@ async function refreshBinanceFallback(){
 }
 
 /* -------- Klines + indicators -------- */
-async function getKlines(symbol, interval='240', limit=220){
+async function getKlines(symbol, interval='240', limit=200){
   const key=symbol+'|'+interval;
+  // Bybit first. Keep requests below the public endpoint's practical browser limits.
   try{
     const r=await fetchJson(`${BYBIT_REST}/v5/market/kline?category=linear&symbol=${encodeURIComponent(symbol)}&interval=${interval}&limit=${limit}`);
     const arr=(r.list||[]).reverse().map(x=>({time:+x[0],open:+x[1],high:+x[2],low:+x[3],close:+x[4],volume:+x[5]}));
-    if(arr.length){candles.set(key,arr);return arr}
+    if(arr.length>=100){candles.set(key,arr);return arr}
   }catch(e){console.warn('Bybit kline failed',symbol,e.message)}
+  // Binance's market-data-only host is used before the general API host.
+  try{
+    const map={'240':'4h','60':'1h','30':'30m','15':'15m'};
+    const iv=map[interval]||'4h';
+    const arr=await fetchJson(`${BINANCE_DATA}/api/v3/klines?symbol=${encodeURIComponent(symbol)}&interval=${iv}&limit=${limit}`);
+    const rows=(arr||[]).map(x=>({time:+x[0],open:+x[1],high:+x[2],low:+x[3],close:+x[4],volume:+x[5]}));
+    if(rows.length>=100){candles.set(key,rows);return rows}
+  }catch(e){console.warn('Binance data-api kline failed',symbol,e.message)}
   try{
     const map={'240':'4h','60':'1h','30':'30m','15':'15m'};
     const iv=map[interval]||'4h';
     const arr=await fetchJson(`${BINANCE_REST}/api/v3/klines?symbol=${encodeURIComponent(symbol)}&interval=${iv}&limit=${limit}`);
     const rows=(arr||[]).map(x=>({time:+x[0],open:+x[1],high:+x[2],low:+x[3],close:+x[4],volume:+x[5]}));
-    candles.set(key,rows);return rows;
-  }catch(e){console.warn('Binance kline fallback failed',symbol,e.message);return []}
+    if(rows.length>=100){candles.set(key,rows);return rows}
+  }catch(e){console.warn('Binance kline fallback failed',symbol,e.message)}
+  return [];
 }
 function ema(values, period){
   if(values.length<period)return null;
@@ -572,14 +796,26 @@ async function runDeepScan(){
     const batch=shortlist.slice(i,i+5);
     const vals=await Promise.allSettled(batch.map(x=>enrich(x.symbol)));
     const good=vals.filter(x=>x.status==='fulfilled'&&x.value).map(x=>x.value);
-    scanCache.push(...good);
+    good.forEach(x=>analysisCache.set(x.symbol,x));
+    scanCache.push(...good); window.scanCache=scanCache;
     completed+=batch.length;
     document.getElementById('scanStatus').textContent=`Stage B: ${Math.min(completed,total)}/${total} pairs analyzed · ${new Date().toLocaleTimeString()}`;
     renderScanner();
   }
 
-  document.getElementById('scanStatus').textContent=`Stage B complete: ${scanCache.length}/${total} pairs analyzed · ${new Date().toLocaleTimeString()}`;
-  setDiag(`LIVE · Stage B technical scan complete · ${scanCache.length} pairs enriched with 4H RSI/EMA/structure.`);
+  
+  // Always enrich the three core futures instruments even if Stage A does not rank them.
+  await Promise.allSettled(['ETHUSDT','XRPUSDT','SOLUSDT'].map(async sym=>{
+    if(!analysisCache.has(sym)){
+      const a=await enrich(sym);
+      if(a) analysisCache.set(sym,a);
+    }
+  }));
+  updateDashboard();
+  renderDashboardScanner();
+
+document.getElementById('scanStatus').textContent=`Stage B complete: ${scanCache.length}/${total} pairs analyzed · ${new Date().toLocaleTimeString()}`;
+  setDiag(`LIVE · Stage B complete · ${scanCache.length}/${total} pairs returned enough candles for 4H RSI/EMA/MA50/MA100/structure.` + (scanCache.length<total?' Some symbols are unavailable on the candle fallback source.':''));
   renderScanner();
   renderPotential();
   autoCreatePotential();
@@ -625,11 +861,11 @@ function connectBinanceWS(){
           ts:Date.now(),source:old.source||'Binance WebSocket'};
         v.volDelta=old.volume?((v.volume-old.volume)/old.volume)*100:0;
         market.set(s,v);
-        if(s==='BTCUSDT'||s==='ETHUSDT'||s==='XRPUSDT'||potential.some(t=>t.symbol===s)||confirmed.some(t=>t.symbol===s)){
+        if(s==='BTCUSDT'||s==='ETHUSDT'||s==='XRPUSDT'||s==='SOLUSDT'||potential.some(t=>t.symbol===s)||confirmed.some(t=>t.symbol===s)){
           handlePriceEvent(s,v.price);
         }
       }
-      updateContextCards();renderScanner();renderPotential();renderConfirmed();
+      updateContextCards();renderScanner();renderDashboardScanner();renderPotential();renderConfirmed();updateDashboard();
     }catch(e){console.warn('Binance WS parse',e)}
   };
   binanceWs.onerror=()=>setDiag('Binance WebSocket error; attempting reconnect.',true);
@@ -677,7 +913,7 @@ function scheduleWSReconnect(){
 }
 function ensureWebSocketSubscriptions(){
   connectWS();
-  const wanted=new Set(['BTCUSDT','ETHUSDT','XRPUSDT']);
+  const wanted=new Set(['BTCUSDT','ETHUSDT','XRPUSDT','SOLUSDT']);
   potential.forEach(t=>wanted.add(t.symbol));
   confirmed.forEach(t=>wanted.add(t.symbol));
   if(!ws||ws.readyState!==WebSocket.OPEN)return;
@@ -882,17 +1118,95 @@ function manualClose(id){
  const m=market.get(t.symbol),p=m?.price||t.current||t.entry;
  closeObservedTrade(t,'MANUAL',p);
 }
+
+
+function updateDashboard(){
+  const get=(id)=>document.getElementById(id);
+  const set=(id,v)=>{const e=get(id); if(e)e.textContent=v;};
+  const setMarket=(sym,prefix)=>{
+    const m=market.get(sym); if(!m)return;
+    set(prefix+'Price','$'+fmt(m.price,m.price<1?6:2));
+    set(prefix+'Change',pct(m.change));
+    const ch=get(prefix+'Change'); if(ch)ch.className='core-change '+(m.change>=0?'up':'down');
+    set(prefix+'Oi',fmtLarge(m.oi));
+    set(prefix+'OiD',Number.isFinite(m.oiDelta)?pct(m.oiDelta):'—');
+    set(prefix+'Funding',Number.isFinite(m.funding)?(m.funding*100).toFixed(4)+'%':'—');
+    set(prefix+'Vol',fmtLarge(m.volume));
+    const a=analysisCache.get(sym);
+    if(a){
+      set(prefix+'Trend',a.trend||a.structure?.trend||'—');
+      set(prefix+'Rsi',Number.isFinite(a.rsi)?fmt(a.rsi,1):'—');
+      set(prefix+'Ema',a.ema?`${fmt(a.ema.e10,2)} / ${fmt(a.ema.e20,2)} / ${fmt(a.ema.e55,2)}`:'—');
+      set(prefix+'Ma',a.ma?`${fmt(a.ma.m50,2)} / ${fmt(a.ma.m100,2)}`:'—');
+      set(prefix+'State',a.signal||'NEUTRAL');
+    }
+  };
+
+  const btc=market.get('BTCUSDT');
+  if(btc){
+    set('btcCardValue','$'+fmt(btc.price,2));
+    set('btcCardChange',pct(btc.change));
+    set('btcCardChange',pct(btc.change));
+    const bc=get('btcCardChange'); if(bc)bc.className='mini '+(btc.change>=0?'up':'down');
+  }
+
+  setMarket('ETHUSDT','coreEth');
+  setMarket('XRPUSDT','coreXrp');
+  setMarket('SOLUSDT','coreSol');
+
+  const eth=market.get('ETHUSDT');
+  if(btc && eth && btc.price>0) set('ethBtcValue',(eth.price/btc.price).toFixed(5));
+
+  if(Number.isFinite(marketContext.total3)) set('total3Value',fmtLarge(marketContext.total3));
+  if(Number.isFinite(marketContext.totalMarketCapChange)) set('total3Change',pct(marketContext.totalMarketCapChange)+' total market cap');
+
+  if(Number.isFinite(marketContext.fng)){
+    set('fgValue',String(marketContext.fng));
+    set('fgLabel',marketContext.fngLabel||'');
+  }
+  if(Number.isFinite(marketContext.altseason)){
+    set('altseasonValue',String(marketContext.altseason));
+    const label=marketContext.altseason<=25?'Bitcoin Season':marketContext.altseason>=75?'Altcoin Season':'Neutral';
+    set('altseasonLabel',label);
+    const mk=get('altseasonMarker'); if(mk) mk.style.left=Math.max(0,Math.min(100,marketContext.altseason))+'%';
+  }
+
+  const bullish=[eth,market.get('XRPUSDT'),market.get('SOLUSDT')].filter(m=>m&&m.change>0).length;
+  set('marketState', bullish>=2?'CORE ALT POSITIVE':bullish===1?'MIXED':'RISK-OFF / WEAK');
+  set('dashboardRegime', bullish>=2?'RISK-ON':bullish===1?'MIXED':'RISK-OFF');
+  set('dashDataState',document.getElementById('restStatus')?.textContent||'CONNECTING');
+  set('intelData',document.getElementById('wsStatus')?.textContent||'—');
+
+  ['ETH','XRP','SOL'].forEach(sym=>{
+    const p=sym==='ETH'?'Eth':sym==='XRP'?'Xrp':'Sol';
+    set('d'+p+'Oi',fmtLarge(market.get(sym+'USDT')?.oi));
+    set('d'+p+'OiD',Number.isFinite(market.get(sym+'USDT')?.oiDelta)?pct(market.get(sym+'USDT').oiDelta):'—');
+    set('d'+p+'Funding',Number.isFinite(market.get(sym+'USDT')?.funding)?(market.get(sym+'USDT').funding*100).toFixed(4)+'%':'—');
+    set('d'+p+'Vol',fmtLarge(market.get(sym+'USDT')?.volume));
+  });
+}
+function renderDashboardScanner(){
+  const body=document.querySelector('#dashboardScannerTable tbody'); if(!body)return;
+  const rows=(window.scanCache||[]).slice(0,8);
+  if(!rows.length){body.innerHTML='<tr><td colspan="11" class="empty">Run the live scanner to populate opportunities.</td></tr>';return;}
+  body.innerHTML=rows.map(r=>{
+    const m=market.get(r.symbol)||{};
+    const spike=(Number.isFinite(r.volSpike)?r.volSpike:(Number.isFinite(m.volDelta)?1+m.volDelta/100:null));
+    return `<tr><td class="pair">${r.symbol}</td><td>$${fmt(m.price,m.price<1?6:2)}</td><td class="${m.change>=0?'up':'down'}">${pct(m.change)}</td><td class="warn">${Number.isFinite(spike)?spike.toFixed(1)+'×':'—'}</td><td>${Number.isFinite(m.oiDelta)?pct(m.oiDelta):'—'}</td><td>${Number.isFinite(m.funding)?(m.funding*100).toFixed(4)+'%':'—'}</td><td>${Number.isFinite(r.rsi)?fmt(r.rsi,1):'—'}</td><td>${r.trend||'—'}</td><td><span class="score ${scoreClass(r.score)}">${Number.isFinite(r.score)?fmt(r.score,1):'—'}</span></td><td><span class="badge ${badge(r.signal)}">${r.signal||'NEUTRAL'}</span></td><td>Futures</td></tr>`;
+  }).join('');
+}
+
 document.querySelectorAll('#nav button').forEach(b=>b.onclick=()=>{
  document.querySelectorAll('#nav button').forEach(x=>x.classList.remove('active'));b.classList.add('active');
  document.querySelectorAll('.view').forEach(v=>v.classList.add('hidden'));
  document.getElementById(b.dataset.view+'View').classList.remove('hidden');
- const names={scanner:'SCANNER',potential:'POTENTIAL TRADES',confirmed:'CONFIRMED TRADES',journal:'JOURNAL'};
- document.getElementById('pageTitle').innerHTML=names[b.dataset.view]+' <small>'+({scanner:'REAL-TIME OPPORTUNITIES ACROSS USDT PAIRS',potential:'WAITING FOR ENTRY',confirmed:'LIVE POSITION TRACKING',journal:'RAW PERFORMANCE HISTORY'}[b.dataset.view])+'</small>';
+ const names={dashboard:'DASHBOARD',scanner:'SCANNER',potential:'POTENTIAL TRADES',confirmed:'CONFIRMED TRADES',journal:'JOURNAL',intelligence:'MARKET INTELLIGENCE'};
+ const subs={dashboard:'MARKET REGIME · CORE FUTURES · OPPORTUNITY DISCOVERY',scanner:'REAL-TIME OPPORTUNITIES ACROSS USDT PAIRS',potential:'WAITING FOR ENTRY',confirmed:'LIVE POSITION TRACKING',journal:'RAW PERFORMANCE HISTORY',intelligence:'MACRO · NEWS · EVENTS'}; const pt=document.getElementById('pageTitle'); if(pt) pt.innerHTML=names[b.dataset.view]+' <small>'+subs[b.dataset.view]+'</small>';
 });
 document.getElementById('globalSearch').oninput=renderScanner;
 document.getElementById('minScore').onchange=renderScanner;
 document.getElementById('refresh').onclick=()=>{refreshMarket();runDeepScan()};
-document.getElementById('scan').onclick=()=>{runDeepScan()};
+document.getElementById('scan').onclick=()=>{runDeepScan()}; const db=document.getElementById('dashboardScanBtn'); if(db) db.onclick=()=>runDeepScan();
 document.querySelectorAll('#assetTabs button').forEach(b=>b.onclick=()=>{
  document.querySelectorAll('#assetTabs button').forEach(x=>x.classList.remove('active'));b.classList.add('active');selectedAsset=b.dataset.asset;updateLiveAssetCards();
 });
@@ -905,7 +1219,7 @@ document.getElementById('saveNote').onclick=()=>{
 document.getElementById('clearJournal').onclick=()=>{if(confirm('Clear journal records?')){journal=[];saveState();renderJournal()}};
 
 document.getElementById('marketNote').textContent=manualContext;
-renderScanner();renderPotential();renderConfirmed();renderJournal();
+renderScanner();renderDashboardScanner();renderPotential();renderConfirmed();updateDashboard();renderJournal();
 connectWS();
 connectBinanceWS();
 refreshGlobalContext();
