@@ -1,58 +1,49 @@
-import json, math, statistics, time
+import json, math, statistics, time, re
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 from pathlib import Path
 from urllib.request import Request, urlopen
 from urllib.parse import urlencode
-from urllib.error import HTTPError, URLError
 
 ROOT=Path(__file__).resolve().parents[1]
 DATA=ROOT/'data'; DATA.mkdir(exist_ok=True)
-BINANCE_BASES=[
-    'https://fapi.binance.com',
-    'https://fapi1.binance.com',
-    'https://fapi2.binance.com',
-    'https://fapi3.binance.com',
-    'https://fapi4.binance.com',
-]
-BYBIT_BASES=[
-    'https://api.bytick.com',
-    'https://api.bybit.com',
-]
 CMC='https://pro-api.coinmarketcap.com/public-api'
-NOW=datetime.now(timezone.utc).isoformat()
+CG='https://api.coingecko.com/api/v3'
+NOW=lambda: datetime.now(timezone.utc).isoformat()
+HEADERS={'User-Agent':'Mozilla/5.0 CryptoCheckpoint/2.4','Accept':'application/json'}
 
-HEADERS={'User-Agent':'Mozilla/5.0 CryptoCheckpoint/2.1','Accept':'application/json','Accept-Language':'en-US,en;q=0.8'}
 
-def get_json(url, timeout=15, retries=2):
+def get_json(url, timeout=20, retries=2):
     last=None
     for i in range(retries+1):
         try:
-            req=Request(url, headers=HEADERS)
-            with urlopen(req, timeout=timeout) as r:
-                return json.loads(r.read().decode('utf-8'))
+            req=Request(url,headers=HEADERS)
+            with urlopen(req,timeout=timeout) as r:
+                raw=r.read().decode('utf-8')
+                return json.loads(raw)
         except Exception as e:
             last=e
-            if i<retries: time.sleep(1.2*(i+1))
+            if i<retries: time.sleep(1.5*(i+1))
     raise last
 
-def api(base,path,params=None,timeout=15):
+
+def api(base,path,params=None,timeout=20):
     q=('?'+urlencode(params)) if params else ''
-    return get_json(base+path+q,timeout=timeout)
+    return get_json(base+path+q,timeout)
 
-def first_working(bases,path,params=None,timeout=15):
-    errors=[]
-    for base in bases:
-        try:
-            return api(base,path,params,timeout=timeout),base
-        except Exception as e:
-            errors.append(f"{base}: {type(e).__name__}: {e}")
-    raise RuntimeError("All endpoints failed: " + " | ".join(errors))
 
-def binance(path,params=None): return first_working(BINANCE_BASES,path,params)[0]
-def binance_with_source(path,params=None): return first_working(BINANCE_BASES,path,params)
-def bybit(path,params=None): return first_working(BYBIT_BASES,path,params)[0]
-def bybit_with_source(path,params=None): return first_working(BYBIT_BASES,path,params)
+def cmc(path,params=None):
+    j=api(CMC,path,params)
+    st=j.get('status',{})
+    if str(st.get('error_code','0'))!='0': raise RuntimeError(f"CMC {st.get('error_code')}: {st.get('error_message')}")
+    return j.get('data')
+
+
+def cg(path,params=None):
+    j=api(CG,path,params)
+    if isinstance(j,dict) and j.get('error'): raise RuntimeError(f"CoinGecko: {j['error']}")
+    return j
+
 
 def ema(vals,p):
     if len(vals)<p:return None
@@ -60,17 +51,19 @@ def ema(vals,p):
     for v in vals[p:]: e=v*k+e*(1-k)
     return e
 
+
 def sma(vals,p): return sum(vals[-p:])/p if len(vals)>=p else None
+
 
 def rsi(vals,p=14):
     if len(vals)<p+1:return None
-    g=l=0
+    gains=[];losses=[]
     for i in range(len(vals)-p,len(vals)):
-        d=vals[i]-vals[i-1]
-        if d>=0:g+=d
-        else:l-=d
-    if l==0:return 100
-    return 100-100/(1+g/l)
+        d=vals[i]-vals[i-1];gains.append(max(d,0));losses.append(max(-d,0))
+    ag=sum(gains)/p;al=sum(losses)/p
+    if al==0:return 100.0
+    return 100-100/(1+ag/al)
+
 
 def atr(rows,p=14):
     if len(rows)<p+1:return None
@@ -79,44 +72,70 @@ def atr(rows,p=14):
         tr.append(max(rows[i][2]-rows[i][3],abs(rows[i][2]-rows[i-1][4]),abs(rows[i][3]-rows[i-1][4])))
     return sma(tr,p)
 
-def kline_binance(symbol,interval='4h',limit=220):
-    arr=binance('/fapi/v1/klines',{'symbol':symbol,'interval':interval,'limit':limit})
-    return [[int(x[0]),float(x[1]),float(x[2]),float(x[3]),float(x[4]),float(x[5])] for x in arr]
 
-def kline_bybit(symbol,interval='240',limit=220):
-    arr=bybit('/v5/market/kline',{'category':'linear','symbol':symbol,'interval':interval,'limit':limit}).get('result',{}).get('list',[])
-    arr=list(reversed(arr))
-    return [[int(x[0]),float(x[1]),float(x[2]),float(x[3]),float(x[4]),float(x[5])] for x in arr]
+def aggregate_hourly(hourly, hours):
+    # hourly = [(ts,open,high,low,close,volume)]
+    if not hourly:return []
+    out=[]; bucket=None; cur=None
+    for row in hourly:
+        ts=row[0]; b=(ts//(hours*3600))*hours*3600
+        if bucket!=b:
+            if cur: out.append(cur)
+            bucket=b;cur=[b,row[1],row[2],row[3],row[4],row[5],1]
+        else:
+            cur[2]=max(cur[2],row[2]);cur[3]=min(cur[3],row[3]);cur[4]=row[4];cur[5]+=row[5];cur[6]+=1
+    if cur:out.append(cur)
+    return [x for x in out if x[6]>=max(1,hours//2)]
 
-def kline(symbol,interval='4h',limit=220):
-    try:return kline_binance(symbol,interval,limit)
-    except Exception:
-        bi={'4h':'240','1d':'D','15m':'15'}[interval]
-        return kline_bybit(symbol,bi,limit)
 
 def structure(rows,look=30):
-    r=rows[-look:]; c=[x[4] for x in rows]; e20,e55=ema(c,20),ema(c,55)
-    return {'high':max(x[2] for x in r),'low':min(x[3] for x in r),'trend':'Rising' if e20 and e55 and e20>e55 else 'Falling' if e20 and e55 and e20<e55 else 'Range'}
+    if not rows:return {'high':None,'low':None,'trend':'Range'}
+    r=rows[-look:];c=[x[4] for x in rows];e20,e55=ema(c,20),ema(c,55)
+    trend='Rising' if e20 and e55 and e20>e55 else 'Falling' if e20 and e55 and e20<e55 else 'Range'
+    return {'high':max(x[2] for x in r),'low':min(x[3] for x in r),'trend':trend}
 
-def oi_current(symbol):
-    try:
-        j=binance('/fapi/v1/openInterest',{'symbol':symbol})
-        return float(j.get('openInterest') or 0)
-    except Exception:
-        try:
-            j=bybit('/v5/market/tickers',{'category':'linear','symbol':symbol})
-            x=(j.get('result',{}).get('list') or [{}])[0]
-            return float(x.get('openInterest') or 0)
-        except Exception:return None
 
-def calc_analysis(symbol,m):
+def parse_symbol(s):
+    s=(s or '').upper().replace('-','/').replace('_','/')
+    if '/' in s:
+        parts=s.split('/')
+        return parts[0]
+    for q in ('USDT','USD','USDC','BTC','ETH'):
+        if s.endswith(q) and len(s)>len(q):return s[:-len(q)]
+    return s
+
+
+def derivative_base(d):
+    # CoinGecko derivative ticker shapes have changed over time; handle common forms.
+    for k in ('base','base_symbol','coin_id'):
+        if d.get(k): return str(d[k]).upper().replace('-USDT','').replace('_USDT','')
+    return parse_symbol(d.get('symbol'))
+
+
+def fetch_coin_history(coin_id):
+    # 30d hourly is enough for 4H MA100 and 1D structure; one call per selected asset.
+    j=cg(f'/coins/{coin_id}/market_chart',{'vs_currency':'usd','days':'30','interval':'hourly'})
+    prices=j.get('prices',[]); vols=j.get('total_volumes',[])
+    vm={int(t/1000):float(v) for t,v in vols}
+    rows=[]
+    for p in prices:
+        ts=int(p[0]/1000); rows.append([ts,float(p[1]),float(p[1]),float(p[1]),float(p[1]),vm.get(ts,0)])
+    return rows
+
+
+def technical_from_history(symbol,m,history):
     try:
-        r4=kline(symbol,'4h',220); r1=kline(symbol,'1d',120); c=[x[4] for x in r4]
-        e10,e20,e55=ema(c,10),ema(c,20),ema(c,55); ma50,ma100=sma(c,50),sma(c,100); rr=rsi(c); aa=atr(r4); s4=structure(r4); s1=structure(r1)
-        score=5; reasons=[]
+        h4=aggregate_hourly(history,4); d1=aggregate_hourly(history,24)
+        c=[x[4] for x in h4]
+        e10,e20,e55=ema(c,10),ema(c,20),ema(c,55);ma50,ma100=sma(c,50),sma(c,100);rr=rsi(c);aa=atr(h4)
+        s4=structure(h4);s1=structure(d1)
+        score=5.0; reasons=[]
         if e10 and e20 and e55:
             if e10>e20>e55:score+=1.2;reasons.append('EMA bullish')
             elif e10<e20<e55:score-=1.2;reasons.append('EMA bearish')
+        if ma50 and ma100:
+            if ma50>ma100:score+=.5;reasons.append('MA50 > MA100')
+            elif ma50<ma100:score-=.5;reasons.append('MA50 < MA100')
         if rr is not None:
             if 55<=rr<=70:score+=.7;reasons.append('RSI bullish zone')
             elif rr<=45:score-=.7;reasons.append('RSI weak')
@@ -128,121 +147,144 @@ def calc_analysis(symbol,m):
             if oi>5:score+=.5;reasons.append('OI expansion')
             elif oi<-5:score-=.2;reasons.append('OI contraction')
         vr=m.get('volRatio') or 0
-        if vr>=1.75:score+=.8;reasons.append(f'{vr:.1f}x volume spike')
-        elif vr>=1.25:score+=.3;reasons.append('elevated volume')
-        score=max(0,min(10,score)); signal='LONG' if score>=7 else 'SHORT' if score<=4 else 'NEUTRAL'
-        return {'symbol':symbol,'score':round(score,2),'signal':signal,'rsi':rr,'ema10':e10,'ema20':e20,'ema55':e55,'ma50':ma50,'ma100':ma100,'atr':aa,'structure4h':s4,'structure1d':s1,'trend':s4['trend'],'reasons':reasons}
-    except Exception as e:return {'symbol':symbol,'error':str(e)}
+        if vr>=1.75:score+=.8;reasons.append(f'{vr:.1f}x 1H volume spike')
+        elif vr>=1.25:score+=.3;reasons.append('elevated 1H volume')
+        score=max(0,min(10,score));signal='LONG' if score>=7 else 'SHORT' if score<=4 else 'NEUTRAL'
+        return {'symbol':symbol,'score':round(score,2),'signal':signal,'rsi':rr,'ema10':e10,'ema20':e20,'ema55':e55,'ma50':ma50,'ma100':ma100,'atr':aa,'structure4h':s4,'structure1d':s1,'trend':s4['trend'],'reasons':reasons,'historySource':'CoinGecko market_chart'}
+    except Exception as e:
+        return {'symbol':symbol,'error':str(e)}
 
-def spike_for(symbol):
-    try:
-        rows=kline(symbol,'15m',25)
-        if len(rows)<22:return None
-        now=int(time.time()*1000); completed=rows[:-1] if rows[-1][0]+900000>now else rows
-        if len(completed)<21:return None
-        cur=completed[-1][5]; base=statistics.median([x[5] for x in completed[-21:-1]])
-        ratio=cur/base if base else None
-        if ratio is None:return None
-        label='EXTREME' if ratio>=4 else 'MAJOR' if ratio>=2.5 else 'SPIKE' if ratio>=1.75 else 'ELEVATED' if ratio>=1.25 else 'NORMAL'
-        return {'vol15m':cur,'volBaseline':base,'volRatio':ratio,'spike':label,'spikeSource':'Binance Futures 15m'}
-    except Exception:return None
 
-# Previous snapshot for 15m OI change.
-prev={}
+def volume_spike(history):
+    if len(history)<22:return None
+    # Use completed hourly bars; latest may be incomplete, so use previous bar as current completed bar.
+    vols=[float(x[5]) for x in history]
+    cur=vols[-2];base=statistics.median(vols[-22:-2])
+    if base<=0:return None
+    ratio=cur/base
+    label='EXTREME' if ratio>=4 else 'MAJOR' if ratio>=2.5 else 'SPIKE' if ratio>=1.75 else 'ELEVATED' if ratio>=1.25 else 'NORMAL'
+    return {'vol1h':cur,'volBaseline':base,'volRatio':ratio,'spike':label,'spikeSource':'CoinGecko 1H market volume'}
+
+# ---------------- CMC broad market ----------------
+ctx={'source':'CoinMarketCap Keyless Public API','generated_at':NOW()}
+listings=[]
 try:
-    old=json.loads((DATA/'market.json').read_text()); prev={x['symbol']:x for x in old.get('symbols',[])}
-except Exception:pass
-
-market_source='UNAVAILABLE'
-# Try Binance Futures mirror hosts first; fall back to Bybit's official alternative mainnet REST host.
-try:
-    info,market_base=binance_with_source('/fapi/v1/exchangeInfo')
-    market_source=f'Binance USD-M Futures ({market_base})'
-    eligible={x['symbol'] for x in info.get('symbols',[]) if x.get('quoteAsset')=='USDT' and x.get('contractType')=='PERPETUAL' and x.get('status')=='TRADING'}
-    tickers=api(market_base,'/fapi/v1/ticker/24hr')
-    premium=api(market_base,'/fapi/v1/premiumIndex')
-    prem={x.get('symbol'):x for x in premium}
-    rows=[]
-    for x in tickers:
-        s=x.get('symbol','')
-        if s not in eligible:continue
-        price=float(x.get('lastPrice') or 0)
-        if price<=0:continue
-        p=prem.get(s,{})
-        old=prev.get(s,{})
-        rows.append({'symbol':s,'price':price,'change':float(x.get('priceChangePercent') or 0),'high':float(x.get('highPrice') or 0),'low':float(x.get('lowPrice') or 0),'volume':float(x.get('quoteVolume') or 0),'oi':old.get('oi'),'funding':float(p.get('lastFundingRate') or 0)*100,'nextFunding':int(p.get('nextFundingTime') or 0),'oiDelta':None,'ts':int(time.time()*1000),'source':f'Binance USD-M Futures ({market_base})'})
+    listings=cmc('/v3/cryptocurrency/listings/latest',{'start':'1','limit':'1000','convert':'USD','sort':'volume_24h','sort_dir':'desc'}) or []
 except Exception as e:
-    # Last-resort Bybit. Official V3 docs list api.bytick.com as an alternative mainnet REST endpoint.
-    tickers,bybit_base=bybit_with_source('/v5/market/tickers',{'category':'linear'})
-    market_source=f'Bybit Linear ({bybit_base})'
-    tickers=tickers.get('result',{}).get('list',[])
-    rows=[]
-    for x in tickers:
-        s=x.get('symbol','')
-        if not s.endswith('USDT'):continue
-        price=float(x.get('lastPrice') or 0)
-        if price<=0:continue
-        old=prev.get(s,{})
-        oi=float(x.get('openInterestValue') or 0); oldoi=float(old.get('oi') or 0)
-        rows.append({'symbol':s,'price':price,'change':float(x.get('price24hPcnt') or 0)*100,'high':float(x.get('highPrice24h') or 0),'low':float(x.get('lowPrice24h') or 0),'volume':float(x.get('turnover24h') or 0),'oi':oi,'funding':float(x.get('fundingRate') or 0)*100,'nextFunding':int(x.get('nextFundingTime') or 0),'oiDelta':((oi-oldoi)/oldoi*100 if oldoi else None),'ts':int(time.time()*1000),'source':f'Bybit Linear ({bybit_base})'})
+    ctx['listingsError']=str(e)
 
-rows.sort(key=lambda x:x['volume'],reverse=True)
+# CMC context: these are authoritative CMC-native values.
+try:
+    d=cmc('/v3/fear-and-greed/latest') or {};ctx.update(fng=int(d.get('value')),fngLabel=d.get('value_classification'),fngUpdated=d.get('update_time'))
+except Exception as e:ctx['fngError']=str(e)
+try:
+    d=cmc('/v1/altcoin-season-index/latest') or {};ctx.update(altseason=int(d.get('altcoin_index')),altseasonUpdated=d.get('snapshot_time') or d.get('update_time'))
+except Exception as e:ctx['altseasonError']=str(e)
+try:
+    g=cmc('/v1/global-metrics/quotes/latest',{'convert':'USD'}) or {};q=g.get('quote',{}).get('USD',{});ctx.update(btcDom=float(g.get('btc_dominance')),totalMarketCap=float(q.get('total_market_cap')),totalMarketCapChange=float(q.get('total_market_cap_yesterday_percentage_change')))
+except Exception as e:ctx['globalError']=str(e)
+try:
+    q=cmc('/v3/cryptocurrency/quotes/latest',{'id':'1,1027','convert':'USD'}) or {};ctx.update(btcCap=float(q['1']['quote']['USD']['market_cap']),ethCap=float(q['1027']['quote']['USD']['market_cap']))
+except Exception as e:ctx['assetError']=str(e)
+if finite:=('btcCap' in ctx and 'ethCap' in ctx and 'totalMarketCap' in ctx):
+    ctx['total3']=ctx['totalMarketCap']-ctx['btcCap']-ctx['ethCap'];ctx['total3Btc']=ctx['total3']/ctx['btcCap'] if ctx['btcCap'] else None
 
-# Current OI for top 100 liquid contracts. This keeps the scanner broad while controlling API weight.
-with ThreadPoolExecutor(max_workers=20) as ex:
-    fut={ex.submit(oi_current,x['symbol']):x for x in rows[:100]}
+# ---------------- CoinGecko derivatives ----------------
+derivs=[]; deriv_error=None
+try: derivs=cg('/derivatives') or []
+except Exception as e: deriv_error=str(e)
+if deriv_error:ctx['derivativesError']=deriv_error
+
+# Build derivative lookup. Prefer USDT-like contracts and liquid markets.
+deriv_by_base={}
+for d in derivs if isinstance(derivs,list) else []:
+    base=derivative_base(d)
+    target=str(d.get('target') or '').upper()
+    symbol=str(d.get('symbol') or '').upper()
+    market_name=str(d.get('market') or d.get('market_name') or '')
+    # Keep USD/USDT perpetual-like contracts; avoid dated futures when contract_type explicitly says futures.
+    if target and target not in ('USDT','USD','USDC'): continue
+    if not target and not any(q in symbol for q in ('USDT','USD')): continue
+    if not base: continue
+    try: vol=float(d.get('volume_24h') or 0); oi=float(d.get('open_interest') or 0)
+    except: vol=0;oi=0
+    item={'derivMarket':market_name,'derivSymbol':symbol,'oi':oi,'funding':float(d.get('funding_rate') or 0)*100 if d.get('funding_rate') is not None else None,'derivVolume':vol,'basis':float(d.get('basis') or 0) if d.get('basis') is not None else None,'derivPrice':float(d.get('price') or 0) if d.get('price') else None}
+    # Choose the highest-volume derivative for each base asset.
+    if base not in deriv_by_base or vol>deriv_by_base[base]['derivVolume']: deriv_by_base[base]=item
+
+# ---------------- Build broad market rows ----------------
+rows=[]
+for x in listings:
+    sym=str(x.get('symbol') or '').upper()+'USDT'
+    if sym=='USDTUSDT':continue
+    q=x.get('quote',{}).get('USD',{})
+    price=q.get('price')
+    if price is None:continue
+    base=str(x.get('symbol') or '').upper()
+    d=deriv_by_base.get(base,{})
+    rows.append({'symbol':sym,'coinId':x.get('id'),'name':x.get('name'),'price':float(price),'change':float(q.get('percent_change_24h') or 0),'high':None,'low':None,'volume':float(q.get('volume_24h') or 0),'marketCap':float(q.get('market_cap') or 0),'oi':d.get('oi'),'funding':d.get('funding'),'oiDelta':None,'derivVolume':d.get('derivVolume'),'derivMarket':d.get('derivMarket'),'derivSymbol':d.get('derivSymbol'),'source':'CMC + CoinGecko derivatives','ts':int(time.time()*1000)})
+
+# Load previous snapshot for OI deltas.
+prev={}
+try: prev={x['symbol']:x for x in json.loads((DATA/'market.json').read_text()).get('symbols',[])}
+except Exception: pass
+for x in rows:
+    old=prev.get(x['symbol'],{});oldoi=old.get('oi');
+    if x.get('oi') is not None and oldoi not in (None,0): x['oiDelta']=(x['oi']-float(oldoi))/float(oldoi)*100
+
+# Stage A: prioritize liquid/active names, while retaining core.
+rows.sort(key=lambda x:(x.get('derivVolume') or 0,x.get('volume') or 0),reverse=True)
+by_symbol={x['symbol']:x for x in rows}
+# Candidate pool: top 40 by 24h volume, plus top derivative volume names, plus core.
+vol_rank=sorted(rows,key=lambda x:x.get('volume') or 0,reverse=True)[:60]
+deriv_rank=sorted([x for x in rows if x.get('derivVolume')],key=lambda x:x.get('derivVolume') or 0,reverse=True)[:60]
+candidates={x['symbol'] for x in vol_rank+deriv_rank}
+for s in ['BTCUSDT','ETHUSDT','XRPUSDT','SOLUSDT']: 
+    if s in by_symbol:candidates.add(s)
+
+# Fetch CoinGecko hourly history for up to 28 assets (20 broad + 4 core + derivative leaders).
+ranked=sorted([by_symbol[s] for s in candidates],key=lambda x:(x.get('derivVolume') or 0,x.get('volume') or 0),reverse=True)[:28]
+for s in ['BTCUSDT','ETHUSDT','XRPUSDT','SOLUSDT']:
+    if s in by_symbol and all(x['symbol']!=s for x in ranked):ranked.append(by_symbol[s])
+
+histories={}
+with ThreadPoolExecutor(max_workers=5) as ex:
+    fut={ex.submit(fetch_coin_history,x['coinId']):x for x in ranked if x.get('coinId')}
     for f in as_completed(fut):
         x=fut[f]
-        oi=f.result()
-        if oi is not None:
-            oldoi=float(prev.get(x['symbol'],{}).get('oi') or 0)
-            x['oi']=oi*x['price']
-            x['oiDelta']=((x['oi']-oldoi)/oldoi*100 if oldoi else None)
-
-# True 15m volume anomaly on top 120 liquid contracts.
-with ThreadPoolExecutor(max_workers=20) as ex:
-    fut={ex.submit(spike_for,x['symbol']):x for x in rows[:120]}
-    for f in as_completed(fut):
-        sp=f.result()
-        if sp:fut[f].update(sp)
+        try:
+            h=f.result();histories[x['symbol']]=h
+            sp=volume_spike(h)
+            if sp:x.update(sp)
+        except Exception as e:x['historyError']=str(e)
 
 for x in rows:
-    spike=x.get('volRatio') or 0
-    x['stageAScore']=round(min(3,abs(x['change'])/2)+min(2,abs(x.get('oiDelta') or 0)/5)+(3 if spike>=1.75 else 1.5 if spike>=1.25 else 0),3)
-ranked=sorted(rows,key=lambda x:x['stageAScore'],reverse=True)
-by_symbol={x['symbol']:x for x in rows}
-selected=[x['symbol'] for x in ranked[:40]]
-for s in ['BTCUSDT','ETHUSDT','XRPUSDT','SOLUSDT']:
-    if s in by_symbol and s not in selected:selected.append(s)
+    vr=x.get('volRatio') or 0
+    x['stageAScore']=round(min(3,abs(x.get('change',0))/2)+min(2,abs(x.get('oiDelta') or 0)/5)+(3 if vr>=1.75 else 1.5 if vr>=1.25 else 0),3)
+
+# Stage B targeted technicals.
 analysis=[]
-with ThreadPoolExecutor(max_workers=8) as ex:
-    fut={ex.submit(calc_analysis,s,by_symbol[s]):s for s in selected}
+with ThreadPoolExecutor(max_workers=5) as ex:
+    fut={ex.submit(technical_from_history,x['symbol'],x,histories[x['symbol']]):x for x in ranked if x['symbol'] in histories}
     for f in as_completed(fut):
         a=f.result()
         if 'error' not in a:analysis.append(a)
 analysis.sort(key=lambda x:x.get('score',0),reverse=True)
 
-ctx={'source':'CoinMarketCap keyless snapshot','generated_at':NOW}
-for name,path in [('fng','/v3/fear-and-greed/latest'),('altseason','/v1/altcoin-season-index/latest')]:
-    try:
-        d=get_json(CMC+path).get('data',{})
-        if name=='fng':ctx.update(fng=int(d.get('value')),fngLabel=d.get('value_classification'),fngUpdated=d.get('update_time'))
-        else:ctx.update(altseason=int(d.get('altcoin_index')),altseasonUpdated=d.get('snapshot_time') or d.get('update_time'))
-    except Exception as e:ctx[name+'Error']=str(e)
-try:
-    g=get_json(CMC+'/v1/global-metrics/quotes/latest?convert=USD').get('data',{});q=g.get('quote',{}).get('USD',{})
-    ctx.update(btcDom=float(g.get('btc_dominance')),totalMarketCap=float(q.get('total_market_cap')),totalMarketCapChange=float(q.get('total_market_cap_yesterday_percentage_change')))
-except Exception as e:ctx['globalError']=str(e)
-try:
-    q=get_json(CMC+'/v3/cryptocurrency/quotes/latest?id=1,1027&convert=USD').get('data',{})
-    ctx.update(btcCap=float(q['1']['quote']['USD']['market_cap']),ethCap=float(q['1027']['quote']['USD']['market_cap']))
-    ctx['total3']=ctx.get('totalMarketCap',0)-ctx['btcCap']-ctx['ethCap'];ctx['total3Btc']=ctx['total3']/ctx['btcCap'] if ctx['btcCap'] else None
-except Exception as e:ctx['assetError']=str(e)
-
-(DATA/'market.json').write_text(json.dumps({'generated_at':NOW,'source':market_source,'count':len(rows),'symbols':rows,'engine_status':'OK' if rows else 'NO_MARKET_DATA'},separators=(',',':')))
-(DATA/'analysis.json').write_text(json.dumps({'generated_at':NOW,'source':'Binance/Bybit 4H/1D','count':len(analysis),'analysis':analysis},separators=(',',':')))
+# Make sure every core asset has an analysis if its history succeeded.
 ctx['engine_status']='OK' if rows else 'NO_MARKET_DATA'
+ctx['marketSource']='CoinMarketCap listings'
+ctx['derivativesSource']='CoinGecko aggregated derivatives'
+ctx['volumeSource']='CoinGecko hourly market_chart'
+ctx['volumeSpikeTimeframe']='1H'
+ctx['generated_at']=NOW()
+
+(DATA/'market.json').write_text(json.dumps({'generated_at':NOW(),'source':'CMC + CoinGecko','count':len(rows),'symbols':rows,'engine_status':'OK' if rows else 'NO_MARKET_DATA'},separators=(',',':')))
+(DATA/'analysis.json').write_text(json.dumps({'generated_at':NOW(),'source':'CoinGecko hourly → 4H/1D','count':len(analysis),'analysis':analysis},separators=(',',':')))
 (DATA/'context.json').write_text(json.dumps(ctx,separators=(',',':')))
-print(f'Generated {len(rows)} market rows, {len(analysis)} analysis rows')
-print('Market source:', market_source)
+
+print(f'Generated {len(rows)} broad market rows, {len(analysis)} Stage-B analyses')
+print('Market source: CoinMarketCap listings')
+print('Derivatives source: CoinGecko aggregated derivatives' if derivs else 'Derivatives source: unavailable')
+print('Volume spike source: CoinGecko hourly market history; timeframe=1H')
 print('Context:',{k:ctx.get(k) for k in ('fng','fngLabel','altseason','btcDom','totalMarketCap','total3','total3Btc')})
