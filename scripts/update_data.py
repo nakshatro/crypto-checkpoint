@@ -172,6 +172,7 @@ try:
     listings=cmc('/v3/cryptocurrency/listings/latest',{'start':'1','limit':'1000','convert':'USD','sort':'volume_24h','sort_dir':'desc'}) or []
 except Exception as e:
     ctx['listingsError']=str(e)
+ctx['listingCount']=len(listings) if isinstance(listings,list) else 0
 
 # CMC context: these are authoritative CMC-native values.
 try:
@@ -181,10 +182,19 @@ try:
     d=cmc('/v1/altcoin-season-index/latest') or {};ctx.update(altseason=int(d.get('altcoin_index')),altseasonUpdated=d.get('snapshot_time') or d.get('update_time'))
 except Exception as e:ctx['altseasonError']=str(e)
 try:
-    g=cmc('/v1/global-metrics/quotes/latest',{'convert':'USD'}) or {};q=g.get('quote',{}).get('USD',{});ctx.update(btcDom=float(g.get('btc_dominance')),totalMarketCap=float(q.get('total_market_cap')),totalMarketCapChange=float(q.get('total_market_cap_yesterday_percentage_change')))
+    g=cmc('/v1/global-metrics/quotes/latest',{'convert':'USD'}) or {}
+    q=g.get('quote',{}).get('USD',{}) if isinstance(g.get('quote'),dict) else {}
+    if g.get('btc_dominance') is not None: ctx['btcDom']=float(g['btc_dominance'])
+    if q.get('total_market_cap') is not None: ctx['totalMarketCap']=float(q['total_market_cap'])
+    if q.get('total_market_cap_yesterday_percentage_change') is not None: ctx['totalMarketCapChange']=float(q['total_market_cap_yesterday_percentage_change'])
 except Exception as e:ctx['globalError']=str(e)
 try:
-    q=cmc('/v3/cryptocurrency/quotes/latest',{'id':'1,1027','convert':'USD'}) or {};ctx.update(btcCap=float(q['1']['quote']['USD']['market_cap']),ethCap=float(q['1027']['quote']['USD']['market_cap']))
+    q=cmc('/v3/cryptocurrency/quotes/latest',{'id':'1,1027','convert':'USD'}) or {}
+    btc=q.get('1') or {}; eth=q.get('1027') or {}
+    bq=btc.get('quote',{}).get('USD',{}) if isinstance(btc.get('quote'),dict) else {}
+    eq=eth.get('quote',{}).get('USD',{}) if isinstance(eth.get('quote'),dict) else {}
+    if bq.get('market_cap') is not None: ctx['btcCap']=float(bq['market_cap'])
+    if eq.get('market_cap') is not None: ctx['ethCap']=float(eq['market_cap'])
 except Exception as e:ctx['assetError']=str(e)
 if finite:=('btcCap' in ctx and 'ethCap' in ctx and 'totalMarketCap' in ctx):
     ctx['total3']=ctx['totalMarketCap']-ctx['btcCap']-ctx['ethCap'];ctx['total3Btc']=ctx['total3']/ctx['btcCap'] if ctx['btcCap'] else None
@@ -213,11 +223,25 @@ for d in derivs if isinstance(derivs,list) else []:
     if base not in deriv_by_base or vol>deriv_by_base[base]['derivVolume']: deriv_by_base[base]=item
 
 # ---------------- Build broad market rows ----------------
+def usd_quote(asset):
+    """Normalize CMC quote shape. CMC returns quote as a list in listings/latest."""
+    q=asset.get('quote') if isinstance(asset,dict) else None
+    if isinstance(q,list):
+        for item in q:
+            if isinstance(item,dict) and str(item.get('symbol','')).upper()=='USD':
+                return item
+        return q[0] if q and isinstance(q[0],dict) else {}
+    if isinstance(q,dict):
+        if isinstance(q.get('USD'),dict): return q['USD']
+        return q
+    return {}
+
 rows=[]
-for x in listings:
+for x in listings if isinstance(listings,list) else []:
+    if not isinstance(x,dict): continue
     sym=str(x.get('symbol') or '').upper()+'USDT'
     if sym=='USDTUSDT':continue
-    q=x.get('quote',{}).get('USD',{})
+    q=usd_quote(x)
     price=q.get('price')
     if price is None:continue
     base=str(x.get('symbol') or '').upper()
