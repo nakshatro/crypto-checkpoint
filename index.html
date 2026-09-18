@@ -452,11 +452,12 @@ background-size:38px 38px;position:relative;overflow:hidden}
    - Stage A: broad market discovery
    - Stage B: targeted 4H/1D technical analysis
 */
-const VERSION='v2.16';
+const VERSION='v2.18';
 const REFRESH_MS=15*60*1000;
 const SNAPSHOT_MARKET='data/market.json', SNAPSHOT_CONTEXT='data/context.json', SNAPSHOT_ANALYSIS='data/analysis.json', SNAPSHOT_STATE='data/trade_state.json';
 let market=new Map(), marketById=new Map(), analysisCache=new Map(), scanCache=[], tradeState={setups:{}};
 let marketSnapshotAt=null, contextSnapshotAt=null, marketSource='SNAPSHOT';
+let snapshotErrors={market:null,context:null,analysis:null,state:null};
 let selectedAsset='BTC';
 let potential=JSON.parse(localStorage.getItem('cc_potential')||'[]');
 let confirmed=JSON.parse(localStorage.getItem('cc_confirmed')||'[]');
@@ -470,20 +471,45 @@ const fmt=(n,d=2)=>finite(n)?Number(n).toLocaleString(undefined,{minimumFraction
 const pct=n=>finite(n)?`${Number(n)>=0?'+':''}${fmt(n,2)}%`:'—';
 const fmtLarge=n=>{const x=Number(n);if(!finite(x))return'—';const a=Math.abs(x);if(a>=1e12)return(x/1e12).toFixed(2)+'T';if(a>=1e9)return(x/1e9).toFixed(2)+'B';if(a>=1e6)return(x/1e6).toFixed(2)+'M';if(a>=1e3)return(x/1e3).toFixed(2)+'K';return fmt(x,2)};
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
-function setDiag(msg,bad=false){if($('diagText')){$('diagText').textContent=msg;$('diagText').style.color=bad?'var(--red)':'var(--muted)'}}
+function setDiag(msg,bad=false){
+  if($('diagText')){
+    $('diagText').textContent=msg;
+    $('diagText').style.color=bad?'var(--red)':'var(--muted)';
+  }
+  if($('dashDataState') && bad) $('dashDataState').textContent=msg;
+}
+function snapshotDiag(s){
+  const parts=[
+    `M:${s.okM?'OK':'FAIL'}`,
+    `A:${s.okA?'OK':'FAIL'}`,
+    `C:${s.okC?'OK':'FAIL'}`,
+    `S:${s.okS?'OK':'FAIL'}`
+  ];
+  const errs=Object.entries(snapshotErrors).filter(([,v])=>v).map(([k,v])=>`${k}: ${v}`);
+  return errs.length ? parts.join(' · ')+' | '+errs.join(' | ') : parts.join(' · ');
+}
 function saveState(){localStorage.setItem('cc_potential',JSON.stringify(potential));localStorage.setItem('cc_confirmed',JSON.stringify(confirmed));localStorage.setItem('cc_journal',JSON.stringify(journal));localStorage.setItem('cc_context',manualContext)}
-async function fetchJson(url,timeout=12000){
+function snapshotUrl(path){
+  const u=new URL(path,document.baseURI);
+  u.searchParams.set('v',Date.now());
+  return u.href;
+}
+async function fetchJson(url,timeout=15000){
   let last=null;
   for(let attempt=0;attempt<3;attempt++){
     const c=new AbortController(),t=setTimeout(()=>c.abort(),timeout);
     try{
-      const r=await fetch(url,{cache:'no-store',signal:c.signal,headers:{'Accept':'application/json'}});
-      if(!r.ok) throw new Error(`${r.status} ${r.statusText}`);
+      const r=await fetch(url,{cache:'no-store',signal:c.signal,headers:{'Accept':'application/json, text/plain, */*'}});
+      if(!r.ok) throw new Error(`HTTP ${r.status} ${r.statusText}`);
       const text=await r.text();
       if(!text || !text.trim()) throw new Error('empty response');
-      try{return JSON.parse(text)}catch(e){throw new Error('invalid JSON response')}
-    }catch(e){last=e;if(attempt<2) await sleep(700*(attempt+1));}
-    finally{clearTimeout(t)}
+      try{return JSON.parse(text)}catch(e){
+        throw new Error('invalid JSON response · '+text.slice(0,120).replace(/\\s+/g,' '));
+      }
+    }catch(e){
+      last=e;
+      if(attempt<2) await sleep(800*(attempt+1));
+    }finally{clearTimeout(t)}
   }
   throw last||new Error('snapshot fetch failed');
 }
@@ -536,17 +562,28 @@ function analysisFor(symbolOrAsset){
 }
 async function loadSnapshots(){
   let okM=false,okC=false,okA=false,okS=false;
-  const stamp=Date.now();
-  const loadOne=async(label,url)=>{
-    try{return await fetchJson(`${url}?v=${stamp}`)}
-    catch(e){console.warn(label,e);return null}
+  snapshotErrors={market:null,context:null,analysis:null,state:null};
+
+  const loadOne=async(label,key,path)=>{
+    try{
+      const data=await fetchJson(snapshotUrl(path));
+      return {data};
+    }catch(e){
+      snapshotErrors[key]=e?.message||String(e);
+      console.warn(label,snapshotErrors[key]);
+      return {data:null};
+    }
   };
-  const [mj,cj,aj,sj]=await Promise.all([
-    loadOne('market snapshot',SNAPSHOT_MARKET),
-    loadOne('context snapshot',SNAPSHOT_CONTEXT),
-    loadOne('analysis snapshot',SNAPSHOT_ANALYSIS),
-    loadOne('trade state snapshot',SNAPSHOT_STATE)
+
+  const [mr,cr,ar,sr]=await Promise.all([
+    loadOne('market snapshot','market',SNAPSHOT_MARKET),
+    loadOne('context snapshot','context',SNAPSHOT_CONTEXT),
+    loadOne('analysis snapshot','analysis',SNAPSHOT_ANALYSIS),
+    loadOne('trade state snapshot','state',SNAPSHOT_STATE)
   ]);
+
+  const mj=mr.data,cj=cr.data,aj=ar.data,sj=sr.data;
+
   if(mj){
     const rows=normalizeMarketPayload(mj);
     if(rows.length){
@@ -558,17 +595,36 @@ async function loadSnapshots(){
         if(!market.has(sym)||id!=null) market.set(sym,x);
         if(id!=null&&!marketById.has(id)) marketById.set(id,x);
       });
-      marketSnapshotAt=mj.generated_at||null; marketSource=mj.source||'SNAPSHOT'; okM=market.size>0;
+      marketSnapshotAt=mj.generated_at||null;
+      marketSource=mj.source||'SNAPSHOT';
+      okM=market.size>0;
       if($('snapshotStatus'))$('snapshotStatus').textContent=`SNAPSHOT: ${market.size} pairs · ${ageText(marketSnapshotAt)}`;
       if($('restStatus'))$('restStatus').textContent=`DATA: ${marketSource} · ${market.size} pairs`;
+    }else{
+      snapshotErrors.market='valid JSON but no market rows found';
     }
   }
-  if(cj&&(cj.source||cj.context_status||cj.btcPrice!=null)){applyContext(cj);contextSnapshotAt=cj.generated_at||null;okC=true}
-  if(aj&&Array.isArray(aj.analysis)&&aj.analysis.length){
-    analysisCache.clear(); aj.analysis.forEach(a=>{if(a?.symbol)analysisCache.set(String(a.symbol).toUpperCase(),a)});
-    scanCache=aj.analysis.slice(); okA=true;
+
+  if(cj&&(cj.source||cj.context_status||cj.btcPrice!=null)){
+    applyContext(cj);
+    contextSnapshotAt=cj.generated_at||null;
+    okC=true;
   }
-  if(sj&&typeof sj==='object'){tradeState=sj;okS=true}
+
+  if(aj&&Array.isArray(aj.analysis)&&aj.analysis.length){
+    analysisCache.clear();
+    aj.analysis.forEach(a=>{if(a?.symbol)analysisCache.set(String(a.symbol).toUpperCase(),a)});
+    scanCache=aj.analysis.slice();
+    okA=true;
+  }else if(aj){
+    snapshotErrors.analysis='valid JSON but analysis[] is empty/missing';
+  }
+
+  if(sj&&typeof sj==='object'){
+    tradeState=sj;
+    okS=true;
+  }
+
   return {okM,okC,okA,okS};
 }
 
@@ -628,31 +684,60 @@ function updateCore(sym,prefix){
   }
 }
 function updateDashboard(){
-  const btc=marketFor('BTCUSDT')||analysisFor('BTCUSDT');
-  const eth=marketFor('ETHUSDT')||analysisFor('ETHUSDT');
-  const btcPrice=finite(btc?.price)?btc.price:(finite(btc?.currentPrice)?btc.currentPrice:context.btcPrice);
-  const ethPrice=finite(eth?.price)?eth.price:(finite(eth?.currentPrice)?eth.currentPrice:context.ethPrice);
+  const btcM=marketFor('BTCUSDT'), ethM=marketFor('ETHUSDT');
+  const btcA=analysisFor('BTCUSDT'), ethA=analysisFor('ETHUSDT');
+  const btcPrice=finite(btcM?.price)?btcM.price:(finite(btcA?.currentPrice)?btcA.currentPrice:(finite(context.btcPrice)?context.btcPrice:null));
+  const ethPrice=finite(ethM?.price)?ethM.price:(finite(ethA?.currentPrice)?ethA.currentPrice:(finite(context.ethPrice)?context.ethPrice:null));
   if($('btcCardValue'))$('btcCardValue').textContent=finite(btcPrice)?'$'+fmt(btcPrice,2):'—';
-  if($('btcCardChange'))$('btcCardChange').textContent=finite(btc?.change)?pct(btc.change):'—';
+  if($('btcCardChange'))$('btcCardChange').textContent=finite(btcM?.change)?pct(btcM.change):(finite(context.btcPriceChange)?pct(context.btcPriceChange):'—');
   if($('ethBtcValue'))$('ethBtcValue').textContent=finite(ethPrice)&&finite(btcPrice)&&btcPrice>0?(ethPrice/btcPrice).toFixed(5):'—';
   updateContextUI();
   updateCore('ETHUSDT','coreEth');updateCore('XRPUSDT','coreXrp');updateCore('SOLUSDT','coreSol');
   const bull=core.map(x=>marketFor(x)||analysisFor(x)).filter(x=>x&&finite(x.change)).filter(x=>Number(x.change)>0).length;
-  if($('marketState'))$('marketState').textContent=bull>=2?'CORE ALT POSITIVE':bull===1?'MIXED':'RISK-OFF / WEAK';
-  if($('dashboardRegime'))$('dashboardRegime').textContent=bull>=2?'RISK-ON':bull===1?'MIXED':'RISK-OFF';
-  if($('dashDataState'))$('dashDataState').textContent=market.size?`${marketSource} · ${market.size} pairs`:(analysisCache.size?'ANALYSIS SNAPSHOT':'NO SNAPSHOT');
+  if($('marketState'))$('marketState').textContent=bull>=2?'CORE ALT POSITIVE':bull===1?'MIXED':(market.size?'RISK-OFF / WEAK':'DATA INCOMPLETE');
+  if($('dashboardRegime'))$('dashboardRegime').textContent=bull>=2?'RISK-ON':bull===1?'MIXED':(market.size?'RISK-OFF':'ANALYZING');
+  if($('dashDataState'))$('dashDataState').textContent=market.size?`${marketSource} · ${market.size} pairs`:(analysisCache.size?`ANALYSIS · ${analysisCache.size} assets`:'SNAPSHOT ERROR');
   if($('derivState'))$('derivState').textContent=core.map(x=>marketFor(x)||analysisFor(x)).filter(Boolean).length+'/3 core loaded';
   if($('intelData'))$('intelData').textContent=market.size?marketSource:(analysisCache.size?'Analysis snapshot':'Unavailable');
 }
 
-function updateAsset(){const sym=selectedAsset+'USDT',m=marketFor(sym)||analysisFor(sym),a=analysisFor(sym);if(!m)return;if($('assetName'))$('assetName').textContent=sym;const px=finite(m.price)?m.price:m.currentPrice;if($('assetPrice'))$('assetPrice').textContent='$'+fmt(px,px<1?6:2);if($('assetChange'))$('assetChange').textContent=finite(m.change)?pct(m.change):'—';if(a){$('assetTrend').textContent=a.trend||'—';$('assetRsi').textContent=fmt(a.rsi,1);$('assetEma').textContent=`${fmt(a.ema10,2)} / ${fmt(a.ema20,2)} / ${fmt(a.ema55,2)}`;$('assetMa').textContent=`${fmt(a.ma50,2)} / ${fmt(a.ma100,2)}`;$('assetStructure').textContent=a.structure4h?.trend||'—';$('assetScore').textContent=fmt(a.score,1)}}
+function updateAsset(){
+  const sym=selectedAsset+'USDT',m=marketFor(sym),a=analysisFor(sym);
+  if($('assetName'))$('assetName').textContent=sym;
+  const px=finite(m?.price)?m.price:(finite(a?.currentPrice)?a.currentPrice:null);
+  if($('assetPrice'))$('assetPrice').textContent=finite(px)?'$'+fmt(px,px<1?6:2):'—';
+  if($('assetChange'))$('assetChange').textContent=finite(m?.change)?pct(m.change):'—';
+  if(a){
+    $('assetTrend').textContent=a.trend||'—';
+    $('assetRsi').textContent=fmt(a.rsi,1);
+    $('assetEma').textContent=`${fmt(a.ema10,2)} / ${fmt(a.ema20,2)} / ${fmt(a.ema55,2)}`;
+    $('assetMa').textContent=`${fmt(a.ma50,2)} / ${fmt(a.ma100,2)}`;
+    $('assetStructure').textContent=a.structure4h?.trend||'—';
+    $('assetScore').textContent=fmt(a.score,1);
+  }
+}
 
 window.addEventListener('error',e=>setDiag('JavaScript error: '+e.message,true));window.addEventListener('unhandledrejection',e=>setDiag('Promise error: '+(e.reason?.message||e.reason),true));
 document.querySelectorAll('#nav button').forEach(b=>b.onclick=()=>{document.querySelectorAll('#nav button').forEach(x=>x.classList.remove('active'));b.classList.add('active');document.querySelectorAll('.view').forEach(v=>v.classList.add('hidden'));const target=$(b.dataset.view+'View');if(target)target.classList.remove('hidden');const names={dashboard:'DASHBOARD',scanner:'SCANNER',potential:'POTENTIAL TRADES',confirmed:'CONFIRMED TRADES',journal:'JOURNAL',intelligence:'MARKET INTELLIGENCE'};const subs={dashboard:'MARKET REGIME · CORE FUTURES · OPPORTUNITY DISCOVERY',scanner:'SNAPSHOT MARKET SCAN · VOLUME ANOMALY · TECHNICAL CONFLUENCE',potential:'WAITING FOR ENTRY',confirmed:'LIVE POSITION TRACKING',journal:'RAW PERFORMANCE HISTORY',intelligence:'MACRO · NEWS · EVENTS'};if($('pageTitle'))$('pageTitle').innerHTML=names[b.dataset.view]+' <small>'+subs[b.dataset.view]+'</small>'});
 $('globalSearch').oninput=renderScanner;$('minScore').onchange=renderScanner;$('refresh').onclick=async()=>{const s=await loadSnapshots();enrichScan();updateDashboard();setDiag(s.okM?`Snapshot refreshed · ${market.size} pairs · ${ageText(marketSnapshotAt)}`:'Snapshot unavailable',!s.okM)};$('scan').onclick=()=>{enrichScan();setDiag('Scanner refreshed from latest snapshot.',false)};$('dashboardScanBtn').onclick=()=>{enrichScan();setDiag('Scanner refreshed from latest snapshot.',false)};
 document.querySelectorAll('#assetTabs button').forEach(b=>b.onclick=()=>{document.querySelectorAll('#assetTabs button').forEach(x=>x.classList.remove('active'));b.classList.add('active');selectedAsset=b.dataset.asset;updateAsset()});
 $('editNote').onclick=()=>{$('noteInput').value=manualContext;$('modal').classList.add('show')};$('cancelModal').onclick=()=>$('modal').classList.remove('show');$('saveNote').onclick=()=>{manualContext=$('noteInput').value;$('marketNote').textContent=manualContext;$('modal').classList.remove('show');saveState()};$('clearJournal').onclick=()=>{if(confirm('Clear journal records?')){journal=[];saveState();renderJournal()}};$('marketNote').textContent=manualContext;
-(async function boot(){setDiag('Loading snapshot files…');renderPotential();renderConfirmed();renderJournal();const s=await loadSnapshots();if(!s.okM && !s.okA)setDiag('No market snapshot or analysis yet. Run GitHub Actions.',true);renderPotential();enrichScan();updateDashboard();updateAsset();if(s.okM||s.okA||s.okC)setDiag(`SNAPSHOT READY · market ${s.okM?'OK':'FAIL'} · analysis ${s.okA?'OK':'FAIL'} · context ${s.okC?'OK':'FAIL'}`,false);else setDiag('ALL SNAPSHOT FILES FAILED TO LOAD',true);setInterval(async()=>{const x=await loadSnapshots();renderPotential();enrichScan();updateDashboard();updateAsset();setDiag(x.okM?`SNAPSHOT REFRESHED · ${market.size} pairs · ${ageText(marketSnapshotAt)}`:'Snapshot unavailable',!x.okM)},REFRESH_MS)})();
+(async function boot(){
+  setDiag('Loading snapshot files…');
+  renderPotential();renderConfirmed();renderJournal();
+  const s=await loadSnapshots();
+  renderPotential();enrichScan();updateDashboard();updateAsset();
+  const d=snapshotDiag(s);
+  setDiag(d,!s.okM&&!s.okA);
+  if($('dashDataState'))$('dashDataState').textContent=d;
+  setInterval(async()=>{
+    const x=await loadSnapshots();
+    renderPotential();enrichScan();updateDashboard();updateAsset();
+    const dx=snapshotDiag(x);
+    setDiag(dx,!x.okM&&!x.okA);
+    if($('dashDataState'))$('dashDataState').textContent=dx;
+  },REFRESH_MS);
+})();
 </script>
 
 </body>
