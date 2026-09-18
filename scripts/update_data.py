@@ -165,6 +165,19 @@ def volume_spike(history):
     label='EXTREME' if ratio>=4 else 'MAJOR' if ratio>=2.5 else 'SPIKE' if ratio>=1.75 else 'ELEVATED' if ratio>=1.25 else 'NORMAL'
     return {'vol1h':cur,'volBaseline':base,'volRatio':ratio,'spike':label,'spikeSource':'CoinGecko 1H market volume'}
 
+# Normalize CMC v3 quote shapes. Listings/Quotes v3 return quote as a LIST.
+def usd_quote(asset):
+    q=asset.get('quote') if isinstance(asset,dict) else None
+    if isinstance(q,list):
+        for item in q:
+            if isinstance(item,dict) and str(item.get('symbol','')).upper()=='USD':
+                return item
+        return q[0] if q and isinstance(q[0],dict) else {}
+    if isinstance(q,dict):
+        if isinstance(q.get('USD'),dict): return q['USD']
+        return q
+    return {}
+
 # ---------------- CMC broad market ----------------
 ctx={'source':'CoinMarketCap Keyless Public API','generated_at':NOW()}
 listings=[]
@@ -188,16 +201,32 @@ try:
     if q.get('total_market_cap') is not None: ctx['totalMarketCap']=float(q['total_market_cap'])
     if q.get('total_market_cap_yesterday_percentage_change') is not None: ctx['totalMarketCapChange']=float(q['total_market_cap_yesterday_percentage_change'])
 except Exception as e:ctx['globalError']=str(e)
-try:
-    q=cmc('/v3/cryptocurrency/quotes/latest',{'id':'1,1027','convert':'USD'}) or {}
-    btc=q.get('1') or {}; eth=q.get('1027') or {}
-    bq=btc.get('quote',{}).get('USD',{}) if isinstance(btc.get('quote'),dict) else {}
-    eq=eth.get('quote',{}).get('USD',{}) if isinstance(eth.get('quote'),dict) else {}
+# Derive BTC/ETH market caps directly from the already-fetched CMC listings.
+# CMC v3 returns each asset's `quote` as a LIST containing the USD quote.
+# Using the listings also avoids a second request and prevents quote-shape mismatches.
+def listing_by_id(asset_id):
+    for a in listings if isinstance(listings,list) else []:
+        if str(a.get('id')) == str(asset_id):
+            return a
+    return None
+
+btc_asset=listing_by_id(1)
+eth_asset=listing_by_id(1027)
+if btc_asset:
+    bq=usd_quote(btc_asset) if 'usd_quote' in globals() else {}
     if bq.get('market_cap') is not None: ctx['btcCap']=float(bq['market_cap'])
+    if bq.get('price') is not None: ctx['btcPrice']=float(bq['price'])
+if eth_asset:
+    eq=usd_quote(eth_asset) if 'usd_quote' in globals() else {}
     if eq.get('market_cap') is not None: ctx['ethCap']=float(eq['market_cap'])
-except Exception as e:ctx['assetError']=str(e)
-if finite:=('btcCap' in ctx and 'ethCap' in ctx and 'totalMarketCap' in ctx):
-    ctx['total3']=ctx['totalMarketCap']-ctx['btcCap']-ctx['ethCap'];ctx['total3Btc']=ctx['total3']/ctx['btcCap'] if ctx['btcCap'] else None
+    if eq.get('price') is not None: ctx['ethPrice']=float(eq['price'])
+
+if 'btcCap' in ctx and 'ethCap' in ctx and 'totalMarketCap' in ctx:
+    ctx['total3']=ctx['totalMarketCap']-ctx['btcCap']-ctx['ethCap']
+    ctx['total3Btc']=ctx['total3']/ctx['btcCap'] if ctx['btcCap'] else None
+    ctx['total3Method']='Total market cap minus BTC and ETH market caps'
+else:
+    ctx['total3Error']='BTC/ETH market cap unavailable from CMC listings'
 
 # ---------------- CoinGecko derivatives ----------------
 derivs=[]; deriv_error=None
@@ -223,19 +252,6 @@ for d in derivs if isinstance(derivs,list) else []:
     if base not in deriv_by_base or vol>deriv_by_base[base]['derivVolume']: deriv_by_base[base]=item
 
 # ---------------- Build broad market rows ----------------
-def usd_quote(asset):
-    """Normalize CMC quote shape. CMC returns quote as a list in listings/latest."""
-    q=asset.get('quote') if isinstance(asset,dict) else None
-    if isinstance(q,list):
-        for item in q:
-            if isinstance(item,dict) and str(item.get('symbol','')).upper()=='USD':
-                return item
-        return q[0] if q and isinstance(q[0],dict) else {}
-    if isinstance(q,dict):
-        if isinstance(q.get('USD'),dict): return q['USD']
-        return q
-    return {}
-
 rows=[]
 for x in listings if isinstance(listings,list) else []:
     if not isinstance(x,dict): continue
@@ -297,6 +313,7 @@ analysis.sort(key=lambda x:x.get('score',0),reverse=True)
 
 # Make sure every core asset has an analysis if its history succeeded.
 ctx['engine_status']='OK' if rows else 'NO_MARKET_DATA'
+ctx['context_status']='COMPLETE' if all(k in ctx for k in ('fng','altseason','btcDom','totalMarketCap','btcCap','ethCap','total3','total3Btc')) else 'PARTIAL'
 ctx['marketSource']='CoinMarketCap listings'
 ctx['derivativesSource']='CoinGecko aggregated derivatives'
 ctx['volumeSource']='CoinGecko hourly market_chart'
