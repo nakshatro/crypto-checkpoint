@@ -546,6 +546,9 @@ if deriv_error:ctx['derivativesError']=deriv_error
 # CMC can contain multiple assets with the same ticker symbol. To avoid attaching
 # one asset's derivative contract to another same-symbol asset, only auto-map
 # derivatives for CMC symbols that are unique in the filtered asset universe.
+# Verified CMC ids for core assets. A core coinId may receive derivatives even when its ticker is
+# duplicated on CMC (e.g. 'Bridged ETH', 'Wrapped Solana'); those duplicates never receive them.
+CORE_ID_BY_BASE={'BTC':'1','ETH':'1027','XRP':'52','SOL':'5426'}
 filtered_listings=[x for x in listings if isinstance(x,dict) and not is_non_crypto_asset(x)]
 symbol_counts={}
 for a in filtered_listings:
@@ -560,10 +563,10 @@ for d in derivs if isinstance(derivs,list) else []:
     # Keep USD/USDT perpetual-like contracts; avoid dated futures when contract_type explicitly says futures.
     if target and target not in ('USDT','USD','USDC'): continue
     if not target and not any(q in symbol for q in ('USDT','USD')): continue
-    if not base or base not in unique_symbols: continue
+    if not base or (base not in unique_symbols and base not in CORE_ID_BY_BASE): continue
     try: vol=float(d.get('volume_24h') or 0); oi=float(d.get('open_interest') or 0)
     except: vol=0;oi=0
-    item={'derivMarket':market_name,'derivSymbol':symbol,'oi':oi,'funding':float(d.get('funding_rate') or 0)*100 if d.get('funding_rate') is not None else None,'derivVolume':vol,'basis':float(d.get('basis') or 0) if d.get('basis') is not None else None,'derivPrice':float(d.get('price') or 0) if d.get('price') else None}
+    item={'derivMarket':market_name,'derivSymbol':symbol,'oi':oi,'funding':float(d.get('funding_rate')) if d.get('funding_rate') is not None else None,'derivVolume':vol,'basis':float(d.get('basis') or 0) if d.get('basis') is not None else None,'derivPrice':float(d.get('price') or 0) if d.get('price') else None}
     # Choose the highest-volume derivative for each base asset.
     if base not in deriv_by_base or vol>deriv_by_base[base]['derivVolume']: deriv_by_base[base]=item
 
@@ -577,7 +580,9 @@ for x in filtered_listings:
     price=q.get('price')
     if price is None:continue
     base=str(x.get('symbol') or '').upper()
-    d=deriv_by_base.get(base,{})
+    # Attach only when identity is reliable: unique ticker, or the verified core coinId.
+    core_verified=str(x.get('id'))==CORE_ID_BY_BASE.get(base)
+    d=deriv_by_base.get(base,{}) if (symbol_counts.get(base)==1 or core_verified) else {}
     rows.append({'assetKey':f"CMC:{x.get('id')}",'baseSymbol':base,'symbol':sym,'coinId':x.get('id'),'name':x.get('name'),'price':float(price),'change':float(q.get('percent_change_24h') or 0),'high':None,'low':None,'volume':float(q.get('volume_24h') or 0),'marketCap':float(q.get('market_cap') or 0),'oi':d.get('oi'),'funding':d.get('funding'),'oiDelta':None,'derivVolume':d.get('derivVolume'),'derivMarket':d.get('derivMarket'),'derivSymbol':d.get('derivSymbol'),'source':'CMC + CoinGecko derivatives','ts':int(time.time()*1000)})
 
 # Load previous snapshot for OI deltas.
@@ -742,7 +747,8 @@ ctx['setupEngine']='EMA10-EMA20 pullback/retest with 4H structural invalidation;
 ctx['setupRiskGuardrails']={'maxRiskPct':8.0,'maxStopDistanceATR':3.5,'tp1R':1.5,'tp2R':2.5}
 ctx['setupLifecycle']='WAITING_ENTRY → ZONE_TOUCHED → CONFIRMED → ACTIVE → TP1_HIT → TP2_HIT/SL_HIT → CLOSED; alternative exits EXPIRED/INVALIDATED/CANCELLED'
 ctx['oiDeltaDefinition']='snapshot-to-snapshot change versus previous market.json run, not 24h'
-ctx['derivativesMapping']='Only unique CMC ticker symbols are auto-enriched to avoid same-symbol collisions'
+ctx['derivativesMapping']='Unique CMC ticker symbols, plus verified core coinIds (BTC 1, ETH 1027, XRP 52, SOL 5426); same-ticker duplicates are never auto-enriched'
+ctx['fundingDefinition']='CoinGecko funding_rate as reported (already in percent, not rescaled or annualized); interval per exchange'
 ctx['historyProvider']='OKX 1H candles (futures-first, spot fallback; serialized + 1h cache)'
 ctx['historyCacheTTLSeconds']=HISTORY_TTL
 ctx['historyFetchPacingSeconds']=0.5
