@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Crypto Checkpoint — Live Trading Intelligence v2.0</title>
+<title>Crypto Checkpoint — Live Trading Intelligence v2.17.1</title>
 <style>
 :root{
   --bg:#111315; --panel:#171a1d; --panel2:#1c2024; --line:#30363d;
@@ -189,6 +189,10 @@ background-size:38px 38px;position:relative;overflow:hidden}
     <div class="live"><i class="dot"></i> LIVE</div>
   </div>
 </header>
+<div id="diagWrap" style="max-width:1700px;margin:10px auto 0;padding:0 22px">
+<div id="diagnosticPanel" style="padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#070d15;color:var(--muted);font-size:12px;line-height:1.55">
+  <b style="color:var(--text)">DATA DIAGNOSTICS</b> · <span id="diagText">Starting… (if this text never changes, JavaScript did not run)</span>
+</div></div>
 
 <main>
   
@@ -235,7 +239,7 @@ background-size:38px 38px;position:relative;overflow:hidden}
           <div><span>EMA 10 / 20 / 55</span><b id="coreEthEma">—</b></div>
           <div><span>MA 50 / 100</span><b id="coreEthMa">—</b></div>
           <div><span>OI</span><b id="coreEthOi">—</b></div>
-          <div><span>OI Δ</span><b id="coreEthOiD">—</b></div>
+          <div><span>OI Δ (SNAPSHOT)</span><b id="coreEthOiD">—</b></div>
           <div><span>FUNDING</span><b id="coreEthFunding">—</b></div>
           <div><span>24H VOL</span><b id="coreEthVol">—</b></div>
         </div>
@@ -251,7 +255,7 @@ background-size:38px 38px;position:relative;overflow:hidden}
           <div><span>EMA 10 / 20 / 55</span><b id="coreXrpEma">—</b></div>
           <div><span>MA 50 / 100</span><b id="coreXrpMa">—</b></div>
           <div><span>OI</span><b id="coreXrpOi">—</b></div>
-          <div><span>OI Δ</span><b id="coreXrpOiD">—</b></div>
+          <div><span>OI Δ (SNAPSHOT)</span><b id="coreXrpOiD">—</b></div>
           <div><span>FUNDING</span><b id="coreXrpFunding">—</b></div>
           <div><span>24H VOL</span><b id="coreXrpVol">—</b></div>
         </div>
@@ -267,7 +271,7 @@ background-size:38px 38px;position:relative;overflow:hidden}
           <div><span>EMA 10 / 20 / 55</span><b id="coreSolEma">—</b></div>
           <div><span>MA 50 / 100</span><b id="coreSolMa">—</b></div>
           <div><span>OI</span><b id="coreSolOi">—</b></div>
-          <div><span>OI Δ</span><b id="coreSolOiD">—</b></div>
+          <div><span>OI Δ (SNAPSHOT)</span><b id="coreSolOiD">—</b></div>
           <div><span>FUNDING</span><b id="coreSolFunding">—</b></div>
           <div><span>24H VOL</span><b id="coreSolVol">—</b></div>
         </div>
@@ -284,7 +288,7 @@ background-size:38px 38px;position:relative;overflow:hidden}
     <div class="card scanner">
       <div class="table-wrap">
         <table id="dashboardScannerTable">
-          <thead><tr><th>PAIR</th><th>PRICE</th><th>24H</th><th>15M SPIKE</th><th>VOL RATIO</th><th>OI Δ</th><th>FUNDING</th><th>RSI 4H</th><th>TREND</th><th>SCORE</th><th>SIGNAL</th><th>TYPE</th></tr></thead>
+          <thead><tr><th>PAIR</th><th>PRICE</th><th>24H</th><th>1H SPIKE</th><th>VOL RATIO</th><th>OI Δ (SNAP)</th><th>FUNDING</th><th>RSI 4H</th><th>TREND</th><th>SCORE</th><th>SIGNAL</th><th>TYPE</th></tr></thead>
           <tbody><tr><td colspan="11" class="empty">Run the live scanner to populate opportunities.</td></tr></tbody>
         </table>
       </div>
@@ -298,7 +302,7 @@ background-size:38px 38px;position:relative;overflow:hidden}
         <table><thead><tr><th>METRIC</th><th>ETH</th><th>XRP</th><th>SOL</th></tr></thead>
         <tbody>
           <tr><td>Open Interest</td><td id="dEthOi">—</td><td id="dXrpOi">—</td><td id="dSolOi">—</td></tr>
-          <tr><td>OI Δ</td><td id="dEthOiD">—</td><td id="dXrpOiD">—</td><td id="dSolOiD">—</td></tr>
+          <tr><td>OI Δ (snapshot vs previous run)</td><td id="dEthOiD">—</td><td id="dXrpOiD">—</td><td id="dSolOiD">—</td></tr>
           <tr><td>Funding</td><td id="dEthFunding">—</td><td id="dXrpFunding">—</td><td id="dSolFunding">—</td></tr>
           <tr><td>24H Volume</td><td id="dEthVol">—</td><td id="dXrpVol">—</td><td id="dSolVol">—</td></tr>
         </tbody></table>
@@ -317,11 +321,11 @@ background-size:38px 38px;position:relative;overflow:hidden}
   </div>
 </section>
 
-<section id="scannerHost" class="view hidden">
+<section id="scannerView" class="view hidden">
 <section class="card" style="margin-bottom:12px">
     <div class="livebar">
-      <span class="livepill" id="restStatus">REST: booting v2.0…</span>
-      <span class="livepill" id="wsStatus"><i class="wsdot"></i>WebSocket: booting…</span>
+      <span class="livepill" id="restStatus">DATA: loading…</span>
+      <span class="livepill" id="wsStatus">WebSocket: not used (snapshot mode)</span>
       <span class="livepill">SOURCE: CMC + OKX SNAPSHOT</span><span class="livepill" id="snapshotStatus">SNAPSHOT: loading…</span>
       <span class="livepill" id="lastUpdate">Updated: —</span>
       <span class="livepill">No API key required for public market data</span>
@@ -337,12 +341,9 @@ background-size:38px 38px;position:relative;overflow:hidden}
       </div>
     </div>
   </section>
-<div id="diagnosticPanel" style="margin-top:10px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#070d15;color:var(--muted);font-size:12px;line-height:1.55">
-  <b style="color:var(--text)">DATA DIAGNOSTICS</b> · <span id="diagText">Starting live market connections…</span>
-</div>
 
 
-  <section id="scannerView" class="view">
+  <div id="scannerBody">
     <div class="card scanner">
       <div class="section-head">
         <div class="sub">STAGE A → cheap market-wide filter &nbsp; / &nbsp; STAGE B → targeted technical confluence</div>
@@ -351,7 +352,7 @@ background-size:38px 38px;position:relative;overflow:hidden}
       <div class="table-wrap">
         <table id="scannerTable">
           <thead><tr>
-            <th>#</th><th>PAIR</th><th>PRICE</th><th>24H %</th><th>VOL 24H</th><th>15M SPIKE</th><th>VOL RATIO</th><th>OI Δ%</th><th>FUNDING</th><th>RSI 4H</th><th>TREND</th><th>SCORE</th><th>SIGNAL</th><th>STATUS</th>
+            <th>#</th><th>PAIR</th><th>PRICE</th><th>24H %</th><th>VOL 24H</th><th>1H SPIKE</th><th>VOL RATIO</th><th>OI Δ% (SNAP)</th><th>FUNDING</th><th>RSI 4H</th><th>TREND</th><th>SCORE</th><th>SIGNAL</th><th>STATUS</th>
           </tr></thead>
           <tbody></tbody>
         </table>
@@ -400,7 +401,7 @@ background-size:38px 38px;position:relative;overflow:hidden}
         </div>
       </div>
     </div>
-  </section>
+  </div>
 </section>
 
   <section id="potentialView" class="view hidden">
@@ -425,6 +426,23 @@ background-size:38px 38px;position:relative;overflow:hidden}
       </tr></thead><tbody></tbody></table></div>
     </div>
   </section>
+
+  <section id="intelligenceView" class="view hidden">
+    <div class="card" style="padding:14px;margin-bottom:12px">
+      <div class="section-head" style="padding:0 0 10px"><div class="title">MARKET INTELLIGENCE <small>MACRO · NEWS · EVENTS</small></div><div class="sub" id="intelStatus">—</div></div>
+      <div class="intel-list" style="padding:0">
+        <div><i></i><span>Fear &amp; Greed (CMC)</span><b id="intel2Fg">—</b></div>
+        <div><i></i><span>Altcoin Season (CMC)</span><b id="intel2Alt">—</b></div>
+        <div><i></i><span>BTC dominance (CMC)</span><b id="intel2Dom">—</b></div>
+        <div><i></i><span>TOTAL3 · TOTAL3 ÷ BTC (derived)</span><b id="intel2T3">—</b></div>
+        <div><i></i><span>News / catalyst feed</span><b>NOT CONNECTED (Phase 6)</b></div>
+        <div><i></i><span>Macro: DXY, yields, Fed, VIX</span><b>NOT CONNECTED (Phase 6)</b></div>
+        <div><i></i><span>ETF flows / options</span><b>NOT CONNECTED</b></div>
+      </div>
+      <div class="note" style="margin-top:12px"><b>Manual context note</b> (edit on the Scanner tab):<br><span id="intelManualNote">—</span></div>
+    </div>
+  </section>
+
 
   <div class="footer">CRYPTO CHECKPOINT · UI PROTOTYPE · Local state persists in browser storage</div>
 </main>
@@ -452,12 +470,11 @@ background-size:38px 38px;position:relative;overflow:hidden}
    - Stage A: broad market discovery
    - Stage B: targeted 4H/1D technical analysis
 */
-const VERSION='v2.18';
+const VERSION='v2.17.1';
 const REFRESH_MS=15*60*1000;
 const SNAPSHOT_MARKET='data/market.json', SNAPSHOT_CONTEXT='data/context.json', SNAPSHOT_ANALYSIS='data/analysis.json', SNAPSHOT_STATE='data/trade_state.json';
 let market=new Map(), marketById=new Map(), analysisCache=new Map(), scanCache=[], tradeState={setups:{}};
-let marketSnapshotAt=null, contextSnapshotAt=null, marketSource='SNAPSHOT';
-let snapshotErrors={market:null,context:null,analysis:null,state:null};
+let marketRowCount=0, marketSnapshotAt=null, contextSnapshotAt=null, analysisSnapshotAt=null, stateSnapshotAt=null, marketSource='SNAPSHOT';
 let selectedAsset='BTC';
 let potential=JSON.parse(localStorage.getItem('cc_potential')||'[]');
 let confirmed=JSON.parse(localStorage.getItem('cc_confirmed')||'[]');
@@ -466,50 +483,28 @@ let manualContext=localStorage.getItem('cc_context')||'Macro/news context not en
 const core=['ETHUSDT','XRPUSDT','SOLUSDT'];
 const coreIds={ETHUSDT:1027,XRPUSDT:52,SOLUSDT:5426,BTCUSDT:1};
 const $=id=>document.getElementById(id);
-const finite=x=>Number.isFinite(Number(x));
+// null / '' / booleans are NOT numbers. Number(null)===0 used to make finite(null) true,
+// which fabricated 0.00 values and crashed on null.toFixed().
+const finite=x=>x!==null&&x!==undefined&&x!==''&&typeof x!=='boolean'&&Number.isFinite(Number(x));
+const setText=(id,t)=>{const el=$(id);if(el)el.textContent=t};
 const fmt=(n,d=2)=>finite(n)?Number(n).toLocaleString(undefined,{minimumFractionDigits:d,maximumFractionDigits:d}):'—';
 const pct=n=>finite(n)?`${Number(n)>=0?'+':''}${fmt(n,2)}%`:'—';
-const fmtLarge=n=>{const x=Number(n);if(!finite(x))return'—';const a=Math.abs(x);if(a>=1e12)return(x/1e12).toFixed(2)+'T';if(a>=1e9)return(x/1e9).toFixed(2)+'B';if(a>=1e6)return(x/1e6).toFixed(2)+'M';if(a>=1e3)return(x/1e3).toFixed(2)+'K';return fmt(x,2)};
+const fmtLarge=n=>{if(!finite(n))return'—';const x=Number(n);const a=Math.abs(x);if(a>=1e12)return(x/1e12).toFixed(2)+'T';if(a>=1e9)return(x/1e9).toFixed(2)+'B';if(a>=1e6)return(x/1e6).toFixed(2)+'M';if(a>=1e3)return(x/1e3).toFixed(2)+'K';return fmt(x,2)};
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
-function setDiag(msg,bad=false){
-  if($('diagText')){
-    $('diagText').textContent=msg;
-    $('diagText').style.color=bad?'var(--red)':'var(--muted)';
-  }
-  if($('dashDataState') && bad) $('dashDataState').textContent=msg;
-}
-function snapshotDiag(s){
-  const parts=[
-    `M:${s.okM?'OK':'FAIL'}`,
-    `A:${s.okA?'OK':'FAIL'}`,
-    `C:${s.okC?'OK':'FAIL'}`,
-    `S:${s.okS?'OK':'FAIL'}`
-  ];
-  const errs=Object.entries(snapshotErrors).filter(([,v])=>v).map(([k,v])=>`${k}: ${v}`);
-  return errs.length ? parts.join(' · ')+' | '+errs.join(' | ') : parts.join(' · ');
-}
+function setDiag(msg,bad=false){if($('diagText')){$('diagText').textContent=msg;$('diagText').style.color=bad?'var(--red)':'var(--muted)'}}
 function saveState(){localStorage.setItem('cc_potential',JSON.stringify(potential));localStorage.setItem('cc_confirmed',JSON.stringify(confirmed));localStorage.setItem('cc_journal',JSON.stringify(journal));localStorage.setItem('cc_context',manualContext)}
-function snapshotUrl(path){
-  const u=new URL(path,document.baseURI);
-  u.searchParams.set('v',Date.now());
-  return u.href;
-}
-async function fetchJson(url,timeout=15000){
+async function fetchJson(url,timeout=12000){
   let last=null;
   for(let attempt=0;attempt<3;attempt++){
     const c=new AbortController(),t=setTimeout(()=>c.abort(),timeout);
     try{
-      const r=await fetch(url,{cache:'no-store',signal:c.signal,headers:{'Accept':'application/json, text/plain, */*'}});
-      if(!r.ok) throw new Error(`HTTP ${r.status} ${r.statusText}`);
+      const r=await fetch(url,{cache:'no-store',signal:c.signal,headers:{'Accept':'application/json'}});
+      if(!r.ok) throw new Error(`${r.status} ${r.statusText}`);
       const text=await r.text();
       if(!text || !text.trim()) throw new Error('empty response');
-      try{return JSON.parse(text)}catch(e){
-        throw new Error('invalid JSON response · '+text.slice(0,120).replace(/\\s+/g,' '));
-      }
-    }catch(e){
-      last=e;
-      if(attempt<2) await sleep(800*(attempt+1));
-    }finally{clearTimeout(t)}
+      try{return JSON.parse(text)}catch(e){throw new Error('invalid JSON response')}
+    }catch(e){last=e;if(attempt<2) await sleep(700*(attempt+1));}
+    finally{clearTimeout(t)}
   }
   throw last||new Error('snapshot fetch failed');
 }
@@ -532,6 +527,12 @@ function updateContextUI(){
   if($('regimeBtcDom'))$('regimeBtcDom').textContent=finite(context.btcDom)?fmt(context.btcDom,2)+'%':'—';
   if($('regimeTotal3'))$('regimeTotal3').textContent=finite(context.total3Btc)?context.total3Btc.toFixed(3):'—';
   if($('regimeFg'))$('regimeFg').textContent=finite(context.fng)?`${context.fng} ${context.fngLabel||''}`:'—';
+  setText('intel2Fg',finite(context.fng)?`${context.fng} · ${context.fngLabel||''}`:'Unavailable');
+  setText('intel2Alt',finite(context.altseason)?String(context.altseason):'Unavailable');
+  setText('intel2Dom',finite(context.btcDom)?fmt(context.btcDom,2)+'%':'Unavailable');
+  setText('intel2T3',finite(context.total3)?`${fmtLarge(context.total3)} · ${finite(context.total3Btc)?Number(context.total3Btc).toFixed(3):'—'}`:'Unavailable');
+  setText('intelStatus',`CMC · ${context.context_status||'?'} · ${ageText(contextSnapshotAt)}${staleTag(contextSnapshotAt)}`);
+  setText('intelManualNote',manualContext);
 }
 function normalizeMarketPayload(j){
   if(Array.isArray(j)) return j;
@@ -562,28 +563,17 @@ function analysisFor(symbolOrAsset){
 }
 async function loadSnapshots(){
   let okM=false,okC=false,okA=false,okS=false;
-  snapshotErrors={market:null,context:null,analysis:null,state:null};
-
-  const loadOne=async(label,key,path)=>{
-    try{
-      const data=await fetchJson(snapshotUrl(path));
-      return {data};
-    }catch(e){
-      snapshotErrors[key]=e?.message||String(e);
-      console.warn(label,snapshotErrors[key]);
-      return {data:null};
-    }
+  const stamp=Date.now();
+  const loadOne=async(label,url)=>{
+    try{return await fetchJson(`${url}?v=${stamp}`)}
+    catch(e){console.warn(label,e);return null}
   };
-
-  const [mr,cr,ar,sr]=await Promise.all([
-    loadOne('market snapshot','market',SNAPSHOT_MARKET),
-    loadOne('context snapshot','context',SNAPSHOT_CONTEXT),
-    loadOne('analysis snapshot','analysis',SNAPSHOT_ANALYSIS),
-    loadOne('trade state snapshot','state',SNAPSHOT_STATE)
+  const [mj,cj,aj,sj]=await Promise.all([
+    loadOne('market snapshot',SNAPSHOT_MARKET),
+    loadOne('context snapshot',SNAPSHOT_CONTEXT),
+    loadOne('analysis snapshot',SNAPSHOT_ANALYSIS),
+    loadOne('trade state snapshot',SNAPSHOT_STATE)
   ]);
-
-  const mj=mr.data,cj=cr.data,aj=ar.data,sj=sr.data;
-
   if(mj){
     const rows=normalizeMarketPayload(mj);
     if(rows.length){
@@ -592,48 +582,34 @@ async function loadSnapshots(){
         if(!x||!x.symbol)return;
         const sym=String(x.symbol).toUpperCase();
         const id=x.coinId!=null?Number(x.coinId):null;
-        if(!market.has(sym)||id!=null) market.set(sym,x);
+        {const prev=market.get(sym); if(!prev||(Number(x.marketCap)||0)>(Number(prev.marketCap)||0)) market.set(sym,x);} // duplicate tickers: keep the largest-cap asset; coinId lookup is the primary path
         if(id!=null&&!marketById.has(id)) marketById.set(id,x);
       });
-      marketSnapshotAt=mj.generated_at||null;
-      marketSource=mj.source||'SNAPSHOT';
-      okM=market.size>0;
-      if($('snapshotStatus'))$('snapshotStatus').textContent=`SNAPSHOT: ${market.size} pairs · ${ageText(marketSnapshotAt)}`;
-      if($('restStatus'))$('restStatus').textContent=`DATA: ${marketSource} · ${market.size} pairs`;
-    }else{
-      snapshotErrors.market='valid JSON but no market rows found';
+      marketRowCount=rows.length; marketSnapshotAt=mj.generated_at||null; marketSource=mj.source||'SNAPSHOT'; okM=market.size>0;
+      if($('snapshotStatus'))$('snapshotStatus').textContent=`SNAPSHOT: ${marketRowCount} pairs · ${ageText(marketSnapshotAt)}`;
+      if($('restStatus'))$('restStatus').textContent=`DATA: ${marketSource} · ${marketRowCount} pairs`;
     }
   }
-
-  if(cj&&(cj.source||cj.context_status||cj.btcPrice!=null)){
-    applyContext(cj);
-    contextSnapshotAt=cj.generated_at||null;
-    okC=true;
-  }
-
+  if(cj&&(cj.source||cj.context_status||cj.btcPrice!=null)){applyContext(cj);contextSnapshotAt=cj.generated_at||null;okC=true}
   if(aj&&Array.isArray(aj.analysis)&&aj.analysis.length){
-    analysisCache.clear();
-    aj.analysis.forEach(a=>{if(a?.symbol)analysisCache.set(String(a.symbol).toUpperCase(),a)});
-    scanCache=aj.analysis.slice();
-    okA=true;
-  }else if(aj){
-    snapshotErrors.analysis='valid JSON but analysis[] is empty/missing';
+    analysisCache.clear(); aj.analysis.forEach(a=>{if(a?.symbol)analysisCache.set(String(a.symbol).toUpperCase(),a)});
+    scanCache=aj.analysis.slice(); analysisSnapshotAt=aj.generated_at||null; okA=true;
   }
-
-  if(sj&&typeof sj==='object'){
-    tradeState=sj;
-    okS=true;
-  }
-
+  if(sj&&typeof sj==='object'){tradeState=sj;stateSnapshotAt=sj.generated_at||null;okS=true}
   return {okM,okC,okA,okS};
 }
 
+const renderErrors=[];
+function safe(name,fn){try{return fn()}catch(e){console.error('[render:'+name+']',e);renderErrors.push(name+': '+(e&&e.message||e));return undefined}}
+const STALE_MIN=45; // scheduler runs every 15 min; 3 missed runs => stale
+const ageMin=ts=>ts?Math.max(0,Math.round((Date.now()-new Date(ts).getTime())/60000)):null;
+const staleTag=ts=>{const m=ageMin(ts);return m!=null&&m>STALE_MIN?' · STALE':''};
 function scoreClass(s){return s>=7?'high':s>=5?'mid':'low'}
 function badgeClass(x){return String(x).includes('LONG')?'long':String(x).includes('SHORT')?'short':'neutral'}
 function classifySpike(r){return !finite(r)?'—':r>=4?'EXTREME':r>=2.5?'MAJOR':r>=1.75?'SPIKE':r>=1.25?'ELEVATED':'NORMAL'}
 function enrichScan(){
   scanCache=[...analysisCache.values()].map(a=>{const m=marketFor(a)||{};return {...a,score:finite(a.score)?a.score:0}}).sort((a,b)=>b.score-a.score);
-  renderScanner();renderDashboardScanner();
+  safe('scanner table',renderScanner);safe('dashboard scanner',renderDashboardScanner);
 }
 function renderScanner(){const body=document.querySelector('#scannerTable tbody');if(!body)return;const q=($('globalSearch')?.value||'').toUpperCase();const min=Number($('minScore')?.value||0);const rows=scanCache.filter(x=>!q||x.symbol.includes(q)).filter(x=>x.score>=min);if(!rows.length){body.innerHTML=`<tr><td colspan="14" class="empty">${market.size?'No Stage B candidates meet the current filter.':'Waiting for snapshot data.'}</td></tr>`;return}body.innerHTML=rows.map((r,i)=>{const m=marketFor(r)||{};const ratio=m.volRatio;return `<tr><td>${i+1}</td><td class="pair">${r.symbol}</td><td>$${fmt(m.price,m.price<1?6:2)}</td><td class="${m.change>=0?'up':'down'}">${pct(m.change)}</td><td>${fmtLarge(m.volume)}</td><td class="warn">${m.spike||classifySpike(ratio)}</td><td>${finite(ratio)?ratio.toFixed(2)+'×':'—'}</td><td>${finite(m.oiDelta)?pct(m.oiDelta):'—'}</td><td>${finite(m.funding)?m.funding.toFixed(4)+'%':'—'}</td><td>${finite(r.rsi)?fmt(r.rsi,1):'—'}</td><td>${r.trend||'—'}</td><td><span class="score ${scoreClass(r.score)}">${fmt(r.score,1)}</span></td><td><span class="badge ${badgeClass(r.signal)}">${r.signal}</span></td><td>${m.spikeSource||m.source||'snapshot'}</td></tr>`}).join('')}
 function renderDashboardScanner(){const body=document.querySelector('#dashboardScannerTable tbody');if(!body)return;const rows=scanCache.slice(0,8);if(!rows.length){body.innerHTML='<tr><td colspan="12" class="empty">Waiting for scheduled snapshot.</td></tr>';return}body.innerHTML=rows.map(r=>{const m=marketFor(r)||{};return `<tr><td class="pair">${r.symbol}</td><td>$${fmt(m.price,m.price<1?6:2)}</td><td class="${m.change>=0?'up':'down'}">${pct(m.change)}</td><td class="warn">${m.spike||'—'}</td><td>${finite(m.volRatio)?m.volRatio.toFixed(2)+'×':'—'}</td><td>${finite(m.oiDelta)?pct(m.oiDelta):'—'}</td><td>${finite(m.funding)?m.funding.toFixed(4)+'%':'—'}</td><td>${finite(r.rsi)?fmt(r.rsi,1):'—'}</td><td>${r.trend||'—'}</td><td><span class="score ${scoreClass(r.score)}">${fmt(r.score,1)}</span></td><td><span class="badge ${badgeClass(r.signal)}">${r.signal}</span></td><td>${m.source||'Market'}</td></tr>`}).join('')}
@@ -684,59 +660,72 @@ function updateCore(sym,prefix){
   }
 }
 function updateDashboard(){
-  const btcM=marketFor('BTCUSDT'), ethM=marketFor('ETHUSDT');
-  const btcA=analysisFor('BTCUSDT'), ethA=analysisFor('ETHUSDT');
-  const btcPrice=finite(btcM?.price)?btcM.price:(finite(btcA?.currentPrice)?btcA.currentPrice:(finite(context.btcPrice)?context.btcPrice:null));
-  const ethPrice=finite(ethM?.price)?ethM.price:(finite(ethA?.currentPrice)?ethA.currentPrice:(finite(context.ethPrice)?context.ethPrice:null));
+  const btc=marketFor('BTCUSDT')||analysisFor('BTCUSDT');
+  const eth=marketFor('ETHUSDT')||analysisFor('ETHUSDT');
+  const btcPrice=finite(btc?.price)?btc.price:(finite(btc?.currentPrice)?btc.currentPrice:context.btcPrice);
+  const ethPrice=finite(eth?.price)?eth.price:(finite(eth?.currentPrice)?eth.currentPrice:context.ethPrice);
   if($('btcCardValue'))$('btcCardValue').textContent=finite(btcPrice)?'$'+fmt(btcPrice,2):'—';
-  if($('btcCardChange'))$('btcCardChange').textContent=finite(btcM?.change)?pct(btcM.change):(finite(context.btcPriceChange)?pct(context.btcPriceChange):'—');
+  if($('btcCardChange'))$('btcCardChange').textContent=finite(btc?.change)?pct(btc.change):'—';
   if($('ethBtcValue'))$('ethBtcValue').textContent=finite(ethPrice)&&finite(btcPrice)&&btcPrice>0?(ethPrice/btcPrice).toFixed(5):'—';
+  if(finite(eth?.change)&&finite(btc?.change)){const rel=((1+Number(eth.change)/100)/(1+Number(btc.change)/100)-1)*100;setText('ethBtcChange',`24h ${pct(rel)} (derived from CMC 24h % changes)`)}else setText('ethBtcChange','24h change unavailable');
   updateContextUI();
   updateCore('ETHUSDT','coreEth');updateCore('XRPUSDT','coreXrp');updateCore('SOLUSDT','coreSol');
   const bull=core.map(x=>marketFor(x)||analysisFor(x)).filter(x=>x&&finite(x.change)).filter(x=>Number(x.change)>0).length;
-  if($('marketState'))$('marketState').textContent=bull>=2?'CORE ALT POSITIVE':bull===1?'MIXED':(market.size?'RISK-OFF / WEAK':'DATA INCOMPLETE');
-  if($('dashboardRegime'))$('dashboardRegime').textContent=bull>=2?'RISK-ON':bull===1?'MIXED':(market.size?'RISK-OFF':'ANALYZING');
-  if($('dashDataState'))$('dashDataState').textContent=market.size?`${marketSource} · ${market.size} pairs`:(analysisCache.size?`ANALYSIS · ${analysisCache.size} assets`:'SNAPSHOT ERROR');
-  if($('derivState'))$('derivState').textContent=core.map(x=>marketFor(x)||analysisFor(x)).filter(Boolean).length+'/3 core loaded';
+  if($('marketState'))$('marketState').textContent=bull>=2?'CORE ALT POSITIVE':bull===1?'MIXED':'RISK-OFF / WEAK';
+  if($('dashboardRegime'))$('dashboardRegime').textContent=bull>=2?'RISK-ON':bull===1?'MIXED':'RISK-OFF';
+  if($('dashDataState'))$('dashDataState').textContent=market.size?`${marketSource} · ${marketRowCount} pairs · ${ageText(marketSnapshotAt)}${staleTag(marketSnapshotAt)}`:(analysisCache.size?'ANALYSIS SNAPSHOT':'NO SNAPSHOT');
+  if(marketSnapshotAt)setText('lastUpdate','Updated: '+new Date(marketSnapshotAt).toLocaleString());
+  const derivN=core.filter(x=>finite(marketFor(x)?.oi)).length;
+  if($('derivState'))$('derivState').textContent=derivN+'/3 core with derivatives data';
+  setText('regimeDeriv',derivN+'/3 core with derivatives data');
+  [['Eth','ETHUSDT'],['Xrp','XRPUSDT'],['Sol','SOLUSDT']].forEach(([k,sym])=>{
+    const m=marketFor(sym);
+    setText('d'+k+'Oi',fmtLarge(m?.oi));setText('d'+k+'OiD',pct(m?.oiDelta));
+    setText('d'+k+'Funding',finite(m?.funding)?fmt(m.funding,4)+'%':'—');setText('d'+k+'Vol',fmtLarge(m?.volume));
+  });
   if($('intelData'))$('intelData').textContent=market.size?marketSource:(analysisCache.size?'Analysis snapshot':'Unavailable');
 }
 
-function updateAsset(){
-  const sym=selectedAsset+'USDT',m=marketFor(sym),a=analysisFor(sym);
-  if($('assetName'))$('assetName').textContent=sym;
-  const px=finite(m?.price)?m.price:(finite(a?.currentPrice)?a.currentPrice:null);
-  if($('assetPrice'))$('assetPrice').textContent=finite(px)?'$'+fmt(px,px<1?6:2):'—';
-  if($('assetChange'))$('assetChange').textContent=finite(m?.change)?pct(m.change):'—';
-  if(a){
-    $('assetTrend').textContent=a.trend||'—';
-    $('assetRsi').textContent=fmt(a.rsi,1);
-    $('assetEma').textContent=`${fmt(a.ema10,2)} / ${fmt(a.ema20,2)} / ${fmt(a.ema55,2)}`;
-    $('assetMa').textContent=`${fmt(a.ma50,2)} / ${fmt(a.ma100,2)}`;
-    $('assetStructure').textContent=a.structure4h?.trend||'—';
-    $('assetScore').textContent=fmt(a.score,1);
-  }
-}
+function updateAsset(){const sym=selectedAsset+'USDT',m=marketFor(sym)||analysisFor(sym),a=analysisFor(sym);if(!m)return;if($('assetName'))$('assetName').textContent=sym;const px=finite(m.price)?m.price:m.currentPrice;if($('assetPrice'))$('assetPrice').textContent='$'+fmt(px,px<1?6:2);if($('assetChange'))$('assetChange').textContent=finite(m.change)?pct(m.change):'—';if(a){$('assetTrend').textContent=a.trend||'—';$('assetRsi').textContent=fmt(a.rsi,1);$('assetEma').textContent=`${fmt(a.ema10,2)} / ${fmt(a.ema20,2)} / ${fmt(a.ema55,2)}`;$('assetMa').textContent=`${fmt(a.ma50,2)} / ${fmt(a.ma100,2)}`;$('assetStructure').textContent=a.structure4h?.trend||'—';$('assetScore').textContent=fmt(a.score,1)}}
 
 window.addEventListener('error',e=>setDiag('JavaScript error: '+e.message,true));window.addEventListener('unhandledrejection',e=>setDiag('Promise error: '+(e.reason?.message||e.reason),true));
 document.querySelectorAll('#nav button').forEach(b=>b.onclick=()=>{document.querySelectorAll('#nav button').forEach(x=>x.classList.remove('active'));b.classList.add('active');document.querySelectorAll('.view').forEach(v=>v.classList.add('hidden'));const target=$(b.dataset.view+'View');if(target)target.classList.remove('hidden');const names={dashboard:'DASHBOARD',scanner:'SCANNER',potential:'POTENTIAL TRADES',confirmed:'CONFIRMED TRADES',journal:'JOURNAL',intelligence:'MARKET INTELLIGENCE'};const subs={dashboard:'MARKET REGIME · CORE FUTURES · OPPORTUNITY DISCOVERY',scanner:'SNAPSHOT MARKET SCAN · VOLUME ANOMALY · TECHNICAL CONFLUENCE',potential:'WAITING FOR ENTRY',confirmed:'LIVE POSITION TRACKING',journal:'RAW PERFORMANCE HISTORY',intelligence:'MACRO · NEWS · EVENTS'};if($('pageTitle'))$('pageTitle').innerHTML=names[b.dataset.view]+' <small>'+subs[b.dataset.view]+'</small>'});
-$('globalSearch').oninput=renderScanner;$('minScore').onchange=renderScanner;$('refresh').onclick=async()=>{const s=await loadSnapshots();enrichScan();updateDashboard();setDiag(s.okM?`Snapshot refreshed · ${market.size} pairs · ${ageText(marketSnapshotAt)}`:'Snapshot unavailable',!s.okM)};$('scan').onclick=()=>{enrichScan();setDiag('Scanner refreshed from latest snapshot.',false)};$('dashboardScanBtn').onclick=()=>{enrichScan();setDiag('Scanner refreshed from latest snapshot.',false)};
+function renderAll(){
+  renderErrors.length=0;
+  safe('potential trades',renderPotential);
+  safe('scanner',enrichScan);
+  safe('dashboard',updateDashboard);
+  safe('asset panel',updateAsset);
+  safe('context',updateContextUI);
+}
+function diagLine(s){
+  const ok=x=>x?'OK':'FAIL';
+  const seg=(name,good,n,ts)=>`${name} ${ok(good)}`+(good?` (${[n,ts?ageText(ts)+staleTag(ts):''].filter(Boolean).join(' · ')})`:'');
+  let line=`${VERSION} · `+[seg('MARKET',s.okM,marketRowCount+' pairs',marketSnapshotAt),seg('ANALYSIS',s.okA,analysisCache.size+' assets',analysisSnapshotAt),seg('CONTEXT',s.okC,'',contextSnapshotAt),seg('STATE',s.okS,Object.keys(tradeState?.setups||{}).length+' setups',stateSnapshotAt)].join(' · ');
+  if(!(s.okM&&s.okA&&s.okC&&s.okS)) line+=' · FAIL = that file was missing/invalid this refresh; values on screen may come from the other snapshots or from the previous successful load';
+  if(renderErrors.length) line+=' · RENDER ERRORS → '+renderErrors.join(' | ');
+  return line;
+}
+async function refreshAll(){
+  const res=await loadSnapshots();
+  renderAll();
+  const bad=!(res.okM||res.okA||res.okC)||renderErrors.length>0;
+  setDiag(diagLine(res),bad);
+  return res;
+}
+$('globalSearch').oninput=()=>safe('scanner table',renderScanner);
+$('minScore').onchange=()=>safe('scanner table',renderScanner);
+$('refresh').onclick=()=>{refreshAll()};
+$('scan').onclick=()=>{safe('scanner',enrichScan);setDiag('Scanner re-rendered from the latest loaded snapshot. '+(renderErrors.length?'RENDER ERRORS → '+renderErrors.join(' | '):''),renderErrors.length>0)};
+$('dashboardScanBtn').onclick=$('scan').onclick;
 document.querySelectorAll('#assetTabs button').forEach(b=>b.onclick=()=>{document.querySelectorAll('#assetTabs button').forEach(x=>x.classList.remove('active'));b.classList.add('active');selectedAsset=b.dataset.asset;updateAsset()});
 $('editNote').onclick=()=>{$('noteInput').value=manualContext;$('modal').classList.add('show')};$('cancelModal').onclick=()=>$('modal').classList.remove('show');$('saveNote').onclick=()=>{manualContext=$('noteInput').value;$('marketNote').textContent=manualContext;$('modal').classList.remove('show');saveState()};$('clearJournal').onclick=()=>{if(confirm('Clear journal records?')){journal=[];saveState();renderJournal()}};$('marketNote').textContent=manualContext;
+
 (async function boot(){
-  setDiag('Loading snapshot files…');
-  renderPotential();renderConfirmed();renderJournal();
-  const s=await loadSnapshots();
-  renderPotential();enrichScan();updateDashboard();updateAsset();
-  const d=snapshotDiag(s);
-  setDiag(d,!s.okM&&!s.okA);
-  if($('dashDataState'))$('dashDataState').textContent=d;
-  setInterval(async()=>{
-    const x=await loadSnapshots();
-    renderPotential();enrichScan();updateDashboard();updateAsset();
-    const dx=snapshotDiag(x);
-    setDiag(dx,!x.okM&&!x.okA);
-    if($('dashDataState'))$('dashDataState').textContent=dx;
-  },REFRESH_MS);
+  setDiag(VERSION+' · Loading snapshot files…');
+  safe('confirmed',renderConfirmed);safe('journal',renderJournal);
+  try{await refreshAll()}catch(e){setDiag('BOOT ERROR: '+(e&&e.message||e),true)}
+  setInterval(()=>{refreshAll().catch(e=>setDiag('REFRESH ERROR: '+(e&&e.message||e),true))},REFRESH_MS);
 })();
 </script>
 
