@@ -132,24 +132,39 @@ history_cache=load_history_cache()
 
 def okx_history(coin_base):
     # Prefer the USDT perpetual so technical/volume data reflects futures activity.
-    # OKX public market endpoints are unauthenticated and support recent candles.
+    # OKX market/candles returns at most 300 bars per request, so paginate backwards
+    # to obtain enough 1H candles for the 4H MA100 calculation.
     candidates=[f'{coin_base}-USDT-SWAP', f'{coin_base}-USDT']
     last=None
     for inst in candidates:
         try:
-            q=urlencode({'instId':inst,'bar':'1H','limit':'600'})
-            j=get_json(f'{OKX}/api/v5/market/candles?{q}',timeout=20,retries=1)
-            if str(j.get('code'))!='0': raise RuntimeError(f"OKX {j.get('code')}: {j.get('msg')}" )
-            rows=[]
-            for r in j.get('data',[]):
-                if len(r)<9: continue
-                # OKX returns newest first. Use only completed candles.
-                if str(r[8])!='1': continue
-                rows.append([int(r[0])//1000,float(r[1]),float(r[2]),float(r[3]),float(r[4]),float(r[7] or r[5] or 0)])
-            rows.sort(key=lambda x:x[0])
-            if len(rows)>=120: return rows, ('OKX '+('SWAP' if inst.endswith('-SWAP') else 'SPOT'),inst)
+            collected=[]
+            cursor=None
+            for _ in range(3):
+                params={'instId':inst,'bar':'1H','limit':'300'}
+                if cursor is not None: params['after']=str(cursor)
+                q=urlencode(params)
+                j=get_json(f'{OKX}/api/v5/market/candles?{q}',timeout=20,retries=1)
+                if str(j.get('code'))!='0':
+                    raise RuntimeError(f"OKX {j.get('code')}: {j.get('msg')}")
+                batch=j.get('data',[])
+                if not batch: break
+                for r in batch:
+                    if len(r)<9 or str(r[8])!='1': continue
+                    collected.append([int(r[0])//1000,float(r[1]),float(r[2]),float(r[3]),float(r[4]),float(r[7] or r[5] or 0)])
+                oldest=min(int(r[0]) for r in batch if len(r)>=1)
+                if cursor==oldest: break
+                cursor=oldest
+                if len(collected)>=480: break
+                time.sleep(0.4)
+            # De-duplicate and sort oldest -> newest.
+            uniq={r[0]:r for r in collected}
+            rows=sorted(uniq.values(),key=lambda x:x[0])
+            if len(rows)>=120:
+                return rows[-600:],('OKX '+('SWAP' if inst.endswith('-SWAP') else 'SPOT'),inst)
             if rows: last=RuntimeError(f'OKX {inst}: only {len(rows)} completed 1H candles')
-        except Exception as e: last=e
+        except Exception as e:
+            last=e
     raise last or RuntimeError(f'OKX: no history for {coin_base}')
 
 def fetch_coin_history(coin_id, base_symbol=None):
@@ -162,6 +177,59 @@ def fetch_coin_history(coin_id, base_symbol=None):
     history_cache[key]={'fetched_at':now,'rows':rows,'source':source[0],'instrument':source[1]}
     return rows,False,source[0]
 
+
+
+def technical_from_history(symbol,m,history):
+    try:
+        h4=aggregate_hourly(history,4); d1=aggregate_hourly(history,24)
+        c=[x[4] for x in h4]
+        e10,e20,e55=ema(c,10),ema(c,20),ema(c,55)
+        ma50,ma100=sma(c,50),sma(c,100)
+        rr=rsi(c); aa=atr(h4)
+        s4=structure(h4); s1=structure(d1)
+        score=5.0; reasons=[]
+        if e10 and e20 and e55:
+            if e10>e20>e55: score+=1.2; reasons.append('EMA bullish')
+            elif e10<e20<e55: score-=1.2; reasons.append('EMA bearish')
+        if ma50 and ma100:
+            if ma50>ma100: score+=0.5; reasons.append('MA50 > MA100')
+            elif ma50<ma100: score-=0.5; reasons.append('MA50 < MA100')
+        if rr is not None:
+            if 55<=rr<=70: score+=0.7; reasons.append('RSI bullish zone')
+            elif rr<=45: score-=0.7; reasons.append('RSI weak')
+        ch=m.get('change',0)
+        if ch>3: score+=0.4; reasons.append('positive 24h momentum')
+        elif ch<-3: score-=0.4; reasons.append('negative 24h momentum')
+        oi=m.get('oiDelta')
+        if oi is not None:
+            if oi>5: score+=0.5; reasons.append('OI expansion')
+            elif oi<-5: score-=0.2; reasons.append('OI contraction')
+        vr=m.get('volRatio') or 0
+        if vr>=1.75: score+=0.8; reasons.append(f'{vr:.1f}x 1H volume spike')
+        elif vr>=1.25: score+=0.3; reasons.append('elevated 1H volume')
+        score=max(0,min(10,score))
+        signal='LONG' if score>=7 else 'SHORT' if score<=4 else 'NEUTRAL'
+        return {
+            'symbol':symbol,'score':round(score,2),'signal':signal,
+            'rsi':rr,'ema10':e10,'ema20':e20,'ema55':e55,
+            'ma50':ma50,'ma100':ma100,'atr':aa,
+            'structure4h':s4,'structure1d':s1,'trend':s4['trend'],
+            'reasons':reasons,'historySource':m.get('historySource','OKX')
+        }
+    except Exception as e:
+        return {'symbol':symbol,'error':str(e)}
+
+
+def volume_spike(history):
+    if len(history)<22: return None
+    vols=[float(x[5]) for x in history]
+    cur=vols[-2]
+    base=statistics.median(vols[-22:-2])
+    if base<=0: return None
+    ratio=cur/base
+    label=('EXTREME' if ratio>=4 else 'MAJOR' if ratio>=2.5 else
+           'SPIKE' if ratio>=1.75 else 'ELEVATED' if ratio>=1.25 else 'NORMAL')
+    return {'vol1h':cur,'volBaseline':base,'volRatio':ratio,'spike':label}
 
 # Normalize CMC v3 quote shapes. Listings/Quotes v3 return quote as a LIST.
 def usd_quote(asset):
@@ -300,17 +368,22 @@ candidates={x['assetKey'] for x in vol_rank+deriv_rank}
 for s in ['BTCUSDT','ETHUSDT','XRPUSDT','SOLUSDT']: 
     if s in by_symbol:candidates.add(by_symbol[s]['assetKey'])
 
-# Fetch history for a small Stage-B shortlist to stay within CoinGecko free-tier limits.
+# Fetch history for a small Stage-B shortlist to keep the GitHub Action lightweight.
 # Four core assets are always retained when available.
-ranked=sorted([by_asset[s] for s in candidates],key=lambda x:(x.get('derivVolume') or 0,x.get('volume') or 0),reverse=True)[:12]
+ranked_all=sorted([by_asset[s] for s in candidates],key=lambda x:(x.get('derivVolume') or 0,x.get('volume') or 0),reverse=True)
+ranked=[]
+# Reserve four slots for the core watchlist, then fill remaining slots by Stage-A activity.
 for s in ['BTCUSDT','ETHUSDT','XRPUSDT','SOLUSDT']:
-    if s in by_symbol and all(x['assetKey']!=by_symbol[s]['assetKey'] for x in ranked):ranked.append(by_symbol[s])
+    if s in by_symbol:
+        ranked.append(by_symbol[s])
+for x in ranked_all:
+    if len(ranked)>=12: break
+    if all(x['assetKey']!=y['assetKey'] for y in ranked): ranked.append(x)
 
 histories={}
 history_stats={'requested':0,'cacheHits':0,'freshFetches':0,'errors':0}
-# Fetch sequentially. CoinGecko's public API is only about 5–15 calls/minute, so
-# parallel requests were causing the 429s seen in previous runs. Cached histories
-# are reused for 1 hour, while the dashboard can still refresh every 15 minutes.
+# Fetch sequentially. OKX public market endpoints are IP-rate-limited; pacing and caching
+# keep the GitHub Action well below the documented request limits.
 for x in ranked:
     if not x.get('coinId'): continue
     history_stats['requested']+=1
@@ -324,7 +397,7 @@ for x in ranked:
         if sp:
             sp['spikeSource']=hsrc+' 1H market volume'
             x.update(sp)
-        if not cache_hit: time.sleep(1)
+        if not cache_hit: time.sleep(0.5)
     except Exception as e:
         history_stats['errors']+=1
         x['historyError']=str(e)
@@ -363,7 +436,7 @@ ctx['oiDeltaDefinition']='snapshot-to-snapshot change versus previous market.jso
 ctx['derivativesMapping']='Only unique CMC ticker symbols are auto-enriched to avoid same-symbol collisions'
 ctx['historyProvider']='OKX 1H candles (futures-first, spot fallback; serialized + 1h cache)'
 ctx['historyCacheTTLSeconds']=HISTORY_TTL
-ctx['historyFetchPacingSeconds']=1
+ctx['historyFetchPacingSeconds']=0.5
 ctx['historyStats']=history_stats
 ctx['generated_at']=NOW()
 
@@ -374,5 +447,5 @@ ctx['generated_at']=NOW()
 print(f'Generated {len(rows)} broad market rows, {len(analysis)} Stage-B analyses')
 print('Market source: CoinMarketCap listings')
 print('Derivatives source: CoinGecko aggregated derivatives' if derivs else 'Derivatives source: unavailable')
-print('Volume spike source: CoinGecko hourly market history; timeframe=1H')
+print('Volume spike source: OKX 1H candles; timeframe=1H')
 print('Context:',{k:ctx.get(k) for k in ('fng','fngLabel','altseason','btcDom','totalMarketCap','total3','total3Btc')})
