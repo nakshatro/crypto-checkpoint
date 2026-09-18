@@ -242,6 +242,7 @@ def is_non_crypto_asset(x):
 
 # ---------------- CoinGecko derivatives ----------------
 derivs=[]; deriv_error=None
+deriv_by_base={}
 try: derivs=cg('/derivatives') or []
 except Exception as e: deriv_error=str(e)
 if deriv_error:ctx['derivativesError']=deriv_error
