@@ -443,33 +443,25 @@ background-size:38px 38px;position:relative;overflow:hidden}
 
 
 <script>
-/* ============================================================
-   CRYPTO CHECKPOINT v2.0 — DATA / VOLUME / SIGNAL ENGINE
-   Architecture:
-   1) Same-origin GitHub snapshot (CMC + exchange) — reliable baseline
-   2) Direct exchange REST/WebSocket — live enhancement when browser allows it
-   3) Stage A — ALL eligible USDT pairs
-   4) Volume Spike Engine — 15m candle vs 20-candle median
-   5) Stage B — targeted 4H + 1D technical confluence
-   6) Potential → Confirmed → Journal lifecycle
-   ============================================================ */
-const VERSION='v2.0';
+/* CRYPTO CHECKPOINT v2.4
+   Snapshot-first architecture: CMC + CoinGecko.
+   - CMC: authoritative market context + broad listings
+   - CoinGecko: market/volume history + aggregated derivatives
+   - No Binance/Bybit dependency for GitHub Pages
+   - Volume anomaly: 1H current completed volume / median prior 20 completed hours
+   - Stage A: broad market discovery
+   - Stage B: targeted 4H/1D technical analysis
+*/
+const VERSION='v2.4';
 const REFRESH_MS=15*60*1000;
-const SNAPSHOT_MARKET='data/market.json';
-const SNAPSHOT_CONTEXT='data/context.json';
-const BYBIT='https://api.bybit.com';
-const BYBIT_BACKUP='https://api.bytick.com';
-const BINANCE='https://fapi.binance.com';
-const BINANCE_WS='wss://fstream.binance.com/ws/!ticker@arr';
+const SNAPSHOT_MARKET='data/market.json', SNAPSHOT_CONTEXT='data/context.json', SNAPSHOT_ANALYSIS='data/analysis.json';
 let market=new Map(), analysisCache=new Map(), scanCache=[];
-let marketSnapshotAt=null, contextSnapshotAt=null;
-let marketSource='SNAPSHOT';
+let marketSnapshotAt=null, contextSnapshotAt=null, marketSource='SNAPSHOT';
 let selectedAsset='BTC';
 let potential=JSON.parse(localStorage.getItem('cc_potential')||'[]');
 let confirmed=JSON.parse(localStorage.getItem('cc_confirmed')||'[]');
 let journal=JSON.parse(localStorage.getItem('cc_journal')||'[]');
 let manualContext=localStorage.getItem('cc_context')||'Macro/news context not entered.';
-let binanceWs=null, wsTimer=null;
 const core=['ETHUSDT','XRPUSDT','SOLUSDT'];
 const $=id=>document.getElementById(id);
 const finite=x=>Number.isFinite(Number(x));
@@ -478,218 +470,61 @@ const pct=n=>finite(n)?`${Number(n)>=0?'+':''}${fmt(n,2)}%`:'—';
 const fmtLarge=n=>{const x=Number(n);if(!finite(x))return'—';const a=Math.abs(x);if(a>=1e12)return(x/1e12).toFixed(2)+'T';if(a>=1e9)return(x/1e9).toFixed(2)+'B';if(a>=1e6)return(x/1e6).toFixed(2)+'M';if(a>=1e3)return(x/1e3).toFixed(2)+'K';return fmt(x,2)};
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 function setDiag(msg,bad=false){if($('diagText')){$('diagText').textContent=msg;$('diagText').style.color=bad?'var(--red)':'var(--muted)'}}
-function setStatus(id,msg,ok=true){const e=$(id);if(e){e.textContent=msg;e.className='livepill '+(ok?'ok':'bad')}}
 function saveState(){localStorage.setItem('cc_potential',JSON.stringify(potential));localStorage.setItem('cc_confirmed',JSON.stringify(confirmed));localStorage.setItem('cc_journal',JSON.stringify(journal));localStorage.setItem('cc_context',manualContext)}
 async function fetchJson(url,timeout=12000){const c=new AbortController(),t=setTimeout(()=>c.abort(),timeout);try{const r=await fetch(url,{cache:'no-store',signal:c.signal});if(!r.ok)throw new Error(`${r.status} ${r.statusText}`);return await r.json()}catch(e){if(e.name==='AbortError')throw new Error('timeout');if(e instanceof TypeError)throw new Error('browser/network/CORS blocked');throw e}finally{clearTimeout(t)}}
-
-/* ---------- Snapshot layer: this is the reliable baseline ---------- */
-async function loadSnapshots(){
-  let okM=false,okC=false;
-  try{
-    const j=await fetchJson(`${SNAPSHOT_MARKET}?t=${Date.now()}`,8000);
-    if(j&&Array.isArray(j.symbols)){
-      market=new Map(j.symbols.map(x=>[x.symbol,x]));marketSnapshotAt=j.generated_at||null;marketSource='SNAPSHOT';okM=market.size>0;
-      if($('snapshotStatus'))$('snapshotStatus').textContent=`SNAPSHOT: ${market.size} pairs · ${ageText(marketSnapshotAt)}`;
-    }
-  }catch(e){console.warn('market snapshot',e.message)}
-  try{
-    const j=await fetchJson(`${SNAPSHOT_CONTEXT}?t=${Date.now()}`,8000);
-    if(j&&j.source){applyContext(j);contextSnapshotAt=j.generated_at||null;okC=true}
-  }catch(e){console.warn('context snapshot',e.message)}
-  return {okM,okC};
-}
 function ageText(ts){if(!ts)return'unknown age';const m=Math.max(0,Math.round((Date.now()-new Date(ts).getTime())/60000));return m<1?'fresh':m+'m old'}
-async function loadAnalysisSnapshot(){try{const j=await fetchJson(`${'data/analysis.json'}?t=${Date.now()}`,8000);if(Array.isArray(j?.analysis)){for(const a of j.analysis)analysisCache.set(a.symbol,a);return j}}catch(e){console.warn('analysis snapshot',e.message)}return null}
 
-/* ---------- CMC context: snapshot first, direct keyless second ---------- */
 let context={btcDom:null,totalMarketCap:null,totalMarketCapChange:null,btcCap:null,ethCap:null,total3:null,total3Btc:null,fng:null,fngLabel:null,fngUpdated:null,altseason:null,altseasonUpdated:null,source:'—'};
-function applyContext(j){
-  context={...context,...j};
-  if(finite(context.totalMarketCap)&&finite(context.btcCap)&&finite(context.ethCap)){
-    context.total3=context.totalMarketCap-context.btcCap-context.ethCap;
-    context.total3Btc=context.btcCap>0?context.total3/context.btcCap:null;
-  }
-  updateContextUI();
-}
-async function directCMC(){
-  const base='https://pro-api.coinmarketcap.com/public-api';
-  const urls=[`${base}/v3/fear-and-greed/latest`,`${base}/v1/altcoin-season-index/latest`,`${base}/v1/global-metrics/quotes/latest?convert=USD`,`${base}/v3/cryptocurrency/quotes/latest?id=1,1027&convert=USD`];
-  const r=await Promise.allSettled(urls.map(u=>fetchJson(u,9000)));
-  if(r[0].status==='fulfilled'){const d=r[0].value?.data;context.fng=Number(d?.value);context.fngLabel=d?.value_classification;context.fngUpdated=d?.update_time}
-  if(r[1].status==='fulfilled'){const d=r[1].value?.data;context.altseason=Number(d?.altcoin_index);context.altseasonUpdated=d?.snapshot_time||d?.update_time}
-  if(r[2].status==='fulfilled'){const d=r[2].value?.data,q=d?.quote?.USD;context.btcDom=Number(d?.btc_dominance);context.totalMarketCap=Number(q?.total_market_cap);context.totalMarketCapChange=Number(q?.total_market_cap_yesterday_percentage_change)}
-  if(r[3].status==='fulfilled'){const d=r[3].value?.data||{};context.btcCap=Number(d['1']?.quote?.USD?.market_cap);context.ethCap=Number(d['1027']?.quote?.USD?.market_cap)}
-  context.source='CMC keyless API';applyContext(context);return r.some(x=>x.status==='fulfilled');
-}
-async function refreshContext(){
-  try{const j=await fetchJson(`${SNAPSHOT_CONTEXT}?t=${Date.now()}`,8000);if(j?.source)applyContext(j)}catch(_){ }
-  try{const ok=await directCMC();if(ok)setDiag('CMC context: direct keyless API reachable.')}catch(e){setDiag('CMC context using GitHub snapshot · '+(contextSnapshotAt?ageText(contextSnapshotAt):'no snapshot'),false)}
-  updateContextUI();updateDashboard();
-}
+function applyContext(j){context={...context,...j};if(finite(context.totalMarketCap)&&finite(context.btcCap)&&finite(context.ethCap)){context.total3=context.totalMarketCap-context.btcCap-context.ethCap;context.total3Btc=context.btcCap?context.total3/context.btcCap:null}updateContextUI()}
 function updateContextUI(){
   if($('btcDomValue'))$('btcDomValue').textContent=finite(context.btcDom)?fmt(context.btcDom,2)+'%':'—';
-  if($('btcDomChange'))$('btcDomChange').textContent=finite(context.btcDom)?'CMC':'Unavailable';
+  if($('btcDomChange'))$('btcDomChange').textContent=context.btcDomSource||'CMC';
   if($('fgValue'))$('fgValue').textContent=finite(context.fng)?String(context.fng):'—';
   if($('fgLabel'))$('fgLabel').textContent=context.fngLabel||'CMC unavailable';
   if($('intelFg'))$('intelFg').textContent=finite(context.fng)?`${context.fng} · ${context.fngLabel||''}`:'Unavailable';
   if($('altseasonValue'))$('altseasonValue').textContent=finite(context.altseason)?String(context.altseason):'—';
   if($('altseasonLabel'))$('altseasonLabel').textContent=finite(context.altseason)?(context.altseason>=75?'Altcoin Season':context.altseason<=25?'Bitcoin Season':'Neutral / Transition'):'CMC unavailable';
   if($('altseasonMarker'))$('altseasonMarker').style.left=(finite(context.altseason)?Math.max(0,Math.min(100,context.altseason)):50)+'%';
-  if($('intelAlt'))$('intelAlt').textContent=finite(context.altseason)?`${context.altseason}`:'Unavailable';
+  if($('intelAlt'))$('intelAlt').textContent=finite(context.altseason)?String(context.altseason):'Unavailable';
   if($('total3Value'))$('total3Value').textContent=finite(context.total3)?fmtLarge(context.total3):'—';
   if($('total3Change'))$('total3Change').textContent=finite(context.totalMarketCapChange)?`Total market cap ${pct(context.totalMarketCapChange)}`:'CMC unavailable';
   if($('regimeBtcDom'))$('regimeBtcDom').textContent=finite(context.btcDom)?fmt(context.btcDom,2)+'%':'—';
   if($('regimeTotal3'))$('regimeTotal3').textContent=finite(context.total3Btc)?context.total3Btc.toFixed(3):'—';
   if($('regimeFg'))$('regimeFg').textContent=finite(context.fng)?`${context.fng} ${context.fngLabel||''}`:'—';
 }
-
-/* ---------- Exchange live enhancement ---------- */
-async function refreshExchange(){
-  const sources=[
-    async()=>{const r=await fetchJson(`${BYBIT}/v5/market/tickers?category=linear`,8000);return {source:'Bybit Linear',list:r?.result?.list||[]}},
-    async()=>{const r=await fetchJson(`${BINANCE}/fapi/v1/ticker/24hr`,8000);return {source:'Binance Futures',list:r||[]}}
-  ];
-  for(const load of sources){try{
-    const r=await load();if(!r.list.length)continue;
-    const prev=market;
-    for(const x of r.list){
-      const symbol=x.symbol;if(!symbol?.endsWith('USDT'))continue;
-      const old=prev.get(symbol)||{};
-      if(r.source==='Bybit Linear'){
-        const v={...old,symbol,price:Number(x.lastPrice),change:Number(x.price24hPcnt)*100,high:Number(x.highPrice24h),low:Number(x.lowPrice24h),volume:Number(x.turnover24h||0),oi:Number(x.openInterestValue||0),oiSize:Number(x.openInterest||0),funding:Number(x.fundingRate||0)*100,source:r.source,ts:Date.now()};
-        v.oiDelta=old.oi?((v.oi-old.oi)/old.oi)*100:null;market.set(symbol,v);
-      }else{
-        const v={...old,symbol,price:Number(x.lastPrice),change:Number(x.priceChangePercent),high:Number(x.highPrice),low:Number(x.lowPrice),volume:Number(x.quoteVolume||0),source:r.source,ts:Date.now()};
-        market.set(symbol,v);
-      }
-    }
-    marketSource=r.source;setStatus('restStatus',`LIVE: ${r.source} · ${market.size} pairs`,true);if($('snapshotStatus'))$('snapshotStatus').textContent=`LIVE: ${market.size} pairs`;
-    updateDashboard();renderScanner();return true;
-  }catch(e){console.warn('exchange source failed',e.message)}}
-  setStatus('restStatus',`SNAPSHOT: ${market.size||0} pairs`,!!market.size);return !!market.size;
+async function loadSnapshots(){
+  let okM=false,okC=false,okA=false;
+  try{const j=await fetchJson(`${SNAPSHOT_MARKET}?t=${Date.now()}`,10000);if(j&&Array.isArray(j.symbols)){market=new Map(j.symbols.map(x=>[x.symbol,x]));marketSnapshotAt=j.generated_at||null;marketSource=j.source||'SNAPSHOT';okM=market.size>0;if($('snapshotStatus'))$('snapshotStatus').textContent=`SNAPSHOT: ${market.size} pairs · ${ageText(marketSnapshotAt)}`;if($('restStatus'))$('restStatus').textContent=`DATA: ${marketSource} · ${market.size} pairs`}}
+  catch(e){console.warn(e);if($('restStatus'))$('restStatus').textContent='DATA: snapshot unavailable'}
+  try{const j=await fetchJson(`${SNAPSHOT_CONTEXT}?t=${Date.now()}`,10000);if(j&&j.source){applyContext(j);contextSnapshotAt=j.generated_at||null;okC=true}}
+  catch(e){console.warn(e)}
+  try{const j=await fetchJson(`${SNAPSHOT_ANALYSIS}?t=${Date.now()}`,10000);if(Array.isArray(j?.analysis)){analysisCache.clear();j.analysis.forEach(a=>analysisCache.set(a.symbol,a));scanCache=j.analysis;okA=j.analysis.length>0}}
+  catch(e){console.warn(e)}
+  return {okM,okC,okA}
 }
 
-/* ---------- Indicators ---------- */
-function ema(a,p){if(a.length<p)return null;let k=2/(p+1),e=a.slice(0,p).reduce((x,y)=>x+y,0)/p;for(let i=p;i<a.length;i++)e=a[i]*k+e*(1-k);return e}
-function sma(a,p){return a.length>=p?a.slice(-p).reduce((x,y)=>x+y,0)/p:null}
-function rsi(a,p=14){if(a.length<p+1)return null;let g=0,l=0;for(let i=a.length-p;i<a.length;i++){const d=a[i]-a[i-1];if(d>=0)g+=d;else l-=d}if(l===0)return 100;return 100-100/(1+g/l)}
-function atr(rows,p=14){if(rows.length<p+1)return null;const tr=[];for(let i=1;i<rows.length;i++)tr.push(Math.max(rows[i].high-rows[i].low,Math.abs(rows[i].high-rows[i-1].close),Math.abs(rows[i].low-rows[i-1].close)));return sma(tr,p)}
-function structure(rows){const last=rows.slice(-30),all=rows.map(x=>x.close),h=Math.max(...last.map(x=>x.high)),l=Math.min(...last.map(x=>x.low)),e20=ema(all,20),e55=ema(all,55);return{high:h,low:l,trend:e20&&e55?(e20>e55?'Rising':'Falling'):'Range'}}
-async function klines(symbol,interval='4h',limit=220){
-  try{const a=await fetchJson(`${BINANCE}/fapi/v1/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`,9000);if(Array.isArray(a)&&a.length>=100)return a.map(x=>({time:+x[0],open:+x[1],high:+x[2],low:+x[3],close:+x[4],volume:+x[5]}))}catch(_){ }
-  try{const iv=interval==='4h'?'240':interval==='1d'?'D':'15';const a=await fetchJson(`${BYBIT}/v5/market/kline?category=linear&symbol=${symbol}&interval=${iv}&limit=${limit}`,9000);const arr=a?.result?.list||[];if(arr.length>=100)return arr.reverse().map(x=>({time:+x[0],open:+x[1],high:+x[2],low:+x[3],close:+x[4],volume:+x[5]}))}catch(_){ }
-  return []
+function scoreClass(s){return s>=7?'high':s>=5?'mid':'low'}
+function badgeClass(x){return String(x).includes('LONG')?'long':String(x).includes('SHORT')?'short':'neutral'}
+function classifySpike(r){return !finite(r)?'—':r>=4?'EXTREME':r>=2.5?'MAJOR':r>=1.75?'SPIKE':r>=1.25?'ELEVATED':'NORMAL'}
+function enrichScan(){
+  scanCache=[...analysisCache.values()].map(a=>{const m=market.get(a.symbol)||{};return {...a,score:finite(a.score)?a.score:0}}).sort((a,b)=>b.score-a.score);
+  renderScanner();renderDashboardScanner();
 }
-
-/* ---------- True volume spike engine ---------- */
-function classifySpike(r){if(!finite(r))return'NO DATA';if(r>=4)return'EXTREME';if(r>=2.5)return'MAJOR';if(r>=1.75)return'SPIKE';if(r>=1.25)return'ELEVATED';return'NORMAL'}
-async function enrichVolume(symbol){
-  // Prefer workflow-computed spike in snapshot. If absent, calculate from exchange candles.
-  const m=market.get(symbol);if(m?.volRatio)return m;
-  try{
-    const rows=await klines(symbol,'15m',25);if(rows.length<21)return m;
-    const vols=rows.slice(-21).map(x=>x.volume);const cur=vols.pop();const base=[...vols].sort((a,b)=>a-b);const med=base.length%2?base[(base.length-1)/2]:(base[base.length/2-1]+base[base.length/2])/2;const ratio=med>0?cur/med:null;
-    if(m){m.vol15m=cur;m.volBaseline=med;m.volRatio=ratio;m.spike=classifySpike(ratio);m.spikeSource='live candle'}return m;
-  }catch(_){return m}
-}
-async function enrich(symbol){
-  if(analysisCache.has(symbol))return analysisCache.get(symbol);
-  const rows=await klines(symbol,'4h',220);if(rows.length<100)return null;
-  const c=rows.map(x=>x.close),m=market.get(symbol)||{};const e10=ema(c,10),e20=ema(c,20),e55=ema(c,55),ma50=sma(c,50),ma100=sma(c,100),rr=rsi(c),aa=atr(rows),st=structure(rows);
-  let score=5, reasons=[];
-  if(e10&&e20&&e55&&e10>e20&&e20>e55){score+=1.2;reasons.push('EMA bullish')}else if(e10&&e20&&e55&&e10<e20&&e20<e55){score-=1.2;reasons.push('EMA bearish')}
-  if(rr>=55&&rr<=70){score+=.7;reasons.push('RSI bullish zone')}else if(rr<=45){score-=.7;reasons.push('RSI weak')}
-  if(m.change>3){score+=.4;reasons.push('momentum')}else if(m.change<-3){score-=.4;reasons.push('negative momentum')}
-  if(m.oiDelta>5){score+=.5;reasons.push('OI expansion')}else if(m.oiDelta<-5){score-=.2;reasons.push('OI contraction')}
-  if(m.volRatio>=1.75){score+=.8;reasons.push(`${m.volRatio.toFixed(1)}x volume spike`)}else if(m.volRatio>=1.25){score+=.3;reasons.push('elevated volume')}
-  if(finite(context.btcDom)&&context.btcDom>60&&m.symbol!=='BTCUSDT'&&score>6)score-=.2;
-  score=Math.max(0,Math.min(10,score));const signal=score>=7?'LONG':score<=4?'SHORT':'NEUTRAL';
-  let entryLo=m.price,entryHi=m.price,sl=m.price,tp1=m.price,tp2=m.price;if(aa&&m.price){if(signal==='LONG'){entryLo=Math.max(st.low,m.price-aa*.5);entryHi=m.price;sl=Math.min(st.low,m.price-aa*1.25);tp1=Math.max(st.high,m.price+aa);tp2=m.price+aa*2}else if(signal==='SHORT'){entryLo=m.price;entryHi=Math.min(st.high,m.price+aa*.5);sl=Math.max(st.high,m.price+aa*1.25);tp1=Math.min(st.low,m.price-aa);tp2=m.price-aa*2}}
-  const out={symbol,score,signal,rsi:rr,ema10:e10,ema20:e20,ema55:e55,ma50,ma100,atr:aa,structure:st,trend:st.trend,entryLo,entryHi,sl,tp1,tp2,reasons};analysisCache.set(symbol,out);return out;
-}
-
-/* ---------- Stage A: all market pairs ---------- */
-async function stageA(){
-  const arr=[...market.values()].filter(x=>x.symbol?.endsWith('USDT')&&finite(x.price)&&x.price>0);
-  // Score every pair cheaply. Volume anomaly has priority, but no pair is excluded merely because it is not a core coin.
-  return arr.map(x=>{const spike=Number(x.volRatio||0);const activity=Math.min(3,Math.abs(Number(x.change||0))/2);const oi=Math.min(2,Math.abs(Number(x.oiDelta||0))/5);const vol=spike>=1.75?3:spike>=1.25?1.5:0;return {...x,stageAScore:activity+oi+vol}}).sort((a,b)=>b.stageAScore-a.stageAScore)
-}
-async function runDeepScan(){
-  if(!market.size){setDiag('Scanner has no market snapshot. Run the GitHub data workflow first.',true);return}
-  document.getElementById('scanStatus').textContent='Stage A: scanning all eligible USDT pairs…';
-  const all=await stageA();
-  // Use server-generated Stage B analysis first; browser candle requests are only a fallback.
-  const snapAnalyses=[...analysisCache.values()];
-  if(snapAnalyses.length){
-    scanCache=snapAnalyses.filter(a=>market.has(a.symbol));
-    window.scanCache=scanCache;
-    renderScanner();renderDashboardScanner();updateDashboard();
-  }
-  // Ensure a true spike metric exists for the most active candidates. Snapshot normally contains it.
-  const candidates=all.slice(0,60);
-  for(let i=0;i<candidates.length;i+=10){await Promise.all(candidates.slice(i,i+10).map(x=>enrichVolume(x.symbol)));}
-  // Re-rank after volume spike enrichment.
-  const ranked=[...market.values()].filter(x=>x.symbol?.endsWith('USDT')).sort((a,b)=>((b.volRatio||0)*3+Math.abs(b.change||0)+Math.abs(b.oiDelta||0)/3)-((a.volRatio||0)*3+Math.abs(a.change||0)+Math.abs(a.oiDelta||0)/3)).slice(0,40);
-  const snapshotSymbols=new Set(scanCache.map(x=>x.symbol));
-  const need=ranked.filter(x=>!snapshotSymbols.has(x.symbol));
-  for(let i=0;i<need.length;i+=5){
-    const vals=await Promise.all(need.slice(i,i+5).map(x=>enrich(x.symbol)));vals.filter(Boolean).forEach(a=>scanCache.push(a));
-    document.getElementById('scanStatus').textContent=`Stage B: ${Math.min(i+5,need.length)}/${need.length} browser-fallback pairs analyzed`;
-    renderScanner();renderDashboardScanner();
-  }
-  await Promise.all(core.map(async s=>{const a=analysisCache.get(s)||await enrich(s);if(a&&!scanCache.some(x=>x.symbol===s))scanCache.push(a)}));
-  window.scanCache=scanCache;renderScanner();renderDashboardScanner();autoCreatePotential();updateDashboard();
-  document.getElementById('scanStatus').textContent=`Complete · Stage A ${all.length} pairs · Stage B ${scanCache.length} analyzed · ${new Date().toLocaleTimeString()}`;
-  setDiag(`SCAN COMPLETE · ${all.length} USDT pairs screened · ${scanCache.length} targeted · volume spike engine active`,false);
-}
-
-/* ---------- Lifecycle ---------- */
-function autoCreatePotential(){const active=new Set([...potential,...confirmed].map(x=>x.symbol));for(const s of scanCache){if(s.score<7||s.signal==='NEUTRAL'||active.has(s.symbol))continue;const m=market.get(s.symbol);if(!m)continue;potential.push({id:crypto.randomUUID(),symbol:s.symbol,dir:s.signal,score:+s.score.toFixed(1),entryLo:s.entryLo,entryHi:s.entryHi,tp1:s.tp1,tp2:s.tp2,sl:s.sl,created:Date.now(),expiry:Date.now()+72*3600000,reason:s.reasons.join(' · '),volRatio:m.volRatio||null,spike:m.spike||null});active.add(s.symbol)}saveState();renderPotential()}
-function checkEntries(){const now=Date.now();for(const t of [...potential]){if(now>t.expiry){potential=potential.filter(x=>x.id!==t.id);journal.push({...t,exit:'EXPIRED',result:'EXPIRED',closed:now});continue}const p=market.get(t.symbol)?.price;if(!finite(p))continue;const inside=t.dir==='LONG'?p>=t.entryLo&&p<=t.entryHi:p>=t.entryLo&&p<=t.entryHi;if(inside){potential=potential.filter(x=>x.id!==t.id);confirmed.push({...t,id:crypto.randomUUID(),entry:p,current:p,opened:now,state:'LIVE',entrySource:'Observed price zone'})}}saveState();renderPotential();renderConfirmed()}
-function checkConfirmed(){for(const t of [...confirmed]){const p=market.get(t.symbol)?.price;if(!finite(p))continue;t.current=p;const hit=t.dir==='LONG'?(p<=t.sl||p>=t.tp2||p>=t.tp1):(p>=t.sl||p<=t.tp2||p<=t.tp1);if(hit){const result=t.dir==='LONG'?(p<=t.sl?'SL':p>=t.tp2?'TP2':'TP1'):(p>=t.sl?'SL':p<=t.tp2?'TP2':'TP1');closeTrade(t,result,p)}}saveState();renderConfirmed()}
-function closeTrade(t,result,p){confirmed=confirmed.filter(x=>x.id!==t.id);journal.unshift({...t,exit:p,result,closed:Date.now(),holdH:(Date.now()-t.opened)/3600000});saveState();renderJournal()}
-function editSetup(id){const t=potential.find(x=>x.id===id);if(!t)return;const v=prompt('Entry low',t.entryLo);if(v!==null)t.entryLo=+v;saveState();renderPotential()}
-function manualConfirm(id){const t=potential.find(x=>x.id===id);if(!t)return;const p=market.get(t.symbol)?.price||t.entryLo;potential=potential.filter(x=>x.id!==id);confirmed.push({...t,id:crypto.randomUUID(),entry:p,current:p,opened:Date.now(),state:'LIVE',entrySource:'Manual'});saveState();renderPotential();renderConfirmed()}
-function manualClose(id){const t=confirmed.find(x=>x.id===id);if(t)closeTrade(t,'MANUAL',market.get(t.symbol)?.price||t.current||t.entry)}
-
-/* ---------- Rendering ---------- */
-function scoreClass(s){return s>=7?'good':s>=6.5?'mid':'low'}function badgeClass(s){return s==='LONG'?'long':s==='SHORT'?'short':'neutral'}
-function renderScanner(){const body=document.querySelector('#scannerTable tbody');if(!body)return;const q=($('globalSearch')?.value||'').toUpperCase();const min=Number($('minScore')?.value||0);const rows=scanCache.filter(x=>!q||x.symbol.includes(q)).filter(x=>x.score>=min).sort((a,b)=>b.score-a.score);if(!rows.length){body.innerHTML=`<tr><td colspan="14" class="empty">${market.size?'No Stage B candidates meet the current filter.':'Waiting for market snapshot.'}</td></tr>`;return}body.innerHTML=rows.map((r,i)=>{const m=market.get(r.symbol)||{};const ratio=m.volRatio;return `<tr><td>${i+1}</td><td class="pair">${r.symbol}</td><td>$${fmt(m.price,m.price<1?6:2)}</td><td class="${m.change>=0?'up':'down'}">${pct(m.change)}</td><td>${fmtLarge(m.volume)}</td><td class="warn">${m.spike||classifySpike(ratio)}</td><td>${finite(ratio)?ratio.toFixed(2)+'×':'—'}</td><td>${finite(m.oiDelta)?pct(m.oiDelta):'—'}</td><td>${finite(m.funding)?m.funding.toFixed(4)+'%':'—'}</td><td>${finite(r.rsi)?fmt(r.rsi,1):'—'}</td><td>${r.trend||'—'}</td><td><span class="score ${scoreClass(r.score)}">${fmt(r.score,1)}</span></td><td><span class="badge ${badgeClass(r.signal)}">${r.signal}</span></td><td>${m.spikeSource||'snapshot'}</td></tr>`}).join('')}
-function renderDashboardScanner(){const body=document.querySelector('#dashboardScannerTable tbody');if(!body)return;const rows=scanCache.slice().sort((a,b)=>b.score-a.score).slice(0,8);if(!rows.length){body.innerHTML='<tr><td colspan="12" class="empty">Run the scanner or wait for the scheduled snapshot.</td></tr>';return}body.innerHTML=rows.map(r=>{const m=market.get(r.symbol)||{};return `<tr><td class="pair">${r.symbol}</td><td>$${fmt(m.price,m.price<1?6:2)}</td><td class="${m.change>=0?'up':'down'}">${pct(m.change)}</td><td class="warn">${m.spike||'—'}</td><td>${finite(m.volRatio)?m.volRatio.toFixed(2)+'×':'—'}</td><td>${finite(m.oiDelta)?pct(m.oiDelta):'—'}</td><td>${finite(m.funding)?m.funding.toFixed(4)+'%':'—'}</td><td>${finite(r.rsi)?fmt(r.rsi,1):'—'}</td><td>${r.trend||'—'}</td><td><span class="score ${scoreClass(r.score)}">${fmt(r.score,1)}</span></td><td><span class="badge ${badgeClass(r.signal)}">${r.signal}</span></td><td>Futures</td></tr>`}).join('')}
-function renderPotential(){const el=$('potentialGrid');if(!el)return;if(!potential.length){el.innerHTML='<div class="empty">No active potential setups. Scanner promotes setups only when confluence threshold is reached.</div>';return}el.innerHTML=potential.map(t=>`<div class="card" style="padding:14px"><div class="section-head" style="padding:0 0 8px"><b>${t.symbol}</b><span class="badge ${badgeClass(t.dir)}">${t.dir}</span></div><div class="kv"><span>Score</span><b>${t.score}</b></div><div class="kv"><span>Entry</span><b>${fmt(t.entryLo,6)} – ${fmt(t.entryHi,6)}</b></div><div class="kv"><span>TP1 / TP2</span><b>${fmt(t.tp1,6)} / ${fmt(t.tp2,6)}</b></div><div class="kv"><span>SL</span><b>${fmt(t.sl,6)}</b></div><div class="kv"><span>Volume</span><b>${t.spike||'—'} ${t.volRatio?`(${t.volRatio.toFixed(2)}×)`:''}</b></div><div class="note" style="margin-top:10px">${t.reason}</div><div class="toolbar" style="margin-top:10px"><button class="ghost" onclick="editSetup('${t.id}')">EDIT</button><button class="primary" onclick="manualConfirm('${t.id}')">CONFIRM</button></div></div>`).join('')}
-function renderConfirmed(){const el=$('confirmedGrid');if(!el)return;if(!confirmed.length){el.innerHTML='<div class="empty">No confirmed trades. A setup moves here only after an observed entry-zone touch or manual confirmation.</div>';return}el.innerHTML=confirmed.map(t=>`<div class="card" style="padding:14px"><div class="section-head" style="padding:0 0 8px"><b>${t.symbol}</b><span class="badge ${badgeClass(t.dir)}">LIVE</span></div><div class="kv"><span>Entry / Current</span><b>${fmt(t.entry,6)} / ${fmt(t.current,6)}</b></div><div class="kv"><span>TP1 / TP2</span><b>${fmt(t.tp1,6)} / ${fmt(t.tp2,6)}</b></div><div class="kv"><span>SL</span><b>${fmt(t.sl,6)}</b></div><div class="kv"><span>Entry source</span><b>${t.entrySource||'—'}</b></div><button class="ghost" style="margin-top:10px" onclick="manualClose('${t.id}')">CLOSE / JOURNAL</button></div>`).join('')}
+function renderScanner(){const body=document.querySelector('#scannerTable tbody');if(!body)return;const q=($('globalSearch')?.value||'').toUpperCase();const min=Number($('minScore')?.value||0);const rows=scanCache.filter(x=>!q||x.symbol.includes(q)).filter(x=>x.score>=min);if(!rows.length){body.innerHTML=`<tr><td colspan="14" class="empty">${market.size?'No Stage B candidates meet the current filter.':'Waiting for snapshot data.'}</td></tr>`;return}body.innerHTML=rows.map((r,i)=>{const m=market.get(r.symbol)||{};const ratio=m.volRatio;return `<tr><td>${i+1}</td><td class="pair">${r.symbol}</td><td>$${fmt(m.price,m.price<1?6:2)}</td><td class="${m.change>=0?'up':'down'}">${pct(m.change)}</td><td>${fmtLarge(m.volume)}</td><td class="warn">${m.spike||classifySpike(ratio)}</td><td>${finite(ratio)?ratio.toFixed(2)+'×':'—'}</td><td>${finite(m.oiDelta)?pct(m.oiDelta):'—'}</td><td>${finite(m.funding)?m.funding.toFixed(4)+'%':'—'}</td><td>${finite(r.rsi)?fmt(r.rsi,1):'—'}</td><td>${r.trend||'—'}</td><td><span class="score ${scoreClass(r.score)}">${fmt(r.score,1)}</span></td><td><span class="badge ${badgeClass(r.signal)}">${r.signal}</span></td><td>${m.spikeSource||m.source||'snapshot'}</td></tr>`}).join('')}
+function renderDashboardScanner(){const body=document.querySelector('#dashboardScannerTable tbody');if(!body)return;const rows=scanCache.slice(0,8);if(!rows.length){body.innerHTML='<tr><td colspan="12" class="empty">Waiting for scheduled snapshot.</td></tr>';return}body.innerHTML=rows.map(r=>{const m=market.get(r.symbol)||{};return `<tr><td class="pair">${r.symbol}</td><td>$${fmt(m.price,m.price<1?6:2)}</td><td class="${m.change>=0?'up':'down'}">${pct(m.change)}</td><td class="warn">${m.spike||'—'}</td><td>${finite(m.volRatio)?m.volRatio.toFixed(2)+'×':'—'}</td><td>${finite(m.oiDelta)?pct(m.oiDelta):'—'}</td><td>${finite(m.funding)?m.funding.toFixed(4)+'%':'—'}</td><td>${finite(r.rsi)?fmt(r.rsi,1):'—'}</td><td>${r.trend||'—'}</td><td><span class="score ${scoreClass(r.score)}">${fmt(r.score,1)}</span></td><td><span class="badge ${badgeClass(r.signal)}">${r.signal}</span></td><td>${m.source||'Market'}</td></tr>`}).join('')}
+function renderPotential(){const el=$('potentialGrid');if(!el)return;if(!potential.length){el.innerHTML='<div class="empty">No active potential setups. Scanner promotes setups only when confluence threshold is reached.</div>';return}el.innerHTML=potential.map(t=>`<div class="card" style="padding:14px"><div class="section-head" style="padding:0 0 8px"><b>${t.symbol}</b><span class="badge ${badgeClass(t.dir)}">${t.dir}</span></div><div class="kv"><span>Score</span><b>${t.score}</b></div><div class="kv"><span>Entry</span><b>${fmt(t.entryLo,6)} – ${fmt(t.entryHi,6)}</b></div><div class="kv"><span>TP1 / TP2</span><b>${fmt(t.tp1,6)} / ${fmt(t.tp2,6)}</b></div><div class="kv"><span>SL</span><b>${fmt(t.sl,6)}</b></div><div class="kv"><span>Volume</span><b>${t.spike||'—'} ${t.volRatio?`(${t.volRatio.toFixed(2)}×)`:''}</b></div><div class="note" style="margin-top:10px">${t.reason||''}</div></div>`).join('')}
+function renderConfirmed(){const el=$('confirmedGrid');if(!el)return;if(!confirmed.length){el.innerHTML='<div class="empty">No confirmed trades.</div>';return}el.innerHTML=confirmed.map(t=>`<div class="card" style="padding:14px"><div class="section-head" style="padding:0 0 8px"><b>${t.symbol}</b><span class="badge ${badgeClass(t.dir)}">LIVE</span></div><div class="kv"><span>Entry / Current</span><b>${fmt(t.entry,6)} / ${fmt(t.current,6)}</b></div><div class="kv"><span>TP1 / TP2</span><b>${fmt(t.tp1,6)} / ${fmt(t.tp2,6)}</b></div><div class="kv"><span>SL</span><b>${fmt(t.sl,6)}</b></div><button class="ghost" style="margin-top:10px" onclick="manualClose('${t.id}')">CLOSE / JOURNAL</button></div>`).join('')}
 function renderJournal(){const b=document.querySelector('#journalTable tbody');if(!b)return;if(!journal.length){b.innerHTML='<tr><td colspan="11" class="empty">No closed trades yet.</td></tr>';return}b.innerHTML=journal.slice(0,200).map(t=>`<tr><td>${new Date(t.closed||t.created).toLocaleString()}</td><td class="pair">${t.symbol}</td><td>${t.dir||'—'}</td><td>${t.score??'—'}</td><td>${fmt(t.entry,6)}</td><td>${fmt(t.exit,6)}</td><td>${t.result||'—'}</td><td>—</td><td>${finite(t.holdH)?t.holdH.toFixed(1)+'h':'—'}</td><td>${finite(context.fng)?context.fng+' F&G':'—'}</td><td>${t.reason||''}</td></tr>`).join('')}
-
 function updateCore(sym,prefix){const m=market.get(sym),a=analysisCache.get(sym);if(!m)return;$(`${prefix}Price`).textContent='$'+fmt(m.price,m.price<1?6:2);$(`${prefix}Change`).textContent=pct(m.change);$(`${prefix}Trend`).textContent=a?.trend||'—';$(`${prefix}Rsi`).textContent=finite(a?.rsi)?fmt(a.rsi,1):'—';$(`${prefix}Ema`).textContent=a&&[a.ema10,a.ema20,a.ema55].every(finite)?`${fmt(a.ema10,2)} / ${fmt(a.ema20,2)} / ${fmt(a.ema55,2)}`:'—';$(`${prefix}Ma`).textContent=a&&[a.ma50,a.ma100].every(finite)?`${fmt(a.ma50,2)} / ${fmt(a.ma100,2)}`:'—';$(`${prefix}Oi`).textContent=fmtLarge(m.oi);$(`${prefix}OiD`).textContent=pct(m.oiDelta);$(`${prefix}Funding`).textContent=finite(m.funding)?m.funding.toFixed(4)+'%':'—';$(`${prefix}Vol`).textContent=fmtLarge(m.volume);$(`${prefix}State`).textContent=a?.signal||'WAITING'}
 function updateDashboard(){const btc=market.get('BTCUSDT'),eth=market.get('ETHUSDT');if(btc){$('btcCardValue').textContent='$'+fmt(btc.price,2);$('btcCardChange').textContent=pct(btc.change)}if(eth&&btc)$('ethBtcValue').textContent=(eth.price/btc.price).toFixed(5);updateContextUI();updateCore('ETHUSDT','coreEth');updateCore('XRPUSDT','coreXrp');updateCore('SOLUSDT','coreSol');const bull=core.map(x=>market.get(x)).filter(x=>x&&x.change>0).length;$('marketState').textContent=bull>=2?'CORE ALT POSITIVE':bull===1?'MIXED':'RISK-OFF / WEAK';$('dashboardRegime').textContent=bull>=2?'RISK-ON':bull===1?'MIXED':'RISK-OFF';$('dashDataState').textContent=`${marketSource} · ${market.size} pairs`;$('derivState').textContent=core.map(x=>market.get(x)).filter(Boolean).length+'/3 core loaded';$('intelData').textContent=marketSource}
-async function updateAsset(){const sym=selectedAsset+'USDT',m=market.get(sym);if(!m)return;$('assetName').textContent=sym;$('assetPrice').textContent='$'+fmt(m.price,m.price<1?6:2);$('assetChange').textContent=pct(m.change);const a=analysisCache.get(sym)||await enrich(sym);if(a){$('assetTrend').textContent=a.trend;$('assetRsi').textContent=fmt(a.rsi,1);$('assetEma').textContent=`${fmt(a.ema10,2)} / ${fmt(a.ema20,2)} / ${fmt(a.ema55,2)}`;$('assetMa').textContent=`${fmt(a.ma50,2)} / ${fmt(a.ma100,2)}`;$('assetStructure').textContent=a.structure.trend;$('assetScore').textContent=fmt(a.score,1)}}
+function updateAsset(){const sym=selectedAsset+'USDT',m=market.get(sym),a=analysisCache.get(sym);if(!m)return;$('assetName').textContent=sym;$('assetPrice').textContent='$'+fmt(m.price,m.price<1?6:2);$('assetChange').textContent=pct(m.change);if(a){$('assetTrend').textContent=a.trend||'—';$('assetRsi').textContent=fmt(a.rsi,1);$('assetEma').textContent=`${fmt(a.ema10,2)} / ${fmt(a.ema20,2)} / ${fmt(a.ema55,2)}`;$('assetMa').textContent=`${fmt(a.ma50,2)} / ${fmt(a.ma100,2)}`;$('assetStructure').textContent=a.structure4h?.trend||'—';$('assetScore').textContent=fmt(a.score,1)}}
 
-/* ---------- Optional live ticker ---------- */
-function connectLive(){if(binanceWs)return;try{binanceWs=new WebSocket(BINANCE_WS);binanceWs.onopen=()=>setStatus('wsStatus','WebSocket: Binance live',true);binanceWs.onmessage=e=>{try{const a=JSON.parse(e.data);if(!Array.isArray(a))return;for(const x of a){if(!x.s?.endsWith('USDT'))continue;const m=market.get(x.s);if(!m)continue;m.price=Number(x.c);m.change=Number(x.P);m.high=Number(x.h);m.low=Number(x.l);m.ts=Date.now();}updateDashboard();renderScanner();renderDashboardScanner();checkEntries();checkConfirmed()}catch(_){}};binanceWs.onerror=()=>setStatus('wsStatus','WebSocket: snapshot mode',false);binanceWs.onclose=()=>{binanceWs=null;setStatus('wsStatus','WebSocket: snapshot mode',false)}}catch(_){setStatus('wsStatus','WebSocket: snapshot mode',false)}}
-
-/* ---------- UI ---------- */
 window.addEventListener('error',e=>setDiag('JavaScript error: '+e.message,true));window.addEventListener('unhandledrejection',e=>setDiag('Promise error: '+(e.reason?.message||e.reason),true));
-document.querySelectorAll('#nav button').forEach(b=>b.onclick=()=>{document.querySelectorAll('#nav button').forEach(x=>x.classList.remove('active'));b.classList.add('active');document.querySelectorAll('.view').forEach(v=>v.classList.add('hidden'));const target=$(b.dataset.view+'View');if(target)target.classList.remove('hidden');const names={dashboard:'DASHBOARD',scanner:'SCANNER',potential:'POTENTIAL TRADES',confirmed:'CONFIRMED TRADES',journal:'JOURNAL',intelligence:'MARKET INTELLIGENCE'};const subs={dashboard:'MARKET REGIME · CORE FUTURES · OPPORTUNITY DISCOVERY',scanner:'REAL-TIME OPPORTUNITIES ACROSS USDT PAIRS',potential:'WAITING FOR ENTRY',confirmed:'LIVE POSITION TRACKING',journal:'RAW PERFORMANCE HISTORY',intelligence:'MACRO · NEWS · EVENTS'};if($('pageTitle'))$('pageTitle').innerHTML=names[b.dataset.view]+' <small>'+subs[b.dataset.view]+'</small>'});
-$('globalSearch').oninput=renderScanner;$('minScore').onchange=renderScanner;$('refresh').onclick=async()=>{await loadSnapshots();await refreshExchange();await runDeepScan()};$('scan').onclick=runDeepScan;$('dashboardScanBtn').onclick=runDeepScan;
+document.querySelectorAll('#nav button').forEach(b=>b.onclick=()=>{document.querySelectorAll('#nav button').forEach(x=>x.classList.remove('active'));b.classList.add('active');document.querySelectorAll('.view').forEach(v=>v.classList.add('hidden'));const target=$(b.dataset.view+'View');if(target)target.classList.remove('hidden');const names={dashboard:'DASHBOARD',scanner:'SCANNER',potential:'POTENTIAL TRADES',confirmed:'CONFIRMED TRADES',journal:'JOURNAL',intelligence:'MARKET INTELLIGENCE'};const subs={dashboard:'MARKET REGIME · CORE FUTURES · OPPORTUNITY DISCOVERY',scanner:'SNAPSHOT MARKET SCAN · VOLUME ANOMALY · TECHNICAL CONFLUENCE',potential:'WAITING FOR ENTRY',confirmed:'LIVE POSITION TRACKING',journal:'RAW PERFORMANCE HISTORY',intelligence:'MACRO · NEWS · EVENTS'};if($('pageTitle'))$('pageTitle').innerHTML=names[b.dataset.view]+' <small>'+subs[b.dataset.view]+'</small>'});
+$('globalSearch').oninput=renderScanner;$('minScore').onchange=renderScanner;$('refresh').onclick=async()=>{const s=await loadSnapshots();enrichScan();updateDashboard();setDiag(s.okM?`Snapshot refreshed · ${market.size} pairs · ${ageText(marketSnapshotAt)}`:'Snapshot unavailable',!s.okM)};$('scan').onclick=()=>{enrichScan();setDiag('Scanner refreshed from latest snapshot.',false)};$('dashboardScanBtn').onclick=()=>{enrichScan();setDiag('Scanner refreshed from latest snapshot.',false)};
 document.querySelectorAll('#assetTabs button').forEach(b=>b.onclick=()=>{document.querySelectorAll('#assetTabs button').forEach(x=>x.classList.remove('active'));b.classList.add('active');selectedAsset=b.dataset.asset;updateAsset()});
-$('editNote').onclick=()=>{$('noteInput').value=manualContext;$('modal').classList.add('show')};$('cancelModal').onclick=()=>$('modal').classList.remove('show');$('saveNote').onclick=()=>{manualContext=$('noteInput').value;$('marketNote').textContent=manualContext;$('modal').classList.remove('show');saveState()};$('clearJournal').onclick=()=>{if(confirm('Clear journal records?')){journal=[];saveState();renderJournal()}};
-$('marketNote').textContent=manualContext;
-
-(async function boot(){
-  setDiag('Loading same-origin market/context snapshots…');
-  renderPotential();renderConfirmed();renderJournal();updateDashboard();
-  const s=await loadSnapshots();
-  await loadAnalysisSnapshot();
-  if(!s.okM)setDiag('No snapshot yet. GitHub Actions must run once to create data/market.json.',true);
-  updateDashboard();renderScanner();renderDashboardScanner();await refreshContext();
-  // Direct exchange enhancement is best-effort. Snapshot remains authoritative baseline.
-  await refreshExchange();
-  await runDeepScan();
-  connectLive();
-  setInterval(async()=>{await loadSnapshots();await refreshContext();await refreshExchange();await runDeepScan()},REFRESH_MS);
-  setInterval(()=>{checkEntries();checkConfirmed()},15000);
-  setInterval(()=>updateAsset(),30000);
-})();
+$('editNote').onclick=()=>{$('noteInput').value=manualContext;$('modal').classList.add('show')};$('cancelModal').onclick=()=>$('modal').classList.remove('show');$('saveNote').onclick=()=>{manualContext=$('noteInput').value;$('marketNote').textContent=manualContext;$('modal').classList.remove('show');saveState()};$('clearJournal').onclick=()=>{if(confirm('Clear journal records?')){journal=[];saveState();renderJournal()}};$('marketNote').textContent=manualContext;
+(async function boot(){setDiag('Loading CMC + CoinGecko snapshot…');renderPotential();renderConfirmed();renderJournal();const s=await loadSnapshots();if(!s.okM)setDiag('No market snapshot yet. Run GitHub Actions.',true);enrichScan();updateDashboard();updateAsset();if(s.okM)setDiag(`SNAPSHOT READY · ${market.size} pairs · volume anomaly + technical scan loaded`,false);setInterval(async()=>{const x=await loadSnapshots();enrichScan();updateDashboard();updateAsset();setDiag(x.okM?`SNAPSHOT REFRESHED · ${market.size} pairs · ${ageText(marketSnapshotAt)}`:'Snapshot unavailable',!x.okM)},REFRESH_MS)})();
 </script>
 
 </body>
