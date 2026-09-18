@@ -9,7 +9,7 @@ DATA=ROOT/'data'; DATA.mkdir(exist_ok=True)
 CMC='https://pro-api.coinmarketcap.com/public-api'
 CG='https://api.coingecko.com/api/v3'
 NOW=lambda: datetime.now(timezone.utc).isoformat()
-HEADERS={'User-Agent':'Mozilla/5.0 CryptoCheckpoint/2.12','Accept':'application/json'}
+HEADERS={'User-Agent':'Mozilla/5.0 CryptoCheckpoint/2.15','Accept':'application/json'}
 OKX='https://www.okx.com'
 
 
@@ -333,7 +333,7 @@ def build_trade_setup(m, tech, history=None):
             if price < entry_low: status='BELOW_ENTRY_ZONE'
             elif price <= entry_high: status='INSIDE_ENTRY_ZONE'
             else: status='ABOVE_ENTRY_ZONE'
-            confirmation=confirmation_from_history(history,'LONG',entry_low,entry_high) if history else {'status':'NO_DATA','reason':'History unavailable'}
+            confirmation=confirmation_from_history(history,'LONG',entry_low,entry_high,atrv) if history else {'status':'NO_DATA','reason':'History unavailable'}
             if confirmation.get('status')=='CONFIRMED': entry_trigger='CONFIRMED'
             elif status=='INSIDE_ENTRY_ZONE': entry_trigger='IN_ZONE_WAIT_CONFIRMATION'
             else: entry_trigger='WAIT_PULLBACK'
@@ -353,7 +353,7 @@ def build_trade_setup(m, tech, history=None):
             if price > entry_high: status='ABOVE_ENTRY_ZONE'
             elif price >= entry_low: status='INSIDE_ENTRY_ZONE'
             else: status='BELOW_ENTRY_ZONE'
-            confirmation=confirmation_from_history(history,'SHORT',entry_low,entry_high) if history else {'status':'NO_DATA','reason':'History unavailable'}
+            confirmation=confirmation_from_history(history,'SHORT',entry_low,entry_high,atrv) if history else {'status':'NO_DATA','reason':'History unavailable'}
             if confirmation.get('status')=='CONFIRMED': entry_trigger='CONFIRMED'
             elif status=='INSIDE_ENTRY_ZONE': entry_trigger='IN_ZONE_WAIT_CONFIRMATION'
             else: entry_trigger='WAIT_RETEST'
@@ -428,7 +428,7 @@ def technical_from_history(symbol,m,history):
             'ma50':ma50,'ma100':ma100,'atr':aa,
             'structure4h':s4,'structure1d':s1,'trend':s4['trend'],
             'reasons':reasons,'historySource':m.get('historySource','OKX'),'extension':extension,
-            'watchTier':m.get('watchTier','OPPORTUNITY_SCAN')
+            'watchTier':m.get('watchTier','OPPORTUNITY_SCAN'),'currentPrice':m.get('price'),'volumeRatio':m.get('volRatio'),'volumeSpike':m.get('spike')
         }
         setup=build_trade_setup(m,base_result,history)
         if setup:
@@ -667,30 +667,62 @@ try:
     prior_state=json.loads(STATE_FILE.read_text()).get('setups',{})
 except Exception:
     prior_state={}
-now_iso=NOW()
+now_ts=time.time(); now_iso=NOW()
 current_state={}
-for a in analysis:
-    key=a.get('assetKey')
+SETUP_TTL_HOURS=72
+
+def lifecycle_for(a, old):
     setup=a.get('setup')
+    if not setup: return None
+    direction=setup.get('direction'); price=float(a.get('currentPrice') or a.get('price') or 0)
+    lo=float(setup.get('entryLow') or 0); hi=float(setup.get('entryHigh') or 0)
+    sl=float(setup.get('stopLoss') or 0); tp1=float(setup.get('tp1') or 0); tp2=float(setup.get('tp2') or 0)
+    conf=(setup.get('confirmation') or {}).get('status')
+    created=old.get('createdAt') or now_iso
+    try: age=(now_ts-datetime.fromisoformat(created.replace('Z','+00:00')).timestamp())/3600
+    except Exception: age=0
+    oldlife=old.get('lifecycle')
+    if oldlife in ('CLOSED','EXPIRED','INVALIDATED','CANCELLED','TP2_OBSERVED'): return oldlife
+    signal=a.get('signal'); s4=(a.get('structure4h') or {}).get('trend')
+    invalid=(direction=='LONG' and (signal!='LONG' or s4=='Falling' or (sl and price<sl))) or (direction=='SHORT' and (signal!='SHORT' or s4=='Rising' or (sl and price>sl)))
+    if invalid: return 'INVALIDATED'
+    if age>=SETUP_TTL_HOURS and oldlife not in ('CONFIRMED','ENTRY_ZONE_OBSERVED','TP1_HIT'): return 'EXPIRED'
+    if oldlife in ('CONFIRMED','ENTRY_ZONE_OBSERVED','TP1_HIT'):
+        if direction=='LONG' and price>=tp2: return 'TP2_OBSERVED'
+        if direction=='LONG' and price>=tp1: return 'TP1_HIT'
+        if direction=='SHORT' and price<=tp2: return 'TP2_OBSERVED'
+        if direction=='SHORT' and price<=tp1: return 'TP1_HIT'
+        if lo<=price<=hi: return 'ENTRY_ZONE_OBSERVED'
+        return oldlife
+    if conf=='CONFIRMED' or a.get('setupStatus')=='READY_CONFIRMED': return 'CONFIRMED'
+    if a.get('setupStatus')=='IN_ZONE_WAIT_CONFIRMATION' or lo<=price<=hi: return 'ZONE_TOUCHED'
+    return 'WAITING_ENTRY'
+
+for a in analysis:
+    key=a.get('assetKey'); setup=a.get('setup')
     if not key or not setup: continue
     old=prior_state.get(key,{})
-    state=old.get('lifecycle','WAITING_ENTRY')
-    setup_status=a.get('setupStatus')
-    if setup_status=='READY_CONFIRMED':
-        state='CONFIRMED'
-    elif setup_status=='IN_ZONE_WAIT_CONFIRMATION':
-        state='ZONE_TOUCHED'
-    elif setup_status=='WAITING_ENTRY':
-        state='WAITING_ENTRY'
+    life=lifecycle_for(a,old)
     current_state[key]={
-        'assetKey':key,'symbol':a.get('symbol'),'direction':setup.get('direction'),
-        'lifecycle':state,'createdAt':old.get('createdAt',now_iso),
-        'lastSeenAt':now_iso,'entryLow':setup.get('entryLow'),'entryHigh':setup.get('entryHigh'),
-        'stopLoss':setup.get('stopLoss'),'tp1':setup.get('tp1'),'tp2':setup.get('tp2'),
-        'riskPct':setup.get('riskPct'),'stopDistanceATR':setup.get('stopDistanceATR'),
-        'setupStatus':setup_status,'confirmationStatus':(setup.get('confirmation') or {}).get('status')
+        'assetKey':key,'symbol':a.get('symbol'),'direction':setup.get('direction'),'lifecycle':life,
+        'createdAt':old.get('createdAt',now_iso),'lastSeenAt':now_iso,
+        'entryLow':setup.get('entryLow'),'entryHigh':setup.get('entryHigh'),'stopLoss':setup.get('stopLoss'),
+        'tp1':setup.get('tp1'),'tp2':setup.get('tp2'),'riskPct':setup.get('riskPct'),
+        'stopDistanceATR':setup.get('stopDistanceATR'),'setupStatus':a.get('setupStatus'),
+        'confirmationStatus':(setup.get('confirmation') or {}).get('status'),
+        'lastPrice':a.get('currentPrice') or a.get('price'),'historyMarketType':setup.get('historyMarketType'),
+        'ageHours':round(max(0,(now_ts-datetime.fromisoformat(old.get('createdAt',now_iso).replace('Z','+00:00')).timestamp())/3600),2) if old.get('createdAt') else 0
     }
-( DATA/'trade_state.json').write_text(json.dumps({'generated_at':now_iso,'setups':current_state},separators=(',',':')))
+
+# Preserve non-terminal setups that temporarily rotate out of the 8 opportunity slots.
+for key,old in prior_state.items():
+    if key in current_state: continue
+    if old.get('lifecycle') in ('CONFIRMED','ZONE_TOUCHED','WAITING_ENTRY','ENTRY_ZONE_OBSERVED','TP1_HIT'):
+        try: age=(now_ts-datetime.fromisoformat(old.get('createdAt',now_iso).replace('Z','+00:00')).timestamp())/3600
+        except Exception: age=999
+        if age<SETUP_TTL_HOURS:
+            item=old.copy(); item['lastSeenAt']=now_iso; item['ageHours']=round(age,2); current_state[key]=item
+(DATA/'trade_state.json').write_text(json.dumps({'generated_at':now_iso,'stateVersion':'2.15','setups':current_state},separators=(',',':')))
 
 
 # Make sure every core asset has an analysis if its history succeeded.
