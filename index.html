@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Crypto Checkpoint — Live Trading Intelligence v2.17.1</title>
+<title>Crypto Checkpoint — Live Trading Intelligence v2.17.2</title>
 <style>
 :root{
   --bg:#111315; --panel:#171a1d; --panel2:#1c2024; --line:#30363d;
@@ -470,7 +470,7 @@ background-size:38px 38px;position:relative;overflow:hidden}
    - Stage A: broad market discovery
    - Stage B: targeted 4H/1D technical analysis
 */
-const VERSION='v2.17.1';
+const VERSION='v2.17.2';
 const REFRESH_MS=15*60*1000;
 const SNAPSHOT_MARKET='data/market.json', SNAPSHOT_CONTEXT='data/context.json', SNAPSHOT_ANALYSIS='data/analysis.json', SNAPSHOT_STATE='data/trade_state.json';
 let market=new Map(), marketById=new Map(), analysisCache=new Map(), scanCache=[], tradeState={setups:{}};
@@ -656,7 +656,8 @@ function updateCore(sym,prefix){
   if($(`${prefix}Vol`))$(`${prefix}Vol`).textContent=fmtLarge(m?.volume);
   if($(`${prefix}State`)){
     const state=a?.tradeState || a?.signal || 'WATCH';
-    $(`${prefix}State`).textContent=state;
+    $(`${prefix}State`).textContent=state+(a?.setupRejectionCode?' · '+String(a.setupRejectionCode).replace(/_/g,' '):'');
+    $(`${prefix}State`).title=a?.setupRejection||'';
   }
 }
 function updateDashboard(){
