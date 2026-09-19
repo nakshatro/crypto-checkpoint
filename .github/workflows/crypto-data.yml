@@ -3,7 +3,9 @@ name: Crypto Checkpoint Data Refresh
 on:
   workflow_dispatch:
   schedule:
-    - cron: "*/15 * * * *"
+    # Off-peak minutes (not :00/:15/:30/:45). GitHub delays or drops scheduled runs
+    # under load, and the round-number minutes are the busiest.
+    - cron: "7,22,37,52 * * * *"
 
 permissions:
   contents: write
