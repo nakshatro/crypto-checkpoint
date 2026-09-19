@@ -263,6 +263,8 @@ def build_trade_setup(m, tech, history=None):
             risk_pct=(risk/entry_high*100) if entry_high else 999
             stop_atr=risk/atrv if atrv else 999
             if risk_pct > MAX_RISK_PCT or stop_atr > MAX_STOP_ATR:
+                tech['setupRejectionCode']='STOP_TOO_WIDE'
+                tech['setupRejection']=f'Setup rejected: structural stop is {risk_pct:.1f}% / {stop_atr:.1f} ATR away (max {MAX_RISK_PCT:g}% and {MAX_STOP_ATR:g} ATR)'
                 return None
             tp1=entry_high+1.5*risk; tp2=entry_high+2.5*risk
             if price < entry_low: status='BELOW_ENTRY_ZONE'
@@ -288,6 +290,8 @@ def build_trade_setup(m, tech, history=None):
             risk_pct=(risk/entry_low*100) if entry_low else 999
             stop_atr=risk/atrv if atrv else 999
             if risk_pct > MAX_RISK_PCT or stop_atr > MAX_STOP_ATR:
+                tech['setupRejectionCode']='STOP_TOO_WIDE'
+                tech['setupRejection']=f'Setup rejected: structural stop is {risk_pct:.1f}% / {stop_atr:.1f} ATR away (max {MAX_RISK_PCT:g}% and {MAX_STOP_ATR:g} ATR)'
                 return None
             tp1=max(0.0,entry_low-1.5*risk); tp2=max(0.0,entry_low-2.5*risk)
             if price > entry_high: status='ABOVE_ENTRY_ZONE'
@@ -304,64 +308,6 @@ def build_trade_setup(m, tech, history=None):
                    'historyMarketType':'FUTURES' if futures else 'SPOT_FALLBACK'}
     return setup
 
-
-def build_trade_setup(m, tech, history=None):
-    """Construct a conditional setup from already-calculated technicals.
-    This is a setup/entry engine, not proof of an exchange fill.
-    """
-    price=float(m.get('price') or 0)
-    atrv=float(tech.get('atr') or 0)
-    e10=tech.get('ema10'); e20=tech.get('ema20')
-    s4=tech.get('structure4h') or {}; s1=tech.get('structure1d') or {}
-    signal=tech.get('signal'); score=float(tech.get('score') or 0)
-    extension=tech.get('extension','NORMAL')
-    hsrc=str(tech.get('historySource') or '')
-    futures='SWAP' in hsrc.upper()
-
-    setup=None
-    if signal=='LONG' and score>=7 and s4.get('trend')=='Rising' and s1.get('trend')!='Falling' and extension not in ('EXTREME_HIGH',):
-        if e10 and e20 and atrv and price:
-            lo=min(e10,e20); hi=max(e10,e20)
-            # Entry zone is the EMA10-EMA20 pullback band, widened by 0.15 ATR.
-            entry_low=max(0.0,lo-0.15*atrv); entry_high=hi+0.15*atrv
-            # Invalidation uses the latest 4H structural low with a small ATR buffer.
-            swing_low=float(s4.get('low') or 0)
-            sl=max(0.0,swing_low-0.10*atrv)
-            if sl>=entry_low: sl=max(0.0,entry_low-0.75*atrv)
-            risk=max(entry_high-sl,0.0)
-            tp1=entry_high+1.5*risk; tp2=entry_high+2.5*risk
-            if price < entry_low: status='BELOW_ENTRY_ZONE'
-            elif price <= entry_high: status='INSIDE_ENTRY_ZONE'
-            else: status='ABOVE_ENTRY_ZONE'
-            confirmation=confirmation_from_history(history,'LONG',entry_low,entry_high,atrv) if history else {'status':'NO_DATA','reason':'History unavailable'}
-            if confirmation.get('status')=='CONFIRMED': entry_trigger='CONFIRMED'
-            elif status=='INSIDE_ENTRY_ZONE': entry_trigger='IN_ZONE_WAIT_CONFIRMATION'
-            else: entry_trigger='WAIT_PULLBACK'
-            setup={'direction':'LONG','entryLow':entry_low,'entryHigh':entry_high,'entryStatus':status,'entryTrigger':entry_trigger,
-                   'confirmation':confirmation, 'stopLoss':sl,'tp1':tp1,'tp2':tp2,'riskPerUnit':risk,
-                   'rrTp1':1.5,'rrTp2':2.5,'setupType':'EMA pullback + structure continuation',
-                   'historyMarketType':'FUTURES' if futures else 'SPOT_FALLBACK'}
-    elif signal=='SHORT' and score<=4 and s4.get('trend')=='Falling' and s1.get('trend')!='Rising' and extension not in ('EXTREME_LOW',):
-        if e10 and e20 and atrv and price:
-            lo=min(e10,e20); hi=max(e10,e20)
-            entry_low=max(0.0,lo-0.15*atrv); entry_high=hi+0.15*atrv
-            swing_high=float(s4.get('high') or 0)
-            sl=swing_high+0.10*atrv
-            if sl<=entry_high: sl=entry_high+0.75*atrv
-            risk=max(sl-entry_low,0.0)
-            tp1=max(0.0,entry_low-1.5*risk); tp2=max(0.0,entry_low-2.5*risk)
-            if price > entry_high: status='ABOVE_ENTRY_ZONE'
-            elif price >= entry_low: status='INSIDE_ENTRY_ZONE'
-            else: status='BELOW_ENTRY_ZONE'
-            confirmation=confirmation_from_history(history,'SHORT',entry_low,entry_high,atrv) if history else {'status':'NO_DATA','reason':'History unavailable'}
-            if confirmation.get('status')=='CONFIRMED': entry_trigger='CONFIRMED'
-            elif status=='INSIDE_ENTRY_ZONE': entry_trigger='IN_ZONE_WAIT_CONFIRMATION'
-            else: entry_trigger='WAIT_RETEST'
-            setup={'direction':'SHORT','entryLow':entry_low,'entryHigh':entry_high,'entryStatus':status,'entryTrigger':entry_trigger,
-                   'confirmation':confirmation, 'stopLoss':sl,'tp1':tp1,'tp2':tp2,'riskPerUnit':risk,
-                   'rrTp1':1.5,'rrTp2':2.5,'setupType':'EMA retest + structure continuation',
-                   'historyMarketType':'FUTURES' if futures else 'SPOT_FALLBACK'}
-    return setup
 
 def technical_from_history(symbol,m,history):
     try:
@@ -446,6 +392,17 @@ def technical_from_history(symbol,m,history):
         else:
             base_result['tradeState']='WATCH' if signal!='NEUTRAL' else 'NEUTRAL'
             base_result['setupStatus']='NO_VALID_SETUP'
+            if signal!='NEUTRAL' and not base_result.get('setupRejection'):
+                rsitxt=f'{rr:.0f}' if isinstance(rr,(int,float)) else 'n/a'
+                if extension in ('EXTREME_HIGH','EXTREME_LOW'):
+                    base_result['setupRejectionCode']='EXTREME_EXTENSION'
+                    base_result['setupRejection']=f'No setup: extension {extension} (RSI {rsitxt}); waiting for a reset instead of chasing'
+                elif (signal=='LONG' and (s4.get('trend')!='Rising' or s1.get('trend')=='Falling')) or (signal=='SHORT' and (s4.get('trend')!='Falling' or s1.get('trend')=='Rising')):
+                    base_result['setupRejectionCode']='STRUCTURE_NOT_ALIGNED'
+                    base_result['setupRejection']='No setup: 4H/1D structure does not support the signal direction'
+                else:
+                    base_result['setupRejectionCode']='NO_ENTRY_INPUTS'
+                    base_result['setupRejection']='No setup: entry inputs unavailable'
         return base_result
     except Exception as e:
         return {'symbol':symbol,'error':str(e)}
@@ -675,6 +632,13 @@ except Exception:
 now_ts=time.time(); now_iso=NOW()
 current_state={}
 SETUP_TTL_HOURS=72
+TERMINAL_STATES=('INVALIDATED','EXPIRED','CANCELLED','CLOSED','TP2_OBSERVED')
+ACTIVE_STATES=('CONFIRMED','ENTRY_ZONE_OBSERVED','TP1_HIT')
+PENDING_STATES=('ZONE_TOUCHED','WAITING_ENTRY')
+TERMINAL_RETENTION_HOURS=24   # closed/invalidated/expired records stay visible in trade_state.json this long
+def _age_hours(iso, default=999.0):
+    try: return (now_ts-datetime.fromisoformat(str(iso).replace('Z','+00:00')).timestamp())/3600
+    except Exception: return default
 
 def lifecycle_for(a, old):
     setup=a.get('setup')
@@ -707,6 +671,8 @@ for a in analysis:
     key=a.get('assetKey'); setup=a.get('setup')
     if not key or not setup: continue
     old=prior_state.get(key,{})
+    if old.get('lifecycle') in TERMINAL_STATES and lifecycle_for(a,{}) not in TERMINAL_STATES:
+        old={}   # earlier setup ended; this is a new valid one, do not inherit the terminal state
     life=lifecycle_for(a,old)
     current_state[key]={
         'assetKey':key,'symbol':a.get('symbol'),'direction':setup.get('direction'),'lifecycle':life,
@@ -719,15 +685,52 @@ for a in analysis:
         'ageHours':round(max(0,(now_ts-datetime.fromisoformat(old.get('createdAt',now_iso).replace('Z','+00:00')).timestamp())/3600),2) if old.get('createdAt') else 0
     }
 
-# Preserve non-terminal setups that temporarily rotate out of the 8 opportunity slots.
+# Stamp close information on records that became terminal in this run.
+for key,item in current_state.items():
+    life=item.get('lifecycle'); prev=prior_state.get(key,{})
+    if life in TERMINAL_STATES:
+        if prev.get('lifecycle')==life and prev.get('closedAt'):
+            item.update(closedAt=prev.get('closedAt'),closeReason=prev.get('closeReason'),closePrice=prev.get('closePrice'))
+        else:
+            item.update(closedAt=now_iso,closePrice=item.get('lastPrice'),
+                        closeReason={'TP2_OBSERVED':'TP2_OBSERVED','EXPIRED':'TTL_72H'}.get(life,'CONDITIONS_INVALIDATED'))
+
+# Setups that are NOT regenerated this run (asset rotated out of Stage B, or the engine no longer
+# produces a setup for it). They are judged here instead of being carried forward blindly.
+# NOTE: stop/target checks use the public snapshot price at run time (an observed price, not an exchange fill).
+analysis_by_key={x.get('assetKey'):x for x in analysis if x.get('assetKey')}
+row_by_key={x.get('assetKey'):x for x in rows if x.get('assetKey')}
 for key,old in prior_state.items():
     if key in current_state: continue
-    if old.get('lifecycle') in ('CONFIRMED','ZONE_TOUCHED','WAITING_ENTRY','ENTRY_ZONE_OBSERVED','TP1_HIT'):
-        try: age=(now_ts-datetime.fromisoformat(old.get('createdAt',now_iso).replace('Z','+00:00')).timestamp())/3600
-        except Exception: age=999
-        if age<SETUP_TTL_HOURS:
-            item=old.copy(); item['lastSeenAt']=now_iso; item['ageHours']=round(age,2); current_state[key]=item
-(DATA/'trade_state.json').write_text(json.dumps({'generated_at':now_iso,'stateVersion':'2.15','setups':current_state},separators=(',',':')))
+    life=old.get('lifecycle')
+    if life in TERMINAL_STATES:
+        if _age_hours(old.get('closedAt'),0.0)<TERMINAL_RETENTION_HOURS:
+            item=old.copy(); item.setdefault('closedAt',now_iso); current_state[key]=item
+        continue
+    if life not in PENDING_STATES+ACTIVE_STATES: continue
+    age=_age_hours(old.get('createdAt'))
+    an=analysis_by_key.get(key); rw=row_by_key.get(key)
+    price=(an or {}).get('currentPrice') or (an or {}).get('price') or (rw or {}).get('price')
+    item=old.copy(); item['lastSeenAt']=now_iso; item['ageHours']=round(age,2)
+    try: pf=float(price); slf=float(old.get('stopLoss'))
+    except Exception: pf=slf=None
+    if pf is not None: item['lastPrice']=pf
+    direction=old.get('direction')
+    stopped=pf is not None and slf and ((direction=='LONG' and pf<slf) or (direction=='SHORT' and pf>slf))
+    def _close(life_new,reason):
+        item.update(lifecycle=life_new,closeReason=reason,closedAt=now_iso,closePrice=pf)
+    if stopped:
+        _close('INVALIDATED','STOP_LEVEL_BREACHED_AT_SNAPSHOT_PRICE')
+    elif age>=SETUP_TTL_HOURS and life in PENDING_STATES:
+        _close('EXPIRED','TTL_72H')
+    elif an is not None and 'error' not in an:
+        # Analysed this run but no valid setup was produced (signal/structure changed, or risk filter rejected it).
+        if life in PENDING_STATES:
+            _close('INVALIDATED','SETUP_NO_LONGER_VALID: '+str(an.get('setupRejection') or 'signal/structure no longer supports the setup'))
+        else:
+            item['setupNoLongerGenerated']=True   # an active trade is never dropped just because no new entry is generated
+    current_state[key]=item
+(DATA/'trade_state.json').write_text(json.dumps({'generated_at':now_iso,'stateVersion':'2.16','setups':current_state},separators=(',',':')))
 
 
 # Make sure every core asset has an analysis if its history succeeded.
