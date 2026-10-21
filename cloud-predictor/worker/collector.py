@@ -527,6 +527,28 @@ def main():
   f24=next((x for x in v.get("forecasts",[]) if x.get("horizon")=="24h"),{}); med=f24.get("median_return_pct")
   if isinstance(p,(int,float)) and isinstance(med,(int,float)) and ((p>.55 and med<-.2) or (p<.45 and med>.2)):
    add_event(c+":forecast-conflict",f"CONFLICTING FORECASTS — {c}: model P(up) {p*100:.1f}% vs analogue median {med:+.3f}%.")
+ # Optional user-defined trade levels. Empty by default; never fabricate entries or risk levels.
+ trade_file=ROOT/"trade_levels.json"
+ try: configured_trades=json.loads(trade_file.read_text(encoding="utf-8")).get("trades",[])
+ except Exception: configured_trades=[]
+ for trade in configured_trades:
+  try:
+   coin=str(trade.get("coin","")).upper(); side=str(trade.get("side","long")).lower()
+   price=(snap.get("coins",{}).get(coin,{}) or {}).get("price")
+   if price is None or side not in ("long","short"): continue
+   key=str(trade.get("id") or coin+"-"+side+"-"+str(trade.get("entry")))
+   entry=float(trade["entry"]); stop=float(trade["stop_loss"])
+   if (side=="long" and price<=stop) or (side=="short" and price>=stop):
+    add_event("trade:"+key+":stop",f"STOP-LOSS LEVEL REACHED — {coin} {side.upper()}: price {price:.6g}, stop {stop:.6g}. Verify exchange price; this alert does not place an order.")
+   for idx,tp in enumerate(trade.get("take_profits",[]) or [],1):
+    tp=float(tp)
+    if (side=="long" and price>=tp) or (side=="short" and price<=tp):
+     add_event("trade:"+key+":tp"+str(idx),f"TAKE-PROFIT LEVEL REACHED — {coin} {side.upper()}: price {price:.6g}, TP{idx} {tp:.6g}. This alert does not place an order.")
+   if not nstate.get("trade_entry_seen",{}).get(key) and ((side=="long" and price>=entry) or (side=="short" and price<=entry)):
+    add_event("trade:"+key+":entry",f"ENTRY LEVEL REACHED — {coin} {side.upper()}: price {price:.6g}, entry {entry:.6g}. Confirm setup and execute manually.")
+    nstate.setdefault("trade_entry_seen",{})[key]=now
+  except (TypeError,ValueError,KeyError):
+   continue
  if nstate.get("last_hourly_utc_hour")!=hour_key:
   lines=["CRYPTO CHECKPOINT — HOURLY","UTC "+now_dt.strftime("%Y-%m-%d %H:%M"),"Probabilities are experimental and uncalibrated."]
   for c in ("BTC","ETH","XRP","SOL"):
