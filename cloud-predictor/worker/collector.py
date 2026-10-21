@@ -620,7 +620,7 @@ def main():
   else:
    lines.append("⏸ NO TRADE — no setup passed all thresholds.")
   lines.extend(["","📌 KEY NOTES","• OI, funding and liquidation alerts are sent separately when thresholds trigger.","• Missing inputs and conflicting forecasts are reported as alerts.","• Model probabilities are not guaranteed outcomes."])
-  notify_lines.insert(0,"\\n".join(lines)); nstate["last_hourly_utc_hour"]=hour_key
+  notify_lines.insert(0,"\n".join(lines)); nstate["last_hourly_utc_hour"]=hour_key
  if notify_lines:
   message="\n\n".join(notify_lines)
   if len(message)>3800: message=message[:3750]+"\n… truncated; see Forecast Lab."
