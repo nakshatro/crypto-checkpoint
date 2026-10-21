@@ -356,17 +356,18 @@ def main():
   write_json("status.json",{"updated_at":now,"ok":False,"coins_updated":[],"issues":issues,"message":"All assets failed; previous latest.json preserved."})
   raise RuntimeError("All four assets failed; keeping previous latest.json")
  write_json("latest.json",snap); write_json("forecasts.json",{"updated_at":now,"items":[{"coin":c,"price":v["price"],**f} for c,v in snap["coins"].items() if "error" not in v for f in v["forecasts"]]})
- status={"updated_at":now,"ok":bool(snap["coins"]),"coins_updated":list(snap["coins"]),"issues":issues}; histpath=DATA/"history.json"
+ status={"updated_at":now,"ok":bool(snap["coins"]),"coins_updated":[c for c,v in snap["coins"].items() if "error" not in v],"issues":issues}; histpath=DATA/"history.json"
  try: hist=json.loads(histpath.read_text(encoding="utf-8"))
  except Exception: hist=[]
  now_dt=datetime.fromisoformat(now.replace("Z","+00:00"))
  if should_log_history(hist,now_dt):
-  hist.append({"updated_at":now,"coins":{c:{"price":v["price"],"forecasts":v["forecasts"],"model":v.get("model")} for c,v in snap["coins"].items()}})
+  hist.append({"updated_at":now,"coins":{c:{"price":v["price"],"forecasts":v["forecasts"],"model":v.get("model")} for c,v in snap["coins"].items() if "error" not in v}})
  hist=hist[-3000:]
  write_json("history.json",hist)
  write_json("calibration.json",{"updated_at":now,"note":"Calibration requires future hourly observations; treat early samples cautiously. n>=100 per horizon is preferred.","horizons":evaluate_model_calibration(hist)})
  alerts=[]
  for c,v in snap["coins"].items():
+  if "error" in v: continue
   m=v.get("model",{}); h=(m.get("horizons",{}) or {}).get("24h",{}); conf=(m.get("confidence",{}) or {}).get("value",0)
   if h.get("p_up") is not None and conf>=.35 and abs(h["p_up"]-.5)>=.08:
    alerts.append(f'{c} {"BULLISH" if h["p_up"]>.5 else "BEARISH"} model lean | price {v["price"]:.6g} | 24h P(up) {h["p_up"]*100:.1f}% | confidence {conf:.2f}')
