@@ -258,7 +258,7 @@ def advanced_model(coin,symbol,rows,derivs,ctx,price):
  words=[]; terms={"BTC":("bitcoin","btc"),"ETH":("ethereum","ether","eth"),"SOL":("solana","sol"),"XRP":("xrp","ripple")}[coin]
  for title in ctx.get("headlines",[]):
   low=title.lower()
-  if not any(re.search(r"\\b"+re.escape(t)+r"\\b",low) for t in terms): continue
+  if not any(re.search(r"\b"+re.escape(t)+r"\b",low) for t in terms): continue
   b=sum(w in low for w in BULL_WORDS); bear=sum(w in low for w in BEAR_WORDS)
   if b+bear: words.append((b-bear)/(b+bear))
  nc=[]
