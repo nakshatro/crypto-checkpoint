@@ -22,8 +22,8 @@ def load(coin):
  return sorted(d.items())
 
 def feat(rows,i):
- cs=[x[1] for x in rows]; c=cs[i]; m7=c/cs[i-7]-1
- m20=mean(cs[i-19:i+1]); m50=mean(cs[i-49:i+1]); g20=c/m20-1; g50=c/m50-1
+ cs=[x[1] for x in rows]; c=cs[i]; m7=c/cs[i-7]-1 if i>=7 else 0.0
+ m20=mean(cs[max(0,i-19):i+1]); m50=mean(cs[max(0,i-49):i+1]); g20=c/m20-1; g50=c/m50-1
  bucket=(-1 if m7<-.02 else 1 if m7>.02 else 0, int(g20>=0))
  regime="bull" if g50>.01 else "bear" if g50<-.01 else "sideways"
  return bucket,regime,m7,g20,g50
