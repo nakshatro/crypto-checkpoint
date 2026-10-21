@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Experimental Binance hourly nearest-analogue forecast worker."""
-import json, math, os, statistics, time, re
+import json, math, os, statistics, time, re, bisect
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 import requests
@@ -352,26 +352,30 @@ def evaluate_model_calibration(hist):
   try: parsed.append((datetime.fromisoformat(snap["updated_at"].replace("Z","+00:00")),snap))
   except Exception: pass
  parsed.sort(key=lambda x:x[0])
+ by_coin={}
+ for t,snap in parsed:
+  for coin,v in (snap.get("coins",{}) or {}).items():
+   if v.get("price") is not None: by_coin.setdefault(coin,[]).append((t,v))
  for hz,hours in horizons.items():
   rows=[]
-  for t,snap in parsed:
-   for coin,v in (snap.get("coins",{}) or {}).items():
+  for coin,series in by_coin.items():
+   ts=[x[0] for x in series]
+   for idx,(t,v) in enumerate(series):
     p=((v.get("model",{}).get("horizons",{}) or {}).get(hz,{}) or {}).get("p_up")
     price=v.get("price")
     if p is None or price is None: continue
     target=t+timedelta(hours=hours)
-    future=[(abs((tt-target).total_seconds()),fv) for tt,ss in parsed if abs((tt-target).total_seconds())<=5400 for fc,fv in (ss.get("coins",{}) or {}).items() if fc==coin and fv.get("price") is not None]
-    if not future: continue
-    _,fv=min(future,key=lambda x:x[0]); outcome=1 if fv["price"]>price else 0
-    rows.append((float(p),outcome))
+    pos=bisect.bisect_left(ts,target)
+    candidates=[k for k in (pos-1,pos) if 0<=k<len(series) and abs((ts[k]-target).total_seconds())<=5400]
+    if not candidates: continue
+    future=series[min(candidates,key=lambda k:abs((ts[k]-target).total_seconds()))][1]
+    rows.append((float(p),1 if future["price"]>price else 0))
   n=len(rows)
   if not n: out[hz]={"n":0}; continue
-  brier=sum((p-o)**2 for p,o in rows)/n
-  bins=[]
-  edges=[0,.4,.45,.5,.55,.6,1.01]
+  brier=sum((p-o)**2 for p,o in rows)/n; bins=[]; edges=[0,.4,.45,.5,.55,.6,1.01]
   for lo,hi in zip(edges[:-1],edges[1:]):
-   b=[(p,o) for p,o in rows if lo<=p<hi]
-   if b: bins.append({"range":f"{lo:.2f}-{min(hi,1):.2f}","n":len(b),"mean_p":round(sum(p for p,_ in b)/len(b),3),"freq_up":round(sum(o for _,o in b)/len(b),3)})
+   bucket=[(p,o) for p,o in rows if lo<=p<hi]
+   if bucket: bins.append({"range":f"{lo:.2f}-{min(hi,1):.2f}","n":len(bucket),"mean_p":round(sum(p for p,_ in bucket)/len(bucket),3),"freq_up":round(sum(o for _,o in bucket)/len(bucket),3)})
   out[hz]={"n":n,"brier":round(brier,4),"skill_vs_coinflip":round(1-brier/.25,4),"hit_rate":round(sum(1 for p,o in rows if (p>.5)==bool(o))/n,3),"base_rate_up":round(sum(o for _,o in rows)/n,3),"bins":bins}
  return out
 
