@@ -593,7 +593,7 @@ def main():
    lines.append(f"{c} price {v.get('price',0):,.6g} USD | 1h {v.get('change_1h_pct',0):+.2f}% | model P(up) {p*100:.1f}%" if isinstance(p,(int,float)) else f"{c}: model probability unavailable")
    lines.append(f"  Analogue median {med:+.3f}% | confidence {conf}" if isinstance(med,(int,float)) else f"  Analogue forecast unavailable | confidence {conf}")
   evs=snap.get("model_context",{}).get("events",[]) or []
-  lines.append("MACRO EVENTS (UTC): "+json.dumps([{"name":e.get("name"),"time_utc":e.get("time_utc"),"in_hours":e.get("in_hours"),"source":e.get("source")} for e in evs[:4]],ensure_ascii=False)[:750] if evs else "MACRO EVENTS: automatic calendar feeds unavailable this run; retry next cycle.")
+  lines.append("MACRO EVENTS: "+json.dumps([{"name":e.get("name"),"time_utc":e.get("time_utc"),"date_utc":e.get("date_utc"),"in_hours":e.get("in_hours"),"days_away":e.get("days_away"),"time_exact":e.get("time_exact"),"source":e.get("source")} for e in evs[:4]],ensure_ascii=False)[:750] if evs else "MACRO EVENTS: official calendar feeds unavailable this run; retry next cycle.")
   lines.append("AUTO TRADE SETUPS: generated only when direction, confidence and input coverage pass thresholds; otherwise NO TRADE.")
   notify_lines.insert(0,"\n".join(lines)); nstate["last_hourly_utc_hour"]=hour_key
  if notify_lines:
