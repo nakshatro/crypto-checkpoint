@@ -64,6 +64,14 @@ for coin, symbol in COINS.items():
             except (HTTPError, URLError, TimeoutError, zipfile.BadZipFile, OSError):
                 continue
             time.sleep(0.08)
+    # Binance archive timestamps may be milliseconds or microseconds depending on
+    # the data vintage. Normalize both open and close times to milliseconds.
+    for row in rows:
+        for idx in (0, 6):
+            if len(row) > idx and row[idx].isdigit():
+                value = int(row[idx])
+                if value > 100_000_000_000_000:
+                    row[idx] = str(value // 1000)
     rows.sort(key=lambda x: int(x[0]))
     path = OUT / f"{coin.lower()}_spot_1d.csv.gz"
     save_gzip_csv(path, ["open_time_ms","open","high","low","close","volume","close_time_ms","quote_volume","trades","taker_buy_base","taker_buy_quote","ignore"], rows)
@@ -74,11 +82,33 @@ for coin, symbol in COINS.items():
         "months_found": len(months_ok), "source": "Binance public data archive"
     }
 
-# Funding history is public and can be paginated; preserve every returned timestamp.
+# Prefer Binance's public monthly fundingRate archive; fall back to the REST endpoint.
+# Archive coverage can be broader and avoids long pagination loops.
 for coin, symbol in COINS.items():
-    rows, start_ms, end_ms = [], int(datetime(START_YEAR,1,1,tzinfo=timezone.utc).timestamp()*1000), int(NOW.timestamp()*1000)
-    cursor = start_ms
-    while cursor < end_ms:
+    rows, months_ok = [], []
+    for year in range(START_YEAR, NOW.year + 1):
+        for month in range(1, 13):
+            if (year, month) > (NOW.year, NOW.month): break
+            ym = f"{year}-{month:02d}"
+            url = f"https://data.binance.vision/data/futures/um/monthly/fundingRate/{symbol}/{symbol}-fundingRate-{ym}.zip"
+            try:
+                raw = get(url, timeout=40)
+                with zipfile.ZipFile(io.BytesIO(raw)) as z:
+                    for name in z.namelist():
+                        if not name.endswith(".csv"): continue
+                        with z.open(name) as bf:
+                            for line in io.TextIOWrapper(bf, encoding="utf-8"):
+                                parts = next(csv.reader([line]))
+                                if len(parts) >= 2 and parts[0].isdigit():
+                                    rows.append([parts[0], parts[1], parts[2] if len(parts)>2 else ""])
+                months_ok.append(ym)
+            except Exception:
+                continue
+            time.sleep(0.05)
+    if not rows:
+        start_ms, end_ms = int(datetime(START_YEAR,1,1,tzinfo=timezone.utc).timestamp()*1000), int(NOW.timestamp()*1000)
+        cursor = start_ms
+        while cursor < end_ms:
         url = f"https://fapi.binance.com/fapi/v1/fundingRate?symbol={symbol}&startTime={cursor}&endTime={end_ms}&limit=1000"
         try:
             batch = json.loads(get(url).decode("utf-8"))
@@ -100,7 +130,8 @@ for coin, symbol in COINS.items():
         "file": str(path.relative_to(ROOT)), "rows": len(rows),
         "first_timestamp_ms": rows[0][0] if rows else None,
         "last_timestamp_ms": rows[-1][0] if rows else None,
-        "source": "Binance public USD-M funding-rate endpoint",
+        "source": "Binance public USD-M funding-rate archive/API",
+        "archive_months_found": len(months_ok),
         "status": "available" if rows else "unavailable"
     }
 
