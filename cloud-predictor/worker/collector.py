@@ -590,18 +590,36 @@ def main():
    add_event("auto-setup:"+c+":"+side,f"PROVISIONAL SETUP — {c} {side.upper()} | reference ${price:,.6g} | SL ${stop:,.6g} | TP1 ${target:,.6g} | model P(up) {p*100:.1f}% | confidence {conf:.2f}. Experimental and uncalibrated; confirm structure before trading.")
  nstate["last_setup"]=generated_setups
  if nstate.get("last_hourly_utc_hour")!=hour_key:
-  lines=["CRYPTO CHECKPOINT — HOURLY","UTC "+now_dt.strftime("%Y-%m-%d %H:%M"),"Probabilities are experimental and uncalibrated."]
+  lines=["📊 CRYPTO CHECKPOINT | HOURLY","🕒 "+now_dt.strftime("%d %b %Y · %H:%M UTC"),"⚠️ Model probabilities are experimental, not calibrated.",""]
   for c in ("BTC","ETH","XRP","SOL"):
    v=snap["coins"].get(c,{})
-   if "error" in v: lines.append(f"{c}: DATA UNAVAILABLE — {v.get('error','')[:90]}"); continue
-   m=v.get("model",{}) or {}; p=((m.get("horizons",{}) or {}).get("24h",{}) or {}).get("p_up"); conf=(m.get("confidence",{}) or {}).get("label","unknown")
+   if "error" in v: lines.extend([f"🔴 {c} — DATA UNAVAILABLE",str(v.get("error",""))[:100],""]); continue
+   m=v.get("model",{}) or {}; h=(m.get("horizons",{}) or {}).get("24h",{}) or {}; p=h.get("p_up"); conf=(m.get("confidence",{}) or {}).get("label","unknown")
    f24=next((x for x in v.get("forecasts",[]) if x.get("horizon")=="24h"),{}); med=f24.get("median_return_pct")
-   lines.append(f"{c} price {v.get('price',0):,.6g} USD | 1h {v.get('change_1h_pct',0):+.2f}% | model P(up) {p*100:.1f}%" if isinstance(p,(int,float)) else f"{c}: model probability unavailable")
-   lines.append(f"  Analogue median {med:+.3f}% | confidence {conf}" if isinstance(med,(int,float)) else f"  Analogue forecast unavailable | confidence {conf}")
+   ch=float(v.get("change_1h_pct") or 0); arrow="🟢" if ch>0 else "🔴" if ch<0 else "⚪"
+   lines.append(f"{'🟠' if c=='BTC' else '🔵' if c=='ETH' else '🟣' if c=='XRP' else '🟢'} {c}  |  ${v.get('price',0):,.6g}")
+   lines.append(f"   1h: {arrow} {ch:+.2f}%  ·  24h model up: {p*100:.1f}%" if isinstance(p,(int,float)) else f"   1h: {arrow} {ch:+.2f}%  ·  24h model: unavailable")
+   lines.append(f"   Analogue median: {med:+.2f}%  ·  Confidence: {conf}" if isinstance(med,(int,float)) else f"   Analogue median: unavailable  ·  Confidence: {conf}")
+   lines.append("")
   evs=snap.get("model_context",{}).get("events",[]) or []
-  lines.append("MACRO EVENTS: "+json.dumps([{"name":e.get("name"),"time_utc":e.get("time_utc"),"date_utc":e.get("date_utc"),"in_hours":e.get("in_hours"),"days_away":e.get("days_away"),"time_exact":e.get("time_exact"),"source":e.get("source")} for e in evs[:4]],ensure_ascii=False)[:750] if evs else "MACRO EVENTS: official calendar feeds unavailable this run; retry next cycle.")
-  lines.append("AUTO TRADE SETUPS: generated only when direction, confidence and input coverage pass thresholds; otherwise NO TRADE.")
-  notify_lines.insert(0,"\n".join(lines)); nstate["last_hourly_utc_hour"]=hour_key
+  if evs:
+   lines.append("🗓 UPCOMING MACRO EVENTS")
+   for e in evs[:3]:
+    event_name=str(e.get("name") or "Macro event")
+    when=e.get("time_utc") or e.get("date_utc") or "time not confirmed"
+    countdown=(f" · in {e.get('in_hours'):.1f}h" if isinstance(e.get("in_hours"),(int,float)) else f" · in {e.get('days_away')}d" if isinstance(e.get("days_away"),(int,float)) else "")
+    lines.append(f"• {event_name} — {when}{countdown}")
+  else:
+   lines.append("🗓 MACRO EVENTS")
+   lines.append("Calendar feeds unavailable this run; retrying automatically.")
+  lines.extend(["","🎯 TRADE PLAN","Setups appear only when model direction, confidence and data coverage pass thresholds."])
+  if generated_setups:
+   for c,su in generated_setups.items():
+    lines.append(f"• {c} {su['side'].upper()} | Ref ${su['reference_price']:,.6g} | SL ${su['stop_loss']:,.6g} | TP1 ${su['take_profit_1']:,.6g}")
+   lines.append("⚠️ Experimental levels; verify the chart and risk before trading.")
+  else:
+   lines.append("⏸ NO TRADE — no setup passed all thresholds.")
+  lines.extend(["","📌 KEY NOTES","• OI, funding and liquidation alerts are sent separately when thresholds trigger.","• Missing inputs and conflicting forecasts are reported as alerts.","• Model probabilities are not guaranteed outcomes."])  notify_lines.insert(0,"\n".join(lines)); nstate["last_hourly_utc_hour"]=hour_key
  if notify_lines:
   message="\n\n".join(notify_lines)
   if len(message)>3800: message=message[:3750]+"\n… truncated; see Forecast Lab."
