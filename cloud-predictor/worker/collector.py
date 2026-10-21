@@ -243,22 +243,41 @@ def advanced_model(coin,symbol,rows,derivs,ctx,price):
  fr=derivs.get("funding_rate"); funding=None
  if isinstance(fr,dict) and fr.get("fundingRate") is not None: funding=float(fr["fundingRate"])
  elif isinstance(fr,list) and fr and fr[-1].get("fundingRate") is not None: funding=float(fr[-1]["fundingRate"])
- if funding is not None: dc.append(("funding_crowding",bounded(-funding/.001)*(.4 if regime in ("UPTREND","DOWNTREND") else 1),.30,f"latest funding {funding*100:.4f}% (historical percentile unavailable)"))
- else: missing.append("funding_rate")
- missing.append("historical_funding_percentile")
+ fund_hist=derivs.get("funding_history") or []
+ fund_pr=(sum(1 for x in fund_hist if x<=funding)/len(fund_hist)) if funding is not None and fund_hist else None
+ if fund_pr is not None:
+  dc.append(("funding_crowding",bounded(-(fund_pr-.5)*2*(.4 if regime in ("UPTREND","DOWNTREND") else 1)),.30,f"funding {funding*100:.4f}% ({fund_pr*100:.0f}th percentile of available history)"))
+ elif funding is not None:
+  dc.append(("funding_crowding",bounded(-funding/.001)*(.4 if regime in ("UPTREND","DOWNTREND") else 1),.30,f"latest funding {funding*100:.4f}%; historical percentile unavailable"))
+  missing.append("historical_funding_percentile")
  else: missing.append("funding_rate")
  ls=derivs.get("global_long_short_ratio")
  if isinstance(ls,dict) and ls.get("longShortRatio") is not None:
-  ratio=float(ls["longShortRatio"]); dc.append(("long_short_ratio",bounded(-math.log(max(ratio,.01))*.5),.15,f"account long/short ratio {ratio:.3f}"))
- dc.append(("price_vs_oi",None,.30,"24h OI change unavailable from a single snapshot"))
- missing.append("open_interest_change_24h")
+  ratio=float(ls["longShortRatio"]); dc.append(("long_short_ratio",bounded(-math.log(max(ratio,.01))*.5),.15,f"account long/short ratio {ratio:.3f}; historical percentile unavailable"))
+ else: missing.append("long_short_ratio_history")
+ oi_chg=derivs.get("oi_change_24h")
+ px_chg=(rows[-1]["c"]/rows[-25]["c"]-1) if len(rows)>=25 and rows[-25]["c"] else 0
+ if oi_chg is not None:
+  base=.6 if oi_chg>0 else .2
+  oscore=(1 if px_chg>0 else -1)*base*min(1,abs(oi_chg)/.05)
+  dc.append(("price_vs_oi",oscore,.30,f"price {px_chg*100:+.1f}%, OI {oi_chg*100:+.1f}% over 24h"))
+ else:
+  dc.append(("price_vs_oi",None,.30,"24h OI change unavailable")); missing.append("open_interest_change_24h")
+ if isinstance(derivs.get("basis"),(int,float)):
+  dc.append(("perp_basis",bounded(-derivs["basis"]/.001)*.3,.05,f"perpetual basis {derivs['basis']*10000:+.1f} bps"))
  s,comps=layer_mean(dc); scores["derivs"]=s; details["derivs"]={"score":s,"components":comps}
  if s is None: missing.append("derivatives_layer")
- lc=[]; tr=derivs.get("taker_buy_sell_ratio")
- if isinstance(tr,dict) and tr.get("buySellRatio") is not None:
-  ratio=float(tr["buySellRatio"]); lc.append(("recent_taker_flow",bounded((ratio-1)/.5),.4,f"buy/sell size ratio {ratio:.3f}; recent sample, not 24h CVD"))
- lc.extend([("liquidation_magnet",None,.30,"not computed: reliable 168h OI-change series unavailable"),("recent_liquidation_flow",None,.20,"liquidation-flow endpoint not verified")])
- missing.extend(["liquidation_magnet","liquidation_flow"])
+ lc=[]; cvd=derivs.get("taker_cvd_24h")
+ if cvd is not None:
+  lc.append(("taker_cvd_24h",bounded(float(cvd)/.10),.40,f"24h taker CVD {float(cvd)*100:+.1f}% of volume"))
+ else:
+  tr=derivs.get("taker_buy_sell_ratio")
+  if isinstance(tr,dict) and tr.get("buySellRatio") is not None:
+   ratio=float(tr["buySellRatio"]); lc.append(("recent_taker_flow",bounded((ratio-1)/.5),.40,f"buy/sell size ratio {ratio:.3f}; recent sample, not 24h CVD"))
+   missing.append("taker_cvd_24h")
+  else: missing.append("taker_cvd_24h")
+ lc.extend([("liquidation_magnet",None,.30,"not computed: reliable 168h OI-change series unavailable"),("recent_liquidation_flow",None,.20,"liquidation-flow endpoint not verified"),("book_imbalance",None,.10,"order-book imbalance not fetched")])
+ missing.extend(["liquidation_magnet","liquidation_flow","book_imbalance"])
  s,comps=layer_mean(lc); scores["liquidity"]=s; details["liquidity"]={"score":s,"components":comps}
  if s is None: missing.append("liquidity_layer")
  oc=[]; stable=ctx.get("stablecoin_30d")
