@@ -1,0 +1,91 @@
+{
+  "generated_at": "2026-10-21T20:31:52.802125+00:00",
+  "policy": "free/public sources only; no fabricated data; preserve source timestamps",
+  "coverage": {
+    "BTC_spot_1d": {
+      "file": "data/historical/btc_spot_1d.csv.gz",
+      "rows": 2099,
+      "first_timestamp_ms": "1609459200000",
+      "last_timestamp_ms": "1790726400000000",
+      "months_found": 69,
+      "source": "Binance public data archive"
+    },
+    "ETH_spot_1d": {
+      "file": "data/historical/eth_spot_1d.csv.gz",
+      "rows": 2099,
+      "first_timestamp_ms": "1609459200000",
+      "last_timestamp_ms": "1790726400000000",
+      "months_found": 69,
+      "source": "Binance public data archive"
+    },
+    "XRP_spot_1d": {
+      "file": "data/historical/xrp_spot_1d.csv.gz",
+      "rows": 2099,
+      "first_timestamp_ms": "1609459200000",
+      "last_timestamp_ms": "1790726400000000",
+      "months_found": 69,
+      "source": "Binance public data archive"
+    },
+    "SOL_spot_1d": {
+      "file": "data/historical/sol_spot_1d.csv.gz",
+      "rows": 2099,
+      "first_timestamp_ms": "1609459200000",
+      "last_timestamp_ms": "1790726400000000",
+      "months_found": 69,
+      "source": "Binance public data archive"
+    },
+    "BTC_funding": {
+      "file": "data/historical/btc_funding.csv.gz",
+      "rows": 0,
+      "first_timestamp_ms": null,
+      "last_timestamp_ms": null,
+      "source": "Binance public USD-M funding-rate endpoint",
+      "status": "unavailable"
+    },
+    "ETH_funding": {
+      "file": "data/historical/eth_funding.csv.gz",
+      "rows": 0,
+      "first_timestamp_ms": null,
+      "last_timestamp_ms": null,
+      "source": "Binance public USD-M funding-rate endpoint",
+      "status": "unavailable"
+    },
+    "XRP_funding": {
+      "file": "data/historical/xrp_funding.csv.gz",
+      "rows": 0,
+      "first_timestamp_ms": null,
+      "last_timestamp_ms": null,
+      "source": "Binance public USD-M funding-rate endpoint",
+      "status": "unavailable"
+    },
+    "SOL_funding": {
+      "file": "data/historical/sol_funding.csv.gz",
+      "rows": 0,
+      "first_timestamp_ms": null,
+      "last_timestamp_ms": null,
+      "source": "Binance public USD-M funding-rate endpoint",
+      "status": "unavailable"
+    },
+    "BTC_ETF_flows": {
+      "file": "data/historical/btc_etf_flows.json",
+      "source": "TFTC public historical JSON",
+      "status": "available",
+      "note": "Coverage begins with spot ETF launch; verify schema before modelling."
+    },
+    "news_archive": {
+      "file": "data/historical/crypto_news_archive.jsonl.gz",
+      "rows": 0,
+      "first_timestamp": null,
+      "last_timestamp": null,
+      "source": "cryptocurrency.cv public archive",
+      "status": "unavailable",
+      "note": "Provider pagination/schema may cap returned articles; row count is not proof of complete coverage."
+    }
+  },
+  "limitations": [
+    "Binance public archives may not contain every symbol for the full period.",
+    "Public Binance open-interest statistics are limited to recent history (documented latest 30 days); no multi-year OI is inferred.",
+    "ETF products only exist from their respective launch dates; flow history is not applicable before launch.",
+    "News archive availability, pagination, rate limits and historical completeness depend on the public provider."
+  ]
+}
