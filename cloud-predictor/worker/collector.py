@@ -228,14 +228,20 @@ def automatic_macro_events():
  try:
   r=S.get("https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm",timeout=(5,12)); r.raise_for_status()
   html=r.text
-  for match in re.finditer(r"(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{1,2})\s*[–-]\s*(\d{1,2})",html,re.I):
-   month,day,_=match.groups()
-   try:
-    t=datetime.strptime(month+" "+day+" "+str(now.year),"%B %d %Y").replace(tzinfo=timezone.utc)
-    if t<now-timedelta(days=3): t=t.replace(year=t.year+1)
-    hours=(t-now).total_seconds()/3600
-    if -24<=hours<=24*45: out.append({"name":"FOMC meeting (date only; announcement time not inferred)","time_utc":None,"date_utc":t.strftime("%Y-%m-%d"),"time_exact":False,"in_hours":None,"days_away":round(hours/24,1),"source":"Federal Reserve official calendar"})
-   except Exception: pass
+  year_sections=list(re.finditer(r"(20\\d{2})\\s+FOMC Meetings",html,re.I))
+  for yi,ym in enumerate(year_sections):
+   year=int(ym.group(1))
+   if year<now.year or year>now.year+1: continue
+   stop=year_sections[yi+1].start() if yi+1<len(year_sections) else len(html)
+   section=html[ym.end():stop]
+   # Parse named month plus meeting date range; only dates inside this year's section are accepted.
+   for match in re.finditer(r"(January|February|March|April|May|June|July|August|September|October|November|December)\\s+(\\d{1,2})\\s*[–-]\\s*(\\d{1,2})",section,re.I):
+    month,day,_=match.groups()
+    try:
+     t=datetime.strptime(month+" "+day+" "+str(year),"%B %d %Y").replace(tzinfo=timezone.utc)
+     hours=(t-now).total_seconds()/3600
+     if -24<=hours<=24*45: out.append({"name":"FOMC meeting (date only; announcement time not inferred)","time_utc":None,"date_utc":t.strftime("%Y-%m-%d"),"time_exact":False,"in_hours":None,"days_away":round(hours/24,1),"source":"Federal Reserve official calendar"})
+    except Exception: pass
  except Exception: pass
  unique={}
  for e in out:
