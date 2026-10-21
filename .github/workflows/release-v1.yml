@@ -1,0 +1,44 @@
+name: Publish Crypto Checkpoint v1.0.0
+
+on:
+  workflow_run:
+    workflows: ["Crypto Checkpoint Walk-Forward Backtest"]
+    types: [completed]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    if: github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Validate release artifacts and tests
+        run: |
+          python -m py_compile scripts/walk_forward_backtest.py tests/test_backtest.py
+          python -m unittest discover -s tests -v
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p = Path("data/historical/backtest/walk_forward_report.json")
+          d = json.loads(p.read_text())
+          assert d.get("total_predictions", 0) > 0, "No walk-forward predictions found"
+          assert d.get("settings", {}).get("reference_capital_usdt") == 1000.0, "Expected 1000 USDT reference capital"
+          assert d.get("settings", {}).get("fixed_position_notional_usdt") == 100.0, "Expected 100 USDT fixed notional"
+          assert set(d.get("results", {})) >= {"BTC", "ETH", "XRP", "SOL"}, "Missing coin results"
+          print("Release artifact checks passed; report is explicitly a research baseline.")
+          PY
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view v1.0.0 >/dev/null 2>&1; then
+            echo "Release v1.0.0 already exists; leaving it unchanged."
+          else
+            gh release create v1.0.0 --target main --title "Crypto Checkpoint v1.0.0 — Research Release" --notes-file RELEASE_NOTES.md
+          fi
