@@ -69,6 +69,18 @@ def derivatives(symbol):
   try:
    v=get_json("https://fapi.binance.com"+path,params); out[key]=v[-1] if isinstance(v,list) and v else v
   except Exception as e: out[key]={"unavailable":str(e)[:160]}
+ # Fallback to the main checkpoint snapshot for OI/funding when Binance futures is blocked.
+ try:
+  market=json.loads((ROOT.parent/"data"/"market.json").read_text(encoding="utf-8"))
+  base=symbol.replace("USDT","")
+  row=next((x for x in market.get("symbols",[]) if str(x.get("baseSymbol","")).upper()==base),None)
+  if row:
+   if not isinstance(out.get("open_interest"),dict) or "unavailable" in out.get("open_interest",{}):
+    if row.get("oi") is not None: out["open_interest"]={"openInterest":row.get("oi"),"source":"main checkpoint snapshot (USD value)"}
+   if not isinstance(out.get("funding_rate"),list) and (not isinstance(out.get("funding_rate"),dict) or "unavailable" in out.get("funding_rate",{})):
+    if row.get("funding") is not None: out["funding_rate"]={"fundingRate":float(row.get("funding"))/100,"source":"main checkpoint snapshot; converted from percent to decimal"}
+ except Exception:
+  pass
  return out
 def telegram(message):
  token=os.getenv("TELEGRAM_BOT_TOKEN","").strip(); chat=os.getenv("TELEGRAM_CHAT_ID","").strip()
