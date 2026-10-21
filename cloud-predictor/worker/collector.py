@@ -169,7 +169,9 @@ def derivatives(symbol):
 
 # ---------- five-layer checkpoint model (adapted from BUILD PROMPT.docx) ----------
 import xml.etree.ElementTree as ET
-HORIZON_WEIGHTS={"24h":{"structure":.20,"derivs":.30,"liquidity":.30,"onchain":.05,"news":.15},
+HORIZON_WEIGHTS={"4h":{"structure":.15,"derivs":.35,"liquidity":.30,"onchain":.05,"news":.15},
+ "24h":{"structure":.20,"derivs":.30,"liquidity":.30,"onchain":.05,"news":.15},
+ "72h":{"structure":.25,"derivs":.28,"liquidity":.20,"onchain":.12,"news":.15},
  "1w":{"structure":.30,"derivs":.25,"liquidity":.15,"onchain":.15,"news":.15},
  "1m":{"structure":.30,"derivs":.10,"liquidity":.05,"onchain":.35,"news":.20}}
 REGIME_MULT={"UPTREND":{"structure":1.2},"DOWNTREND":{"structure":1.2},"RANGE":{"structure":.7,"derivs":1.2,"liquidity":1.2},"HIGH_VOL":{"structure":.8,"liquidity":1.3,"news":1.2}}
@@ -429,16 +431,16 @@ def advanced_model(coin,symbol,rows,derivs,ctx,price):
  horizons={}
  daily_returns=[math.log(d1[i]["c"]/d1[i-1]["c"]) for i in range(1,len(d1)) if d1[i]["c"]>0 and d1[i-1]["c"]>0] if d1 else []
  sigma=statistics.pstdev(daily_returns[-30:]) if len(daily_returns)>=2 else None
- for hz,days in (("24h",1),("1w",7),("1m",30)):
+ for hz,days in (("4h",4/24),("24h",1),("72h",3),("1w",7),("1m",30)):
   w={k:HORIZON_WEIGHTS[hz][k]*REGIME_MULT.get(regime,{}).get(k,1) for k,v in scores.items() if v is not None}
   tw=sum(w.values()); composite=sum(scores[k]*w[k] for k in w)/tw if tw else None
-  if composite is not None and hz in ("24h","1w"): composite=bounded(composite+adj)
+  if composite is not None and hz in ("4h","24h","72h","1w"): composite=bounded(composite+adj)
   coverage=sum(HORIZON_WEIGHTS[hz][k] for k in w)
   p_up=(.5+.2*math.tanh(2*composite)) if composite is not None else None
   band=price*math.exp(sigma*math.sqrt(days)) if sigma is not None else None
   horizons[hz]={"composite":round(composite,3) if composite is not None else None,"p_up":round(p_up,3) if p_up is not None else None,"coverage":round(coverage,3),"bias":"Bullish" if composite is not None and composite>.15 else "Bearish" if composite is not None and composite<-.15 else "Neutral" if composite is not None else "Unavailable","range":[round(price/math.exp(sigma*math.sqrt(days)),8),round(band,8)] if band else None}
  layer_vals=[x for x in scores.values() if x is not None]; dispersion=statistics.pstdev(layer_vals) if len(layer_vals)>1 else .5
- confidence=max(0,min(1,1-dispersion/.6))*(horizons["1w"]["coverage"] or 0)
+ confidence=max(0,min(1,1-dispersion/.6))*(horizons["72h"]["coverage"] or 0)
  if ctx.get("events"): confidence*=.8
  if not ctx.get("events"): missing.append("scheduled_events_not_configured")
  return {"regime":regime,"vol_ratio":round(vol_ratio,3) if vol_ratio is not None else None,"layers":details,"horizons":horizons,"patterns":patterns,"levels":{"liq_above":liq_above,"liq_below":liq_below,"liq_method":liq_method},"confidence":{"value":round(confidence,2),"label":"High" if confidence>=.6 else "Medium" if confidence>=.35 else "Low","notes":((["layers disagree"] if dispersion>.35 else [])+([ "scheduled event within 24h: "+", ".join(e["name"] for e in ctx.get("events",[])) ] if ctx.get("events") else []))},"data_quality":{"missing":sorted(set(missing))},"method":"five-layer weighted model; missing components excluded and weights renormalized; not calibrated"}
@@ -452,7 +454,7 @@ def should_log_history(hist,now):
  except Exception:return True
 def evaluate_model_calibration(hist):
  out={}
- horizons={"24h":24,"1w":168,"1m":720}
+ horizons={"4h":4,"24h":24,"72h":72,"1w":168,"1m":720}
  parsed=[]
  for snap in hist:
   try: parsed.append((datetime.fromisoformat(snap["updated_at"].replace("Z","+00:00")),snap))
@@ -605,8 +607,21 @@ def main():
    f24=next((x for x in v.get("forecasts",[]) if x.get("horizon")=="24h"),{}); med=f24.get("median_return_pct")
    ch=float(v.get("change_1h_pct") or 0); arrow="🟢" if ch>0 else "🔴" if ch<0 else "⚪"
    lines.append(f"{'🟠' if c=='BTC' else '🔵' if c=='ETH' else '🟣' if c=='XRP' else '🟢'} {c}  |  ${v.get('price',0):,.6g}")
-   lines.append(f"   1h: {arrow} {ch:+.2f}%  ·  24h model up: {p*100:.1f}%" if isinstance(p,(int,float)) else f"   1h: {arrow} {ch:+.2f}%  ·  24h model: unavailable")
-   lines.append(f"   Analogue median: {med:+.2f}%  ·  Confidence: {conf}" if isinstance(med,(int,float)) else f"   Analogue median: unavailable  ·  Confidence: {conf}")
+   lines.append(f"   1h: {arrow} {ch:+.2f}%  ·  Confidence: {conf}")
+   mh=(m.get("horizons",{}) or {})
+   for horizon,label in (("4h","4H"),("24h","24H"),("72h","72H")):
+    hh=mh.get(horizon,{}) or {}
+    pp=hh.get("p_up"); bias=hh.get("bias","Unavailable")
+    analogue=next((x for x in v.get("forecasts",[]) if x.get("horizon")==horizon),{})
+    medh=analogue.get("median_return_pct"); freq=analogue.get("up_frequency_pct")
+    if isinstance(pp,(int,float)):
+     line=f"   {label}: {bias} | Model P(up) {pp*100:.1f}%"
+     if isinstance(medh,(int,float)): line+=f" | Analogue median {medh:+.2f}%"
+     if isinstance(freq,(int,float)): line+=f" | Analogues up {freq:.0f}%"
+    else:
+     line=f"   {label}: model unavailable"
+     if isinstance(medh,(int,float)): line+=f" | Analogue median {medh:+.2f}%"
+    lines.append(line)
    lines.append("")
   evs=snap.get("model_context",{}).get("events",[]) or []
   if evs:
