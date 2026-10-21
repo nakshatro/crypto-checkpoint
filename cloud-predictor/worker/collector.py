@@ -69,8 +69,7 @@ def derivatives(symbol):
   try:
    v=get_json("https://fapi.binance.com"+path,params); out[key]=v[-1] if isinstance(v,list) and v else v
   except Exception as e: out[key]={"unavailable":str(e)[:160]}
- # OKX public derivatives statistics fallback for account long/short and taker buy/sell.
- # Rubik endpoints return recent aggregate rows; ratios are normalized to the dashboard schema.
+ # OKX public account long/short ratio fallback.
  base=symbol.replace("USDT","")
  try:
   j=get_json("https://www.okx.com/api/v5/rubik/stat/contracts/long-short-account-ratio",{"ccy":base,"period":"1H"})
@@ -81,19 +80,29 @@ def derivatives(symbol):
    if ratio is not None: out["global_long_short_ratio"]={"longShortRatio":ratio,"source":"OKX public account long/short ratio","timestamp":row[0] if row else None}
  except Exception as e:
   out.setdefault("global_long_short_ratio",{"unavailable":"OKX: "+str(e)[:120]})
+ # Binance is blocked on some hosted runners. Calculate a clearly labelled recent-trades taker ratio from OKX public trades.
+ # This is a recent sample, not a 1-hour aggregate.
  try:
-  j=get_json("https://www.okx.com/api/v5/rubik/stat/contracts/taker-volume",{"ccy":base,"instType":"SWAP","period":"1H"})
-  data=j.get("data",[])
-  if str(j.get("code"))=="0" and data:
-   row=data[0]
-   # OKX row convention: timestamp, sell volume, buy volume.
-   sell=float(row[1]) if len(row)>1 and row[1] not in (None,"") else 0
-   buy=float(row[2]) if len(row)>2 and row[2] not in (None,"") else 0
-   if sell>0: out["taker_buy_sell_ratio"]={"buySellRatio":buy/sell,"source":"OKX public taker volume","timestamp":row[0] if row else None}
-   else: out["taker_buy_sell_ratio"]={"unavailable":"OKX returned zero sell volume in latest row"}
-  else: out["taker_buy_sell_ratio"]={"unavailable":"OKX returned no taker-volume rows; code="+str(j.get("code"))+" msg="+str(j.get("msg"))[:100]}
+  trades=None; used_inst=None; last_trade_error=None
+  for inst in (base+"-USDT-SWAP",base+"-USDT"):
+   try:
+    j=get_json("https://www.okx.com/api/v5/market/trades",{"instId":inst,"limit":"500"})
+    if str(j.get("code"))=="0" and j.get("data"):
+     trades=j["data"]; used_inst=inst; break
+    last_trade_error="OKX returned no trades for "+inst+": "+str(j.get("msg",""))
+   except Exception as e:
+    last_trade_error=str(e)[:120]
+  if trades:
+   buy=sum(float(t.get("sz",0)) for t in trades if str(t.get("side","")).lower()=="buy")
+   sell=sum(float(t.get("sz",0)) for t in trades if str(t.get("side","")).lower()=="sell")
+   if sell>0:
+    out["taker_buy_sell_ratio"]={"buySellRatio":buy/sell,"buy_size":buy,"sell_size":sell,"trade_count":len(trades),"source":"OKX public recent trades (up to 500; not a 1h aggregate)","instrument":used_inst,"timestamp":trades[0].get("ts")}
+   else:
+    out["taker_buy_sell_ratio"]={"unavailable":"Recent OKX trades had zero sell-side size","trade_count":len(trades),"instrument":used_inst}
+  else:
+   out["taker_buy_sell_ratio"]={"unavailable":last_trade_error or "No recent OKX trades returned"}
  except Exception as e:
-  out["taker_buy_sell_ratio"]={"unavailable":"OKX: "+str(e)[:120]}
+  out["taker_buy_sell_ratio"]={"unavailable":"OKX recent trades: "+str(e)[:120]}
  # Fallback to the main checkpoint snapshot for OI/funding when Binance futures is blocked.
  try:
   market=json.loads((ROOT.parent/"data"/"market.json").read_text(encoding="utf-8"))
