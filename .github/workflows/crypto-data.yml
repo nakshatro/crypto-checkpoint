@@ -39,6 +39,9 @@ jobs:
         run: python -m pip install --disable-pip-version-check requests
 
       - name: Generate cloud forecast data
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: python cloud-predictor/worker/collector.py
 
       - name: Commit updated snapshots
