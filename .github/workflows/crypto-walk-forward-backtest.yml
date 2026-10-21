@@ -7,6 +7,9 @@ on:
       - "scripts/walk_forward_backtest.py"
       - ".github/workflows/crypto-walk-forward-backtest.yml"
       - "tests/**"
+      - "README.md"
+      - "RELEASE_NOTES.md"
+      - ".github/workflows/release-v1.yml"
       - "data/historical/*.csv.gz"
   workflow_run:
     workflows: ["Crypto Checkpoint Free Historical Backfill"]
@@ -45,6 +48,7 @@ jobs:
             echo "No backtest output changes."
           else
             git commit -m "Publish walk-forward historical backtest"
+            git pull --rebase origin main
             git push
           fi
       - name: Publish run summary
