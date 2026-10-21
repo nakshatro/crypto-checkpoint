@@ -203,11 +203,11 @@ def automatic_macro_events():
  now=datetime.now(timezone.utc); out=[]
  try:
   r=S.get("https://www.bls.gov/schedule/news_release/bls.ics",timeout=(5,12)); r.raise_for_status()
-  text=re.sub(r"\\r?\\n[ \\t]","",r.text)
+  text=re.sub(r"\r?\n[ \t]","",r.text)
   wanted=("consumer price index","producer price index","employment situation","job openings and labor turnover","productivity and costs","employment cost index","import and export price")
   for block in re.findall(r"BEGIN:VEVENT(.*?)END:VEVENT",text,re.S):
    sm=re.search(r"SUMMARY(?:;[^:]*)?:(.*)",block)
-   dt=re.search(r"DTSTART(?:;TZID=([^:;]+))?(?:;[^:]*)?:(\\d{8}T\\d{6}Z?|\\d{8})",block)
+   dt=re.search(r"DTSTART(?:;TZID=([^:;]+))?(?:;[^:]*)?:(\d{8}T\d{6}Z?|\d{8})",block)
    if not sm or not dt: continue
    name=sm.group(1).replace("\\\\, ",", ").replace("\\\\;",";").strip()
    if not any(x in name.lower() for x in wanted): continue
@@ -225,7 +225,7 @@ def automatic_macro_events():
  except Exception: pass
  try:
   r=S.get("https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm",timeout=(5,12)); r.raise_for_status()
-  for match in re.finditer(r"(January|February|March|April|May|June|July|August|September|October|November|December)\\s+(\\d{1,2})\\s*[–-]\\s*(\\d{1,2})",r.text,re.I):
+  for match in re.finditer(r"(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{1,2})\s*[–-]\s*(\d{1,2})",r.text,re.I):
    month,day,_=match.groups()
    try:
     t=datetime.strptime(month+" "+day+" "+str(now.year),"%B %d %Y").replace(tzinfo=timezone.utc)
