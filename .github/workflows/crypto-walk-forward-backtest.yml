@@ -2,6 +2,11 @@ name: Crypto Checkpoint Walk-Forward Backtest
 
 on:
   workflow_dispatch:
+  push:
+    paths:
+      - "scripts/walk_forward_backtest.py"
+      - ".github/workflows/crypto-walk-forward-backtest.yml"
+      - "data/historical/*.csv.gz"
   workflow_run:
     workflows: ["Crypto Checkpoint Free Historical Backfill"]
     types: [completed]
@@ -15,9 +20,9 @@ concurrency:
 
 jobs:
   backtest:
-    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') || github.event_name == 'push'
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -41,20 +46,21 @@ jobs:
             git push
           fi
       - name: Publish run summary
+        env:
+          GITHUB_STEP_SUMMARY: ${{ github.step_summary }}
         run: |
           python - <<'PY'
-          import json
+          import json, os
           from pathlib import Path
-          p = Path("data/historical/backtest/walk_forward_report.json")
-          d = json.loads(p.read_text())
-          print("## Walk-forward backtest", file=open("$GITHUB_STEP_SUMMARY", "a"))
-          with open("$GITHUB_STEP_SUMMARY", "a") as f:
-              print(f"Predictions generated: **{d.get('total_predictions', 0)}**\n", file=f)
-              print("| Coin | Horizon | N | Accuracy | Brier | Always-up accuracy |", file=f)
-              print("|---|---:|---:|---:|---:|---:|", file=f)
-              for coin, horizons in d["results"].items():
-                  for h, result in horizons.items():
-                      if not isinstance(result, dict) or "metrics" not in result: continue
-                      m = result["metrics"]
-                      print(f"| {coin} | {h} | {m['n']} | {m['directional_accuracy_pct']}% | {m['brier_score']} | {m['baseline_always_up_accuracy_pct']}% |", file=f)
+          d = json.loads(Path("data/historical/backtest/walk_forward_report.json").read_text())
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as f:
+              print("# Walk-forward backtest", file=f)
+              print(f"Generated predictions: **{d.get('total_predictions', 0)}**", file=f)
+              print("", file=f)
+              print("| Coin | Horizon | Model | N | Accuracy | Brier | Constant base-rate Brier |", file=f)
+              print("|---|---|---|---:|---:|---:|---:|", file=f)
+              for coin, item in d["results"].items():
+                  for horizon, result in item.get("horizons", {}).items():
+                      for model, m in result.get("metrics_by_model", {}).items():
+                          print(f"| {coin} | {horizon} | {model} | {m.get('n')} | {m.get('accuracy_pct')}% | {m.get('brier_score')} | {m.get('constant_train_rate_brier')} |", file=f)
           PY
