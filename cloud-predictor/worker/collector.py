@@ -517,7 +517,13 @@ def update_event_tracker(events,snap,hist,now_dt):
   return min(candidates,key=lambda x:x[0])[1] if candidates else None
  def prices(row):
   return {c:{"price":v.get("price"),"model":{hz:((v.get("model",{}).get("horizons",{}) or {}).get(hz,{}) or {}).get("p_up") for hz in ("4h","24h","72h")},"analogue":{hz:next((f.get("median_return_pct") for f in v.get("forecasts",[]) if f.get("horizon")==hz),None) for hz in ("4h","24h","72h")}} for c,v in (row.get("coins",{}) or {}).items() if v.get("price") is not None and "error" not in v}
+ # Revisit already-tracked events even after they disappear from the upcoming-calendar window,
+ # so 24h/72h outcomes can mature after the event date.
+ event_list={x.get("key"):x.get("event",{}) for x in records.values() if x.get("key")}
  for e in events or []:
+  k="|".join((str(e.get("name","Event")),str(e.get("date_utc","")),str(e.get("source",""))))
+  event_list[k]=e
+ for e in event_list.values():
   key="|".join((str(e.get("name","Event")),str(e.get("date_utc","")),str(e.get("source",""))))
   rec=records.get(key,{"key":key,"event":e,"first_seen_utc":now_dt.isoformat(),"status":"scheduled","pre_event_history":[],"outcomes":{}})
   rec["event"]=e
