@@ -8,7 +8,8 @@ from pathlib import Path
 from statistics import mean
 ROOT=Path(__file__).resolve().parents[1]; DATA=ROOT/"data"/"historical"; OUT=DATA/"backtest"
 COINS=("BTC","ETH","XRP","SOL"); HORIZONS={"1d":1,"3d":3,"7d":7}; MIN_TRAIN=120; SHRINK=20.0
-TRADE_THRESHOLDS=(0.52,0.55,0.60); COSTS_BPS=(5,10,20); BOOTSTRAP_REPS=300\nREFERENCE_CAPITAL_USDT=1000.0; POSITION_ALLOCATION_PCT=10.0
+TRADE_THRESHOLDS=(0.52,0.55,0.60); COSTS_BPS=(5,10,20); BOOTSTRAP_REPS=300
+REFERENCE_CAPITAL_USDT=1000.0; POSITION_ALLOCATION_PCT=10.0
 OUT.mkdir(parents=True,exist_ok=True)
 
 def load_prices(coin):
