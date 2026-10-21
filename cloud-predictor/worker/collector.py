@@ -243,7 +243,11 @@ def advanced_model(coin,symbol,rows,derivs,ctx,price):
   tvl=chain_tvl_change(chain)
   if tvl is not None: oc.append(("chain_tvl_30d",bounded(tvl/.15),.3,f"{chain} TVL {tvl*100:+.1f}% over 30d"))
   else: missing.append("chain_tvl_"+coin.lower())
- etf=(ctx.get("manual",{}).get("etf_flow_5d_usd",{}) or {}).get(coin)\n if etf is not None:\n  oc.append(("manual_etf_flow",bounded(float(etf)/({"BTC":1.5e9,"ETH":5e8,"SOL":1e8,"XRP":1e8}[coin])),.4,f"verified manual 5d ETF flow ${float(etf)/1e6:+.0f}M"))\n else:\n  oc.append(("manual_etf_flow",None,.4,"ETF flow unknown; optional verified input not set"))
+ etf=(ctx.get("manual",{}).get("etf_flow_5d_usd",{}) or {}).get(coin)
+ if etf is not None:
+  oc.append(("manual_etf_flow",bounded(float(etf)/({"BTC":1.5e9,"ETH":5e8,"SOL":1e8,"XRP":1e8}[coin])),.4,f"verified manual 5d ETF flow ${float(etf)/1e6:+.0f}M"))
+ else:
+  oc.append(("manual_etf_flow",None,.4,"ETF flow unknown; optional verified input not set"))
  s,comps=layer_mean(oc); scores["onchain"]=s; details["onchain"]={"score":s,"components":comps}
  if s is None: missing.append("onchain_layer")
  words=[]; terms={"BTC":("bitcoin","btc"),"ETH":("ethereum","ether","eth"),"SOL":("solana","sol"),"XRP":("xrp","ripple")}[coin]
@@ -273,6 +277,7 @@ def advanced_model(coin,symbol,rows,derivs,ctx,price):
   horizons[hz]={"composite":round(composite,3) if composite is not None else None,"p_up":round(p_up,3) if p_up is not None else None,"coverage":round(coverage,3),"bias":"Bullish" if composite is not None and composite>.15 else "Bearish" if composite is not None and composite<-.15 else "Neutral" if composite is not None else "Unavailable","range":[round(price/math.exp(sigma*math.sqrt(days)),8),round(band,8)] if band else None}
  layer_vals=[x for x in scores.values() if x is not None]; dispersion=statistics.pstdev(layer_vals) if len(layer_vals)>1 else .5
  confidence=max(0,min(1,1-dispersion/.6))*(horizons["1w"]["coverage"] or 0)
+ if ctx.get("events"): confidence*=.8
  return {"regime":regime,"vol_ratio":round(vol_ratio,3) if vol_ratio is not None else None,"layers":details,"horizons":horizons,"confidence":{"value":round(confidence,2),"label":"High" if confidence>=.6 else "Medium" if confidence>=.35 else "Low","notes":((["layers disagree"] if dispersion>.35 else [])+([ "scheduled event within 24h: "+", ".join(e["name"] for e in ctx.get("events",[])) ] if ctx.get("events") else []))},"data_quality":{"missing":sorted(set(missing))},"method":"five-layer weighted model; missing components excluded and weights renormalized; not calibrated"}
 
 def telegram(message):
