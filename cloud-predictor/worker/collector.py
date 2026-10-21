@@ -137,6 +137,33 @@ def derivatives(symbol):
   sell=sum(float(x[1]) for x in last if len(x)>2); buy=sum(float(x[2]) for x in last if len(x)>2)
   if buy+sell>0: out["taker_cvd_24h"]=(buy-sell)/(buy+sell); out["taker_cvd_count"]=len(last)
  except Exception as e: out["taker_cvd_unavailable"]=str(e)[:120]
+ try:
+  sp=get_json("https://www.okx.com/api/v5/market/ticker",{"instId":base+"-USDT"})
+  sw=get_json("https://www.okx.com/api/v5/market/ticker",{"instId":base+"-USDT-SWAP"})
+  if sp.get("data") and sw.get("data"):
+   spot=float(sp["data"][0]["last"]); swap=float(sw["data"][0]["last"])
+   if spot: out["basis"]=(swap-spot)/spot
+ except Exception as e: out["basis_unavailable"]=str(e)[:120]
+ try:
+  j=get_json("https://www.okx.com/api/v5/market/books",{"instId":base+"-USDT-SWAP","sz":"400"})
+  if str(j.get("code"))=="0" and j.get("data"):
+   bids=j["data"][0].get("bids",[]); asks=j["data"][0].get("asks",[])
+   bv=sum(float(x[0])*float(x[1]) for x in bids); av=sum(float(x[0])*float(x[1]) for x in asks)
+   if bv+av: out["book_imbalance"]=(bv-av)/(bv+av)
+ except Exception as e: out["book_imbalance_unavailable"]=str(e)[:120]
+ try:
+  j=get_json("https://www.okx.com/api/v5/public/instruments",{"instType":"SWAP","instFamily":base+"-USDT"})
+  ct=float(j["data"][0]["ctVal"]) if str(j.get("code"))=="0" and j.get("data") else None
+  q=get_json("https://www.okx.com/api/v5/public/liquidation-orders",{"instType":"SWAP","instFamily":base+"-USDT","state":"filled"})
+  if ct and str(q.get("code"))=="0":
+   longs=shorts=0.0
+   for group in q.get("data",[]):
+    for x in group.get("details",[]):
+     usd=float(x.get("sz",0))*ct*float(x.get("bkPx",0))
+     if x.get("posSide")=="long" or (x.get("posSide")=="net" and x.get("side")=="sell"): longs+=usd
+     else: shorts+=usd
+   out["recent_liquidations_usd"]={"longs":longs,"shorts":shorts}
+ except Exception as e: out["liquidations_unavailable"]=str(e)[:120]
  return out
 
 # ---------- five-layer checkpoint model (adapted from BUILD PROMPT.docx) ----------
