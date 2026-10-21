@@ -490,16 +490,21 @@ def evaluate_model_calibration(hist):
 def telegram(message):
  token=os.getenv("TELEGRAM_BOT_TOKEN","").strip(); chat=os.getenv("TELEGRAM_CHAT_ID","").strip()
  if not token or not chat:return "not_configured: missing TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID"
- try:
-  r=S.post("https://api.telegram.org/bot"+token+"/sendMessage",json={"chat_id":chat,"text":message,"disable_web_page_preview":True},timeout=15)
-  r.raise_for_status()
-  try: payload=r.json()
-  except Exception: return "failed: Telegram returned non-JSON response"
-  # Telegram may return HTTP 200 with ok=false; do not mistake that for delivery.
-  if not payload.get("ok"):
-   return "failed: Telegram API "+str(payload.get("error_code","unknown"))+": "+str(payload.get("description","unspecified error"))[:180]
-  return "sent: message_id="+str((payload.get("result") or {}).get("message_id","unknown"))
- except Exception as e:return "failed: "+str(e)[:180]
+ last_error=None
+ for attempt in range(3):
+  try:
+   r=S.post("https://api.telegram.org/bot"+token+"/sendMessage",json={"chat_id":chat,"text":message,"disable_web_page_preview":True},timeout=20)
+   r.raise_for_status()
+   try: payload=r.json()
+   except Exception: return "failed: Telegram returned non-JSON response"
+   # Telegram may return HTTP 200 with ok=false; do not mistake that for delivery.
+   if not payload.get("ok"):
+    return "failed: Telegram API "+str(payload.get("error_code","unknown"))+": "+str(payload.get("description","unspecified error"))[:180]
+   return "sent: message_id="+str((payload.get("result") or {}).get("message_id","unknown"))
+  except Exception as e:
+   last_error=e
+   if attempt<2: time.sleep(2*(attempt+1))
+ return "failed after 3 attempts: "+str(last_error)[:180]
 def update_event_tracker(events,snap,hist,now_dt):
  """Persist pre-event crypto forecasts and evaluate post-event market moves when timestamps are precise."""
  path=DATA/"event_tracker.json"
@@ -718,7 +723,7 @@ def main():
   message="\n\n".join(notify_lines)
   if len(message)>3800: message=message[:3750]+"\n… truncated; see Forecast Lab."
   status["telegram"]=telegram(message)
-  if status["telegram"]=="sent":
+  if str(status["telegram"]).startswith("sent"):
    for key in event_keys: nstate.setdefault("last_event_sent",{})[key]=now
    nstate["last_model"]={c:{"p_up":((v.get("model",{}).get("horizons",{}) or {}).get("24h",{}) or {}).get("p_up")} for c,v in snap["coins"].items() if "error" not in v}
    write_json("notification_state.json",nstate)
