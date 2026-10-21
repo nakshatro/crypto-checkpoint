@@ -69,6 +69,29 @@ def derivatives(symbol):
   try:
    v=get_json("https://fapi.binance.com"+path,params); out[key]=v[-1] if isinstance(v,list) and v else v
   except Exception as e: out[key]={"unavailable":str(e)[:160]}
+ # OKX public derivatives statistics fallback for account long/short and taker buy/sell.
+ # Rubik endpoints return recent aggregate rows; ratios are normalized to the dashboard schema.
+ base=symbol.replace("USDT","")
+ try:
+  j=get_json("https://www.okx.com/api/v5/rubik/stat/contracts/long-short-account-ratio",{"ccy":base,"period":"1H"})
+  data=j.get("data",[])
+  if str(j.get("code"))=="0" and data:
+   row=data[0]
+   ratio=float(row[1]) if len(row)>1 and row[1] not in (None,"") else None
+   if ratio is not None: out["global_long_short_ratio"]={"longShortRatio":ratio,"source":"OKX public account long/short ratio","timestamp":row[0] if row else None}
+ except Exception as e:
+  out.setdefault("global_long_short_ratio",{"unavailable":"OKX: "+str(e)[:120]})
+ try:
+  j=get_json("https://www.okx.com/api/v5/rubik/stat/contracts/taker-volume",{"ccy":base,"period":"1H"})
+  data=j.get("data",[])
+  if str(j.get("code"))=="0" and data:
+   row=data[0]
+   # OKX row convention: timestamp, sell volume, buy volume.
+   sell=float(row[1]) if len(row)>1 and row[1] not in (None,"") else 0
+   buy=float(row[2]) if len(row)>2 and row[2] not in (None,"") else 0
+   if sell>0: out["taker_buy_sell_ratio"]={"buySellRatio":buy/sell,"source":"OKX public taker volume","timestamp":row[0] if row else None}
+ except Exception as e:
+  out.setdefault("taker_buy_sell_ratio",{"unavailable":"OKX: "+str(e)[:120]})
  # Fallback to the main checkpoint snapshot for OI/funding when Binance futures is blocked.
  try:
   market=json.loads((ROOT.parent/"data"/"market.json").read_text(encoding="utf-8"))
