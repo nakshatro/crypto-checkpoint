@@ -128,6 +128,7 @@ def derivatives(symbol):
   if len(rows)>=25:
    vals=[float(x[1]) for x in rows if len(x)>1 and x[1] not in (None,"")]
    if len(vals)>=25 and vals[-25]: out["oi_change_24h"]=vals[-1]/vals[-25]-1
+   out["oi_series"]=[[int(x[0]),float(x[1])] for x in rows if len(x)>1 and x[1] not in (None,"")]
    out["oi_history_count"]=len(rows)
  except Exception as e: out["oi_history_unavailable"]=str(e)[:120]
  try:
@@ -240,6 +241,28 @@ def layer_mean(items):
  total=sum(x[2] for x in items)
  if not items or not total:return None,[]
  return sum(x[1]*x[2] for x in items)/total,[{"name":n,"score":round(s,3),"weight":round(w/total,3),"note":note} for n,s,w,note in items]
+def estimated_liq_clusters(h1,oi_series,price):
+ lev=[(5,.10),(10,.25),(20,.30),(50,.20),(100,.15)]; mmr=.005; candles=h1[-168:]
+ oi_map=dict(oi_series or []); use_oi=bool(oi_series) and len(oi_series)>=100; width=price*.0025; bins={}
+ def add(side,p,amount):
+  k=round(p/width); slot=bins.setdefault(k,{"long":0.0,"short":0.0}); slot[side]+=amount
+ for i,x in enumerate(candles):
+  typical=(x["h"]+x["l"]+x["c"])/3
+  w=max(oi_map.get(x["t"],0)-oi_map.get(x["t"]-3600000,0),0) if use_oi else x["v"]
+  if w<=0:continue
+  long_share=.6 if x["c"]>=x["o"] else .4; later=candles[i+1:]
+  lo=min((y["l"] for y in later),default=x["l"]); hi=max((y["h"] for y in later),default=x["h"])
+  for levg,weight in lev:
+   lp=typical*(1-1/levg+mmr); sp=typical*(1+1/levg-mmr)
+   if lp<lo and lp<price:add("long",lp,w*weight*long_share)
+   if sp>hi and sp>price:add("short",sp,w*weight*(1-long_share))
+ maxv=max([v["long"] for v in bins.values()]+[v["short"] for v in bins.values()]+[1e-9])
+ below=[{"price":k*width,"strength":v["long"]/maxv,"dist_pct":(k*width/price-1)*100} for k,v in bins.items() if v["long"]>0 and abs((k*width/price-1)*100)<=12]
+ above=[{"price":k*width,"strength":v["short"]/maxv,"dist_pct":(k*width/price-1)*100} for k,v in bins.items() if v["short"]>0 and abs((k*width/price-1)*100)<=12]
+ def mass(arr):return sum(x["strength"]/max(abs(x["dist_pct"]),.5) for x in arr if abs(x["dist_pct"])<=6)
+ ma,mb=mass(above),mass(below); magnet=(ma-mb)/(ma+mb) if ma+mb else None
+ above=sorted(above,key=lambda x:-x["strength"])[:3]; below=sorted(below,key=lambda x:-x["strength"])[:3]
+ return above,below,magnet,("OI-delta weighted" if use_oi else "volume-weighted estimate; fewer than 100 hourly OI points")
 def advanced_model(coin,symbol,rows,derivs,ctx,price):
  missing=[]; details={}; scores={}
  d1=daily_candles(symbol); regime="RANGE"; vol_ratio=None
