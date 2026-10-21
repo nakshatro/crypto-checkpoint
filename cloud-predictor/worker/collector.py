@@ -228,14 +228,14 @@ def automatic_macro_events():
  try:
   r=S.get("https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm",timeout=(5,12)); r.raise_for_status()
   html=r.text
-  year_sections=list(re.finditer(r"(20\\d{2})\\s+FOMC Meetings",html,re.I))
+  year_sections=list(re.finditer(r"(20\d{2})\s+FOMC Meetings",html,re.I))
   for yi,ym in enumerate(year_sections):
    year=int(ym.group(1))
    if year<now.year or year>now.year+1: continue
    stop=year_sections[yi+1].start() if yi+1<len(year_sections) else len(html)
    section=html[ym.end():stop]
    # Parse named month plus meeting date range; only dates inside this year's section are accepted.
-   for match in re.finditer(r"(January|February|March|April|May|June|July|August|September|October|November|December)\\s+(\\d{1,2})\\s*[–-]\\s*(\\d{1,2})",section,re.I):
+   for match in re.finditer(r"(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{1,2})\s*[–-]\s*(\d{1,2})",section,re.I):
     month,day,_=match.groups()
     try:
      t=datetime.strptime(month+" "+day+" "+str(year),"%B %d %Y").replace(tzinfo=timezone.utc)
