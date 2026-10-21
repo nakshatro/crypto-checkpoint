@@ -127,7 +127,18 @@ def main():
  for coin,symbol in SYMBOLS.items():
   try:
    rows=fetch_rows(symbol); f,forecasts=make_forecasts(rows); last=rows[-1]
-   snap["coins"][coin]={"coin":coin,"symbol":symbol,"price":last["c"],"candle_time":datetime.fromtimestamp(last["t"]/1000,timezone.utc).isoformat(),"change_1h_pct":round(f["r1"],3),"change_4h_pct":round(f["r4"],3),"change_12h_pct":round(f["r12"],3),"change_24h_pct":round(f["r24"],3),"volume_ratio_24h":round(f["volratio"],3),"ma6_gap_pct":round(f["ma6gap"],3),"ma24_gap_pct":round(f["ma24gap"],3),"volatility_24h_pct":round(f["volatility24"],3),"derivatives":derivatives(symbol),"forecasts":forecasts}
+   # Use the live OKX ticker for the displayed price; keep completed candles for indicators/forecasts.
+   live_price=None; price_source=None; price_time=None; base=symbol.replace("USDT","")
+   for inst in (base+"-USDT-SWAP",base+"-USDT"):
+    try:
+     tj=get_json("https://www.okx.com/api/v5/market/ticker",{"instId":inst})
+     td=tj.get("data",[])
+     if str(tj.get("code"))=="0" and td and td[0].get("last"):
+      live_price=float(td[0]["last"]); price_source="OKX live ticker ("+inst+")"; price_time=datetime.fromtimestamp(int(td[0]["ts"])/1000,timezone.utc).isoformat(); break
+    except Exception:
+     pass
+   display_price=live_price if live_price is not None else last["c"]
+   snap["coins"][coin]={"coin":coin,"symbol":symbol,"price":display_price,"price_source":price_source or "last completed OKX hourly candle (ticker unavailable)","price_time":price_time or datetime.fromtimestamp(last["t"]/1000,timezone.utc).isoformat(),"candle_time":datetime.fromtimestamp(last["t"]/1000,timezone.utc).isoformat(),"change_1h_pct":round(f["r1"],3),"change_4h_pct":round(f["r4"],3),"change_12h_pct":round(f["r12"],3),"change_24h_pct":round(f["r24"],3),"volume_ratio_24h":round(f["volratio"],3),"ma6_gap_pct":round(f["ma6gap"],3),"ma24_gap_pct":round(f["ma24gap"],3),"volatility_24h_pct":round(f["volatility24"],3),"derivatives":derivatives(symbol),"forecasts":forecasts}
   except Exception as e:issues.append(coin+": "+str(e)[:200])
  write_json("latest.json",snap); write_json("forecasts.json",{"updated_at":now,"items":[{"coin":c,"price":v["price"],**f} for c,v in snap["coins"].items() for f in v["forecasts"]]})
  status={"updated_at":now,"ok":bool(snap["coins"]),"coins_updated":list(snap["coins"]),"issues":issues}; histpath=DATA/"history.json"
