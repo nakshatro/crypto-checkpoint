@@ -326,7 +326,9 @@ def advanced_model(coin,symbol,rows,derivs,ctx,price):
    ratio=float(tr["buySellRatio"]); lc.append(("recent_taker_flow",bounded((ratio-1)/.5),.40,f"buy/sell size ratio {ratio:.3f}; recent sample, not 24h CVD"))
    missing.append("taker_cvd_24h")
   else: missing.append("taker_cvd_24h")
- lc.append(("liquidation_magnet",None,.30,"not computed: reliable 168h OI-change series unavailable")); missing.append("liquidation_magnet")
+ liq_above,liq_below,magnet,liq_method=estimated_liq_clusters(rows,derivs.get("oi_series"),price)
+ if magnet is not None: lc.append(("liquidation_magnet",magnet,.30,"estimated liquidation fuel above vs below; "+liq_method))
+ else: lc.append(("liquidation_magnet",None,.30,"no liquidation clusters in range; "+liq_method)); missing.append("liquidation_magnet")
  liq=derivs.get("recent_liquidations_usd")
  if isinstance(liq,dict) and (float(liq.get("longs",0))+float(liq.get("shorts",0)))>0:
   longs=float(liq.get("longs",0)); shorts=float(liq.get("shorts",0)); lc.append(("recent_liquidation_flow",.3*(longs-shorts)/(longs+shorts),.20,f"liquidated longs ${longs/1e6:.1f}M vs shorts ${shorts/1e6:.1f}M"))
@@ -392,7 +394,7 @@ def advanced_model(coin,symbol,rows,derivs,ctx,price):
  confidence=max(0,min(1,1-dispersion/.6))*(horizons["1w"]["coverage"] or 0)
  if ctx.get("events"): confidence*=.8
  if not ctx.get("events"): missing.append("scheduled_events_not_configured")
- return {"regime":regime,"vol_ratio":round(vol_ratio,3) if vol_ratio is not None else None,"layers":details,"horizons":horizons,"patterns":patterns,"confidence":{"value":round(confidence,2),"label":"High" if confidence>=.6 else "Medium" if confidence>=.35 else "Low","notes":((["layers disagree"] if dispersion>.35 else [])+([ "scheduled event within 24h: "+", ".join(e["name"] for e in ctx.get("events",[])) ] if ctx.get("events") else []))},"data_quality":{"missing":sorted(set(missing))},"method":"five-layer weighted model; missing components excluded and weights renormalized; not calibrated"}
+ return {"regime":regime,"vol_ratio":round(vol_ratio,3) if vol_ratio is not None else None,"layers":details,"horizons":horizons,"patterns":patterns,"levels":{"liq_above":liq_above,"liq_below":liq_below,"liq_method":liq_method},"confidence":{"value":round(confidence,2),"label":"High" if confidence>=.6 else "Medium" if confidence>=.35 else "Low","notes":((["layers disagree"] if dispersion>.35 else [])+([ "scheduled event within 24h: "+", ".join(e["name"] for e in ctx.get("events",[])) ] if ctx.get("events") else []))},"data_quality":{"missing":sorted(set(missing))},"method":"five-layer weighted model; missing components excluded and weights renormalized; not calibrated"}
 
 
 def should_log_history(hist,now):
