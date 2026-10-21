@@ -75,10 +75,10 @@ def metric_pack(ps):
  for a,z in [(0,.4),(.4,.45),(.45,.5),(.5,.55),(.55,.6),(.6,.7),(.7,1.000001)]:
   subset=[p for p in ps if a<=p["p_up"]<z]
   if subset:bins.append({"range":f"{a:.2f}-{min(z,1):.2f}","n":len(subset),"mean_predicted_up_pct":round(100*mean([p["p_up"] for p in subset]),2),"actual_up_pct":round(100*mean([p["actual_up"] for p in subset]),2)})
- return {"n":n,"accuracy_pct":round(100*acc,2),"brier_score":round(brier(list(zip(probs,ys))),5),"constant_train_rate_brier":round(mean([(rate-y)**2 for y in ys]),5),"mean_predicted_up_pct":round(100*mean(probs),2),"actual_up_pct":round(100*rate,2),"accuracy_ci95_pct":[round(100*lo,2),round(100*hi,2)],"calibration_bins":bins}
+ return {"n":n,"accuracy_pct":round(100*acc,2),"brier_score":round(brier(list(zip(probs,ys))),5),"constant_train_rate_brier":round(mean([(float(p.get("p_base",rate))-y)**2 for p,y in zip(ps,ys)]),5),"mean_predicted_up_pct":round(100*mean(probs),2),"actual_up_pct":round(100*rate,2),"accuracy_ci95_pct":[round(100*lo,2),round(100*hi,2)],"calibration_bins":bins}
 
 def probs_from(train, key, bucket):
- vals=[y for x,y in train if x.get(key) is not None]
+ vals=[(x.get(key),y) for x,y in train if x.get(key) is not None]
  if not vals:return .5,0
  base=(sum(y for _,y in vals)+1)/(len(vals)+2)
  same=[y for x,y in train if x.get(key)==bucket]
