@@ -143,8 +143,23 @@ def ema_values(vals,n):
 def ret_std(vals,n):
  rr=[math.log(vals[i]/vals[i-1]) for i in range(max(1,len(vals)-n),len(vals)) if vals[i]>0 and vals[i-1]>0]
  return statistics.pstdev(rr) if len(rr)>1 else None
+def load_manual_inputs():
+ try:
+  p=ROOT/"manual_inputs.json"
+  return json.loads(p.read_text(encoding="utf-8")) if p.exists() else {}
+ except Exception: return {}
+def upcoming_manual_events(manual):
+ out=[]; now=datetime.now(timezone.utc)
+ for e in manual.get("events",[]):
+  try:
+   t=datetime.fromisoformat(e["time_utc"].replace("Z","+00:00"))
+   if t.tzinfo is None:t=t.replace(tzinfo=timezone.utc)
+   hours=(t-now).total_seconds()/3600
+   if -2<=hours<=24:out.append({"name":str(e.get("name","Scheduled event")),"in_hours":round(hours,1)})
+  except Exception: pass
+ return out
 def global_model_context():
- out={"stablecoin_30d":None,"fear_greed":None,"headlines":[],"events":[]}
+ manual=load_manual_inputs(); out={"stablecoin_30d":None,"fear_greed":None,"headlines":[],"events":upcoming_manual_events(manual),"manual":manual}
  try:
   j=get_json("https://stablecoins.llama.fi/stablecoincharts/all")
   if len(j)>=31:
@@ -228,7 +243,7 @@ def advanced_model(coin,symbol,rows,derivs,ctx,price):
   tvl=chain_tvl_change(chain)
   if tvl is not None: oc.append(("chain_tvl_30d",bounded(tvl/.15),.3,f"{chain} TVL {tvl*100:+.1f}% over 30d"))
   else: missing.append("chain_tvl_"+coin.lower())
- oc.append(("manual_etf_flow",None,.4,"no verified ETF-flow input configured"))
+ etf=(ctx.get("manual",{}).get("etf_flow_5d_usd",{}) or {}).get(coin)\n if etf is not None:\n  oc.append(("manual_etf_flow",bounded(float(etf)/({"BTC":1.5e9,"ETH":5e8,"SOL":1e8,"XRP":1e8}[coin])),.4,f"verified manual 5d ETF flow ${float(etf)/1e6:+.0f}M"))\n else:\n  oc.append(("manual_etf_flow",None,.4,"ETF flow unknown; optional verified input not set"))
  s,comps=layer_mean(oc); scores["onchain"]=s; details["onchain"]={"score":s,"components":comps}
  if s is None: missing.append("onchain_layer")
  words=[]; terms={"BTC":("bitcoin","btc"),"ETH":("ethereum","ether","eth"),"SOL":("solana","sol"),"XRP":("xrp","ripple")}[coin]
@@ -258,7 +273,7 @@ def advanced_model(coin,symbol,rows,derivs,ctx,price):
   horizons[hz]={"composite":round(composite,3) if composite is not None else None,"p_up":round(p_up,3) if p_up is not None else None,"coverage":round(coverage,3),"bias":"Bullish" if composite is not None and composite>.15 else "Bearish" if composite is not None and composite<-.15 else "Neutral" if composite is not None else "Unavailable","range":[round(price/math.exp(sigma*math.sqrt(days)),8),round(band,8)] if band else None}
  layer_vals=[x for x in scores.values() if x is not None]; dispersion=statistics.pstdev(layer_vals) if len(layer_vals)>1 else .5
  confidence=max(0,min(1,1-dispersion/.6))*(horizons["1w"]["coverage"] or 0)
- return {"regime":regime,"vol_ratio":round(vol_ratio,3) if vol_ratio is not None else None,"layers":details,"horizons":horizons,"confidence":{"value":round(confidence,2),"label":"High" if confidence>=.6 else "Medium" if confidence>=.35 else "Low","notes":["layers disagree"] if dispersion>.35 else []},"data_quality":{"missing":sorted(set(missing))},"method":"five-layer weighted model; missing components excluded and weights renormalized; not calibrated"}
+ return {"regime":regime,"vol_ratio":round(vol_ratio,3) if vol_ratio is not None else None,"layers":details,"horizons":horizons,"confidence":{"value":round(confidence,2),"label":"High" if confidence>=.6 else "Medium" if confidence>=.35 else "Low","notes":((["layers disagree"] if dispersion>.35 else [])+([ "scheduled event within 24h: "+", ".join(e["name"] for e in ctx.get("events",[])) ] if ctx.get("events") else []))},"data_quality":{"missing":sorted(set(missing))},"method":"five-layer weighted model; missing components excluded and weights renormalized; not calibrated"}
 
 def telegram(message):
  token=os.getenv("TELEGRAM_BOT_TOKEN","").strip(); chat=os.getenv("TELEGRAM_CHAT_ID","").strip()
@@ -267,7 +282,7 @@ def telegram(message):
   r=S.post("https://api.telegram.org/bot"+token+"/sendMessage",json={"chat_id":chat,"text":message,"disable_web_page_preview":True},timeout=15);r.raise_for_status();return "sent"
  except Exception as e:return "failed: "+str(e)[:160]
 def main():
- now=datetime.now(timezone.utc).isoformat(); model_context=global_model_context(); model_context["btc_daily"]=daily_candles("BTCUSDT"); snap={"updated_at":now,"source":"OKX public hourly candles plus five-layer model; missing components disclosed","model_context":{"fear_greed":model_context.get("fear_greed",[])[-1] if model_context.get("fear_greed") else None,"stablecoin_30d":model_context.get("stablecoin_30d"),"headline_count":len(model_context.get("headlines",[]))},"coins":{}}; issues=[]
+ now=datetime.now(timezone.utc).isoformat(); model_context=global_model_context(); model_context["btc_daily"]=daily_candles("BTCUSDT"); snap={"updated_at":now,"source":"OKX public hourly candles plus five-layer model; missing components disclosed","model_context":{"fear_greed":model_context.get("fear_greed",[])[-1] if model_context.get("fear_greed") else None,"stablecoin_30d":model_context.get("stablecoin_30d"),"headline_count":len(model_context.get("headlines",[])),"events":model_context.get("events",[])},"coins":{}}; issues=[]
  for coin,symbol in SYMBOLS.items():
   try:
    rows=fetch_rows(symbol); f,forecasts=make_forecasts(rows); last=rows[-1]
