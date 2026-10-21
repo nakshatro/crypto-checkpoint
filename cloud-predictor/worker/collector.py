@@ -372,6 +372,10 @@ def advanced_model(coin,symbol,rows,derivs,ctx,price):
  if s is None: missing.append("news_layer")
  patterns=[]
  cvd=derivs.get("taker_cvd_24h")
+ if fund_pr is not None and oi_chg is not None and magnet is not None and px_chg<.005 and fund_pr<.15 and oi_chg>.02 and magnet>0:
+  patterns.append({"name":"SHORT_SQUEEZE_SETUP","bias":1,"why":"low funding percentile, rising OI, flat/down price and estimated liquidation fuel above"})
+ if fund_pr is not None and oi_chg is not None and magnet is not None and fund_pr>.85 and oi_chg>.03 and magnet<0:
+  patterns.append({"name":"LONG_FLUSH_RISK","bias":-1,"why":"high funding percentile, rapidly rising OI and estimated liquidation fuel below"})
  near_high=bool(d1) and price>=.99*max(x["c"] for x in d1[-20:])
  if regime=="UPTREND" and fund_pr is not None and oi_chg is not None and cvd is not None and .30<=fund_pr<=.80 and 0<oi_chg<.08 and cvd>0:
   patterns.append({"name":"HEALTHY_TREND","bias":1,"why":"uptrend, moderate funding percentile, OI growth below 8%, net taker buying"})
