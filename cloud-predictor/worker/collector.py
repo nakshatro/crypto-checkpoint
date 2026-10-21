@@ -681,18 +681,25 @@ def main():
    lines.append(f"{'🟠' if c=='BTC' else '🔵' if c=='ETH' else '🟣' if c=='XRP' else '🟢'} {c}  |  ${v.get('price',0):,.6g}")
    lines.append(f"   1h: {arrow} {ch:+.2f}%  ·  Confidence: {conf}")
    mh=(m.get("horizons",{}) or {})
+   price=float(v.get("price") or 0)
    for horizon,label in (("4h","4H"),("24h","24H"),("72h","72H")):
     hh=mh.get(horizon,{}) or {}
     pp=hh.get("p_up"); bias=hh.get("bias","Unavailable")
     analogue=next((x for x in v.get("forecasts",[]) if x.get("horizon")==horizon),{})
     medh=analogue.get("median_return_pct"); freq=analogue.get("up_frequency_pct")
-    if isinstance(pp,(int,float)):
-     line=f"   {label}: {bias} | Model P(up) {pp*100:.1f}%"
-     if isinstance(medh,(int,float)): line+=f" | Analogue median {medh:+.2f}%"
-     if isinstance(freq,(int,float)): line+=f" | Analogues up {freq:.0f}%"
+    band=analogue.get("range_10_90_pct") or []
+    if isinstance(medh,(int,float)) and price>0:
+     target=price*(1+medh/100)
+     line=f"   {label} {bias}: target ${target:,.6g} ({medh:+.2f}%)"
+    elif isinstance(pp,(int,float)):
+     line=f"   {label} {bias}: model P(up) {pp*100:.0f}%"
     else:
-     line=f"   {label}: model unavailable"
-     if isinstance(medh,(int,float)): line+=f" | Analogue median {medh:+.2f}%"
+     line=f"   {label}: outlook unavailable"
+    if price>0 and len(band)>=2:
+     low=price*(1+float(band[0])/100); high=price*(1+float(band[1])/100)
+     line+=f" | range ${low:,.6g}–${high:,.6g}"
+    if isinstance(freq,(int,float)): line+=f" | up {freq:.0f}%"
+    elif isinstance(pp,(int,float)): line+=f" | P(up) {pp*100:.0f}%"
     lines.append(line)
    lines.append("")
   evs=snap.get("model_context",{}).get("events",[]) or []
