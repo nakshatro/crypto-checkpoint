@@ -85,10 +85,10 @@ def probs_from(train, key, bucket):
  local=(sum(same)+1)/(len(same)+2)
  return (len(same)*local+SHRINK*base)/(len(same)+SHRINK),len(same)
 
-def strategy_metrics(ps,threshold,cost_bps):
+def strategy_metrics(ps,field,threshold,cost_bps):
  trades=[]
  for p in ps:
-  prob=p["p_up"]
+  prob=p[field]
   side=1 if prob>=threshold else (-1 if prob<=1-threshold else 0)
   if side:
    gross=side*p["actual_return_pct"]
@@ -127,7 +127,7 @@ def run_one(coin,rows,fs,label,h):
  regimes={r:{name:metric_pack([dict(x,p_up=x[field]) for x in ps if x["regime"]==r and x[field] is not None]) for name,field in names.items()} for r in ("bull","bear","sideways")}
  strategies={}
  for name,field in (("combined","p_model"),("funding_augmented","p_funding")):
-  strategies[name]={str(th):{str(cost):strategy_metrics([x for x in ps if x[field] is not None],th,cost) for cost in COSTS_BPS} for th in TRADE_THRESHOLDS}
+  strategies[name]={str(th):{str(cost):strategy_metrics([x for x in ps if x[field] is not None],field,th,cost) for cost in COSTS_BPS} for th in TRADE_THRESHOLDS}
  return {"status":"available","rows":len(rows),"metrics_by_model":metrics,"by_regime":regimes,"selective_trade_simulation":strategies},ps
 
 def main():
