@@ -1,0 +1,38 @@
+name: Crypto Checkpoint Free Historical Backfill
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: crypto-free-historical-backfill
+  cancel-in-progress: false
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Check backfill script syntax
+        run: python -m py_compile scripts/backfill_free_history.py
+      - name: Download free public historical datasets
+        run: python scripts/backfill_free_history.py
+      - name: Commit historical datasets and coverage manifest
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/historical/
+          if git diff --cached --quiet; then
+            echo "No historical data changes to commit."
+          else
+            git commit -m "Backfill free historical crypto datasets"
+            git push
+          fi
