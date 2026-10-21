@@ -82,7 +82,7 @@ def derivatives(symbol):
  except Exception as e:
   out.setdefault("global_long_short_ratio",{"unavailable":"OKX: "+str(e)[:120]})
  try:
-  j=get_json("https://www.okx.com/api/v5/rubik/stat/contracts/taker-volume",{"ccy":base,"period":"1H"})
+  j=get_json("https://www.okx.com/api/v5/rubik/stat/contracts/taker-volume",{"ccy":base,"instType":"SWAP","period":"1H"})
   data=j.get("data",[])
   if str(j.get("code"))=="0" and data:
    row=data[0]
