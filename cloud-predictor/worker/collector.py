@@ -22,8 +22,33 @@ KEYS=["r1","r4","r12","r24","ma6gap","ma24gap","volratio","range24","volatility2
 SCALE={"r1":1,"r4":2,"r12":3,"r24":5,"ma6gap":1.5,"ma24gap":3,"volratio":1.5,"range24":1,"volatility24":1}
 def dist(a,b): return math.sqrt(mean([min(5,abs(a[k]-b[k])/SCALE[k])**2 for k in KEYS]))
 def fetch_rows(symbol):
- raw=get_json("https://api.binance.com/api/v3/klines",{"symbol":symbol,"interval":"1h","limit":1000}); now=int(time.time()*1000)
- return [{"t":int(r[0]),"o":float(r[1]),"h":float(r[2]),"l":float(r[3]),"c":float(r[4]),"v":float(r[5])} for r in raw if int(r[6])<now]
+ # Binance can return HTTP 451 from hosted runners in some regions. Use OKX public candles.
+ base=symbol.replace("USDT","")
+ last_error=None
+ for inst in (base+"-USDT-SWAP", base+"-USDT"):
+  try:
+   collected=[]; cursor=None
+   for _ in range(3):
+    params={"instId":inst,"bar":"1H","limit":"300"}
+    if cursor is not None: params["after"]=str(cursor)
+    j=get_json("https://www.okx.com/api/v5/market/candles",params)
+    if str(j.get("code"))!="0": raise RuntimeError("OKX "+str(j.get("code"))+": "+str(j.get("msg")))
+    batch=j.get("data",[])
+    if not batch: break
+    for r in batch:
+     if len(r)>=9 and str(r[8])=="1":
+      collected.append({"t":int(r[0]),"o":float(r[1]),"h":float(r[2]),"l":float(r[3]),"c":float(r[4]),"v":float(r[7] or r[5] or 0)})
+    oldest=min(int(r[0]) for r in batch if r)
+    if cursor==oldest: break
+    cursor=oldest
+    if len(collected)>=480: break
+    time.sleep(0.35)
+   unique={r["t"]:r for r in collected}
+   rows=sorted(unique.values(),key=lambda r:r["t"])
+   if len(rows)>=180: return rows[-600:]
+   last_error=RuntimeError("OKX "+inst+": only "+str(len(rows))+" completed hourly candles")
+  except Exception as e: last_error=e
+ raise last_error or RuntimeError("No OKX hourly history for "+symbol)
 def make_forecasts(rows):
  n=len(rows)
  if n<180: raise RuntimeError("Not enough completed hourly candles")
@@ -52,7 +77,7 @@ def telegram(message):
   r=S.post("https://api.telegram.org/bot"+token+"/sendMessage",json={"chat_id":chat,"text":message,"disable_web_page_preview":True},timeout=15);r.raise_for_status();return "sent"
  except Exception as e:return "failed: "+str(e)[:160]
 def main():
- now=datetime.now(timezone.utc).isoformat(); snap={"updated_at":now,"source":"Binance public market data","coins":{}}; issues=[]
+ now=datetime.now(timezone.utc).isoformat(); snap={"updated_at":now,"source":"OKX public hourly candles; Binance futures derivatives where accessible","coins":{}}; issues=[]
  for coin,symbol in SYMBOLS.items():
   try:
    rows=fetch_rows(symbol); f,forecasts=make_forecasts(rows); last=rows[-1]
