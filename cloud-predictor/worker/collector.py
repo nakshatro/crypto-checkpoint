@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Experimental Binance hourly nearest-analogue forecast worker."""
+"""Experimental Crypto Checkpoint: analogue scenarios plus a five-layer probabilistic model."""
 import json, math, os, statistics, time, re, bisect
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
