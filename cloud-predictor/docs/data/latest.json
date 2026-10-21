@@ -1,19 +1,19 @@
 {
-  "updated_at": "2026-10-21T21:21:09.841737+00:00",
+  "updated_at": "2026-10-21T21:38:35.101208+00:00",
   "source": "OKX public hourly candles plus five-layer model; missing components disclosed",
   "model_context": {
     "fear_greed": 63,
-    "stablecoin_30d": -0.0006345110997572068,
-    "headline_count": 100,
+    "stablecoin_30d": -0.0005651726363246068,
+    "headline_count": 94,
     "events": []
   },
   "coins": {
     "BTC": {
       "coin": "BTC",
       "symbol": "BTCUSDT",
-      "price": 84652.4,
+      "price": 84754.9,
       "price_source": "OKX live ticker (BTC-USDT-SWAP)",
-      "price_time": "2026-10-21T21:21:11.566000+00:00",
+      "price_time": "2026-10-21T21:38:36.265000+00:00",
       "candle_time": "2026-10-21T20:00:00+00:00",
       "change_1h_pct": 0.236,
       "change_4h_pct": 0.151,
@@ -25,10 +25,12 @@
       "volatility_24h_pct": 0.24,
       "derivatives": {
         "open_interest": {
-          "unavailable": "451 Client Error:  for url: https://fapi.binance.com/fapi/v1/openInterest?symbol=BTCUSDT"
+          "openInterest": 8325025036.53,
+          "source": "main checkpoint snapshot (USD value)"
         },
         "funding_rate": {
-          "unavailable": "451 Client Error:  for url: https://fapi.binance.com/fapi/v1/fundingRate?symbol=BTCUSDT&limit=1"
+          "fundingRate": 8.67e-06,
+          "source": "main checkpoint snapshot; converted from percent to decimal"
         },
         "global_long_short_ratio": {
           "longShortRatio": 1.15,
@@ -36,13 +38,13 @@
           "timestamp": "1792616400000"
         },
         "taker_buy_sell_ratio": {
-          "buySellRatio": 0.9439603664608643,
-          "buy_size": 379.17,
-          "sell_size": 401.68,
+          "buySellRatio": 2.7543702740060163,
+          "buy_size": 1016.28,
+          "sell_size": 368.97,
           "trade_count": 500,
           "source": "OKX public recent trades (up to 500; not a 1h aggregate)",
           "instrument": "BTC-USDT-SWAP",
-          "timestamp": "1792617671783"
+          "timestamp": "1792618716555"
         },
         "funding_history": [
           8.98885586635e-05,
@@ -3032,11 +3034,11 @@
         "oi_history_count": 720,
         "taker_cvd_24h": 0.020364576100932293,
         "taker_cvd_count": 24,
-        "basis": -0.0005478235819162577,
-        "book_imbalance": -0.15927930490422973,
+        "basis": -0.0006496875368471386,
+        "book_imbalance": 0.10587294387931953,
         "recent_liquidations_usd": {
           "longs": 436991.3546200001,
-          "shorts": 225092.07424999998
+          "shorts": 233555.21863000002
         }
       },
       "forecasts": [
@@ -3099,30 +3101,36 @@
             ]
           },
           "derivs": {
-            "score": 0.35547041610121394,
+            "score": 0.3200789592182128,
             "components": [
+              {
+                "name": "funding_crowding",
+                "score": 0.256,
+                "weight": 0.375,
+                "note": "funding 0.0009% (18th percentile of available history)"
+              },
               {
                 "name": "long_short_ratio",
                 "score": -0.07,
-                "weight": 0.3,
+                "weight": 0.188,
                 "note": "account long/short ratio 1.150; historical percentile unavailable"
               },
               {
                 "name": "price_vs_oi",
                 "score": 0.6,
-                "weight": 0.6,
+                "weight": 0.375,
                 "note": "price +2.2%, OI +9.4% over 24h"
               },
               {
                 "name": "perp_basis",
-                "score": 0.164,
-                "weight": 0.1,
-                "note": "perpetual basis -5.5 bps"
+                "score": 0.195,
+                "weight": 0.063,
+                "note": "perpetual basis -6.5 bps"
               }
             ]
           },
           "liquidity": {
-            "score": 0.22084694108129846,
+            "score": 0.2864931968398983,
             "components": [
               {
                 "name": "taker_cvd_24h",
@@ -3132,43 +3140,43 @@
               },
               {
                 "name": "liquidation_magnet",
-                "score": 0.507,
+                "score": 0.552,
                 "weight": 0.3,
                 "note": "estimated liquidation fuel above vs below; OI-delta weighted"
               },
               {
                 "name": "recent_liquidation_flow",
-                "score": 0.096,
+                "score": 0.091,
                 "weight": 0.2,
                 "note": "liquidated longs $0.4M vs shorts $0.2M"
               },
               {
                 "name": "book_imbalance",
-                "score": -0.319,
+                "score": 0.212,
                 "weight": 0.1,
-                "note": "top-400-level notional imbalance -0.16"
+                "note": "top-400-level notional imbalance +0.11"
               }
             ]
           },
           "onchain": {
-            "score": -0.021150369991906892,
+            "score": -0.018839087877486893,
             "components": [
               {
                 "name": "stablecoin_supply_30d",
-                "score": -0.021,
+                "score": -0.019,
                 "weight": 1.0,
                 "note": "global stablecoin supply -0.06% over 30d"
               }
             ]
           },
           "news": {
-            "score": -0.07839999999999997,
+            "score": 0.041600000000000005,
             "components": [
               {
                 "name": "headline_sentiment",
-                "score": -0.2,
+                "score": 0.0,
                 "weight": 0.6,
-                "note": "3 matching keyword-scored headlines; not semantic sentiment"
+                "note": "2 matching keyword-scored headlines; not semantic sentiment"
               },
               {
                 "name": "fear_greed",
@@ -3181,53 +3189,53 @@
         },
         "horizons": {
           "4h": {
-            "composite": 0.258,
-            "p_up": 0.595,
+            "composite": 0.282,
+            "p_up": 0.602,
             "coverage": 1.0,
             "bias": "Bullish",
             "range": [
-              84078.43664075,
-              85230.28153317
+              84180.24166643,
+              85333.48125175
             ]
           },
           "24h": {
-            "composite": 0.266,
-            "p_up": 0.597,
+            "composite": 0.292,
+            "p_up": 0.605,
             "coverage": 1.0,
             "bias": "Bullish",
             "range": [
-              83253.38421057,
-              86074.92528635
+              83354.19023475,
+              86179.14772826
             ]
           },
           "72h": {
-            "composite": 0.262,
-            "p_up": 0.596,
+            "composite": 0.283,
+            "p_up": 0.602,
             "coverage": 1.0,
             "bias": "Bullish",
             "range": [
-              82243.91342754,
-              87131.41832767
+              82343.49715023,
+              87236.92000723
             ]
           },
           "1w": {
-            "composite": 0.266,
-            "p_up": 0.597,
+            "composite": 0.284,
+            "p_up": 0.603,
             "coverage": 1.0,
             "bias": "Bullish",
             "range": [
-              81001.11002602,
-              88468.27930454
+              81099.18892016,
+              88575.39970076
             ]
           },
           "1m": {
-            "composite": 0.187,
-            "p_up": 0.572,
+            "composite": 0.211,
+            "p_up": 0.58,
             "coverage": 1.0,
             "bias": "Bullish",
             "range": [
-              77267.79484466,
-              92742.76352996
+              77361.35331402,
+              92855.0596168
             ]
           }
         },
@@ -3235,48 +3243,47 @@
         "levels": {
           "liq_above": [
             {
-              "price": 85710.555,
-              "strength": 0.9887495735621172,
+              "price": 85178.6745,
+              "strength": 1.0,
+              "dist_pct": 0.49999999999998934
+            },
+            {
+              "price": 85814.33625,
+              "strength": 0.9925814766225624,
               "dist_pct": 1.2499999999999956
             },
             {
-              "price": 85287.293,
-              "strength": 0.6823006294000251,
-              "dist_pct": 0.7500000000000062
-            },
-            {
-              "price": 89943.175,
-              "strength": 0.6653477409117876,
-              "dist_pct": 6.25
+              "price": 89840.194,
+              "strength": 0.7035630205929307,
+              "dist_pct": 6.000000000000005
             }
           ],
           "liq_below": [
             {
-              "price": 77880.208,
-              "strength": 1.0,
-              "dist_pct": -7.9999999999999964
+              "price": 77762.62075,
+              "strength": 0.8208528700634772,
+              "dist_pct": -8.249999999999991
             },
             {
-              "price": 79149.994,
-              "strength": 0.7691106717161098,
-              "dist_pct": -6.499999999999984
+              "price": 79669.606,
+              "strength": 0.7907610287908464,
+              "dist_pct": -5.999999999999995
             },
             {
-              "price": 78303.47,
-              "strength": 0.6579775279935287,
-              "dist_pct": -7.499999999999996
+              "price": 79033.94425,
+              "strength": 0.7043472108670281,
+              "dist_pct": -6.749999999999989
             }
           ],
           "liq_method": "OI-delta weighted"
         },
         "confidence": {
-          "value": 0.64,
+          "value": 0.69,
           "label": "High",
           "notes": []
         },
         "data_quality": {
           "missing": [
-            "funding_rate",
             "manual_etf_flow",
             "scheduled_events_not_configured"
           ]
@@ -3287,9 +3294,9 @@
     "ETH": {
       "coin": "ETH",
       "symbol": "ETHUSDT",
-      "price": 2494.4,
+      "price": 2498.91,
       "price_source": "OKX live ticker (ETH-USDT-SWAP)",
-      "price_time": "2026-10-21T21:21:14.971000+00:00",
+      "price_time": "2026-10-21T21:38:39.459000+00:00",
       "candle_time": "2026-10-21T20:00:00+00:00",
       "change_1h_pct": -0.071,
       "change_4h_pct": -0.676,
@@ -3301,10 +3308,12 @@
       "volatility_24h_pct": 0.348,
       "derivatives": {
         "open_interest": {
-          "unavailable": "451 Client Error:  for url: https://fapi.binance.com/fapi/v1/openInterest?symbol=ETHUSDT"
+          "openInterest": 5640738459.37,
+          "source": "main checkpoint snapshot (USD value)"
         },
         "funding_rate": {
-          "unavailable": "451 Client Error:  for url: https://fapi.binance.com/fapi/v1/fundingRate?symbol=ETHUSDT&limit=1"
+          "fundingRate": 3.254e-05,
+          "source": "main checkpoint snapshot; converted from percent to decimal"
         },
         "global_long_short_ratio": {
           "longShortRatio": 1.59,
@@ -3312,13 +3321,13 @@
           "timestamp": "1792616400000"
         },
         "taker_buy_sell_ratio": {
-          "buySellRatio": 0.5982787881036066,
-          "buy_size": 645.13,
-          "sell_size": 1078.31,
+          "buySellRatio": 0.5743978701867747,
+          "buy_size": 414.25,
+          "sell_size": 721.1899999999999,
           "trade_count": 500,
           "source": "OKX public recent trades (up to 500; not a 1h aggregate)",
           "instrument": "ETH-USDT-SWAP",
-          "timestamp": "1792617673723"
+          "timestamp": "1792618718315"
         },
         "funding_history": [
           9.8214674002e-05,
@@ -6308,11 +6317,11 @@
         "oi_history_count": 720,
         "taker_cvd_24h": 0.007017257805844232,
         "taker_cvd_count": 24,
-        "basis": -0.00043278247070700917,
-        "book_imbalance": 0.005108751279489292,
+        "basis": -0.00044399467206398613,
+        "book_imbalance": 0.08413485932367043,
         "recent_liquidations_usd": {
-          "longs": 497589.0803500001,
-          "shorts": 26963.926730000003
+          "longs": 497494.2270300001,
+          "shorts": 99835.04739
         }
       },
       "forecasts": [
@@ -6381,30 +6390,36 @@
             ]
           },
           "derivs": {
-            "score": -0.013944621834737804,
+            "score": 0.03649484012873219,
             "components": [
+              {
+                "name": "funding_crowding",
+                "score": 0.12,
+                "weight": 0.375,
+                "note": "funding 0.0033% (44th percentile of available history)"
+              },
               {
                 "name": "long_short_ratio",
                 "score": -0.232,
-                "weight": 0.3,
+                "weight": 0.188,
                 "note": "account long/short ratio 1.590; historical percentile unavailable"
               },
               {
                 "name": "price_vs_oi",
                 "score": 0.071,
-                "weight": 0.6,
+                "weight": 0.375,
                 "note": "price +1.8%, OI +0.6% over 24h"
               },
               {
                 "name": "perp_basis",
-                "score": 0.13,
-                "weight": 0.1,
-                "note": "perpetual basis -4.3 bps"
+                "score": 0.133,
+                "weight": 0.063,
+                "note": "perpetual basis -4.4 bps"
               }
             ]
           },
           "liquidity": {
-            "score": 0.23064514138595554,
+            "score": 0.26231934358158626,
             "components": [
               {
                 "name": "taker_cvd_24h",
@@ -6414,30 +6429,30 @@
               },
               {
                 "name": "liquidation_magnet",
-                "score": 0.492,
+                "score": 0.592,
                 "weight": 0.3,
                 "note": "estimated liquidation fuel above vs below; OI-delta weighted"
               },
               {
                 "name": "recent_liquidation_flow",
-                "score": 0.269,
+                "score": 0.2,
                 "weight": 0.2,
-                "note": "liquidated longs $0.5M vs shorts $0.0M"
+                "note": "liquidated longs $0.5M vs shorts $0.1M"
               },
               {
                 "name": "book_imbalance",
-                "score": 0.01,
+                "score": 0.168,
                 "weight": 0.1,
-                "note": "top-400-level notional imbalance +0.01"
+                "note": "top-400-level notional imbalance +0.08"
               }
             ]
           },
           "onchain": {
-            "score": -0.1361057377636962,
+            "score": -0.13478500512688477,
             "components": [
               {
                 "name": "stablecoin_supply_30d",
-                "score": -0.021,
+                "score": -0.019,
                 "weight": 0.571,
                 "note": "global stablecoin supply -0.06% over 30d"
               },
@@ -6469,53 +6484,53 @@
         },
         "horizons": {
           "4h": {
-            "composite": -0.015,
-            "p_up": 0.494,
+            "composite": 0.015,
+            "p_up": 0.506,
             "coverage": 1.0,
             "bias": "Neutral",
             "range": [
-              2475.29061696,
-              2513.65690855
+              2479.76606624,
+              2518.20172601
             ]
           },
           "24h": {
-            "composite": -0.027,
-            "p_up": 0.489,
+            "composite": 0.001,
+            "p_up": 0.5,
             "coverage": 1.0,
             "bias": "Neutral",
             "range": [
-              2447.85135269,
-              2541.8338222
+              2452.27719041,
+              2546.42958493
             ]
           },
           "72h": {
-            "composite": -0.077,
-            "p_up": 0.469,
+            "composite": -0.053,
+            "p_up": 0.479,
             "coverage": 1.0,
             "bias": "Neutral",
             "range": [
-              2414.32700731,
-              2577.12867443
+              2418.69223134,
+              2581.78825201
             ]
           },
           "1w": {
-            "composite": -0.11,
-            "p_up": 0.457,
+            "composite": -0.089,
+            "p_up": 0.465,
             "coverage": 1.0,
             "bias": "Neutral",
             "range": [
-              2373.12741923,
-              2621.86990449
+              2377.41815233,
+              2626.61037646
             ]
           },
           "1m": {
-            "composite": -0.189,
-            "p_up": 0.428,
+            "composite": -0.18,
+            "p_up": 0.431,
             "coverage": 1.0,
             "bias": "Bearish",
             "range": [
-              2249.86576142,
-              2765.51226598
+              2253.93363128,
+              2770.51245052
             ]
           }
         },
@@ -6523,48 +6538,47 @@
         "levels": {
           "liq_above": [
             {
-              "price": 2650.3,
-              "strength": 1.0,
-              "dist_pct": 6.25
+              "price": 2648.8446,
+              "strength": 0.7959757183331432,
+              "dist_pct": 6.000000000000005
             },
             {
-              "price": 2538.052,
-              "strength": 0.8758325242225276,
-              "dist_pct": 1.750000000000007
+              "price": 2530.1463750000003,
+              "strength": 0.7153334966253181,
+              "dist_pct": 1.2500000000000178
             },
             {
-              "price": 2531.8160000000003,
-              "strength": 0.6951636862812254,
-              "dist_pct": 1.5000000000000124
+              "price": 2567.630025,
+              "strength": 0.6706564199903012,
+              "dist_pct": 2.750000000000008
             }
           ],
           "liq_below": [
             {
-              "price": 2319.7920000000004,
-              "strength": 0.9756549160641286,
-              "dist_pct": -6.999999999999984
+              "price": 2311.49175,
+              "strength": 1.0,
+              "dist_pct": -7.499999999999984
             },
             {
-              "price": 2195.072,
-              "strength": 0.8834985876277212,
-              "dist_pct": -12.0
-            },
-            {
-              "price": 2313.556,
-              "strength": 0.7818189994165976,
+              "price": 2317.739025,
+              "strength": 0.7990131483789875,
               "dist_pct": -7.250000000000001
+            },
+            {
+              "price": 2292.749925,
+              "strength": 0.6788956742310386,
+              "dist_pct": -8.249999999999991
             }
           ],
           "liq_method": "OI-delta weighted"
         },
         "confidence": {
-          "value": 0.64,
+          "value": 0.61,
           "label": "High",
           "notes": []
         },
         "data_quality": {
           "missing": [
-            "funding_rate",
             "manual_etf_flow",
             "scheduled_events_not_configured"
           ]
@@ -6575,9 +6589,9 @@
     "XRP": {
       "coin": "XRP",
       "symbol": "XRPUSDT",
-      "price": 1.3836,
+      "price": 1.3843,
       "price_source": "OKX live ticker (XRP-USDT-SWAP)",
-      "price_time": "2026-10-21T21:21:18.564000+00:00",
+      "price_time": "2026-10-21T21:38:42.071000+00:00",
       "candle_time": "2026-10-21T20:00:00+00:00",
       "change_1h_pct": -0.274,
       "change_4h_pct": 0.319,
@@ -6589,24 +6603,26 @@
       "volatility_24h_pct": 0.461,
       "derivatives": {
         "open_interest": {
-          "unavailable": "451 Client Error:  for url: https://fapi.binance.com/fapi/v1/openInterest?symbol=XRPUSDT"
+          "openInterest": 450549418.68,
+          "source": "main checkpoint snapshot (USD value)"
         },
         "funding_rate": {
-          "unavailable": "451 Client Error:  for url: https://fapi.binance.com/fapi/v1/fundingRate?symbol=XRPUSDT&limit=1"
+          "fundingRate": 0.0001,
+          "source": "main checkpoint snapshot; converted from percent to decimal"
         },
         "global_long_short_ratio": {
-          "longShortRatio": 3.13,
+          "longShortRatio": 3.14,
           "source": "OKX public account long/short ratio",
           "timestamp": "1792616400000"
         },
         "taker_buy_sell_ratio": {
-          "buySellRatio": 1.1101308786434052,
-          "buy_size": 840.58,
-          "sell_size": 757.19,
+          "buySellRatio": 0.8538225501077235,
+          "buy_size": 392.34,
+          "sell_size": 459.51,
           "trade_count": 500,
           "source": "OKX public recent trades (up to 500; not a 1h aggregate)",
           "instrument": "XRP-USDT-SWAP",
-          "timestamp": "1792617675580"
+          "timestamp": "1792618718368"
         },
         "funding_history": [
           0.0001,
@@ -9596,8 +9612,8 @@
         "oi_history_count": 720,
         "taker_cvd_24h": 0.0036238266094148217,
         "taker_cvd_count": 24,
-        "basis": -0.00043330685347001797,
-        "book_imbalance": 0.04945649503944111,
+        "basis": -0.00043324427756511944,
+        "book_imbalance": -0.012871820079984114,
         "recent_liquidations_usd": {
           "longs": 20809.8301,
           "shorts": 601412.5162000002
@@ -9669,30 +9685,36 @@
             ]
           },
           "derivs": {
-            "score": 0.20184425492129127,
+            "score": -0.24914755728816917,
             "components": [
               {
+                "name": "funding_crowding",
+                "score": -1,
+                "weight": 0.375,
+                "note": "funding 0.0100% (100th percentile of available history)"
+              },
+              {
                 "name": "long_short_ratio",
-                "score": -0.571,
-                "weight": 0.3,
-                "note": "account long/short ratio 3.130; historical percentile unavailable"
+                "score": -0.572,
+                "weight": 0.188,
+                "note": "account long/short ratio 3.140; historical percentile unavailable"
               },
               {
                 "name": "price_vs_oi",
                 "score": 0.6,
-                "weight": 0.6,
+                "weight": 0.375,
                 "note": "price +3.8%, OI +6.4% over 24h"
               },
               {
                 "name": "perp_basis",
                 "score": 0.13,
-                "weight": 0.1,
+                "weight": 0.063,
                 "note": "perpetual basis -4.3 bps"
               }
             ]
           },
           "liquidity": {
-            "score": 0.06770339898539338,
+            "score": 0.05854869493932904,
             "components": [
               {
                 "name": "taker_cvd_24h",
@@ -9702,7 +9724,7 @@
               },
               {
                 "name": "liquidation_magnet",
-                "score": 0.331,
+                "score": 0.342,
                 "weight": 0.3,
                 "note": "estimated liquidation fuel above vs below; OI-delta weighted"
               },
@@ -9714,18 +9736,18 @@
               },
               {
                 "name": "book_imbalance",
-                "score": 0.099,
+                "score": -0.026,
                 "weight": 0.1,
-                "note": "top-400-level notional imbalance +0.05"
+                "note": "top-400-level notional imbalance -0.01"
               }
             ]
           },
           "onchain": {
-            "score": -0.021150369991906892,
+            "score": -0.018839087877486893,
             "components": [
               {
                 "name": "stablecoin_supply_30d",
-                "score": -0.021,
+                "score": -0.019,
                 "weight": 1.0,
                 "note": "global stablecoin supply -0.06% over 30d"
               }
@@ -9745,53 +9767,53 @@
         },
         "horizons": {
           "4h": {
-            "composite": 0.03,
-            "p_up": 0.512,
+            "composite": -0.147,
+            "p_up": 0.443,
             "coverage": 1.0,
             "bias": "Neutral",
             "range": [
-              1.36875199,
-              1.39860908
+              1.36944448,
+              1.39931667
             ]
           },
           "24h": {
-            "composite": -0.009,
-            "p_up": 0.496,
+            "composite": -0.165,
+            "p_up": 0.436,
             "coverage": 1.0,
-            "bias": "Neutral",
+            "bias": "Bearish",
             "range": [
-              1.34751236,
-              1.4206541
+              1.3481941,
+              1.42137285
             ]
           },
           "72h": {
-            "composite": -0.053,
-            "p_up": 0.479,
+            "composite": -0.203,
+            "p_up": 0.423,
             "coverage": 1.0,
-            "bias": "Neutral",
+            "bias": "Bearish",
             "range": [
-              1.32169251,
-              1.44840721
+              1.32236119,
+              1.44914
             ]
           },
           "1w": {
-            "composite": -0.098,
-            "p_up": 0.461,
+            "composite": -0.236,
+            "p_up": 0.412,
             "coverage": 1.0,
-            "bias": "Neutral",
+            "bias": "Bearish",
             "range": [
-              1.29015877,
-              1.48380881
+              1.2908115,
+              1.48455951
             ]
           },
           "1m": {
-            "composite": -0.149,
-            "p_up": 0.442,
+            "composite": -0.206,
+            "p_up": 0.422,
             "coverage": 1.0,
-            "bias": "Neutral",
+            "bias": "Bearish",
             "range": [
-              1.19713762,
-              1.59910518
+              1.19774328,
+              1.59991421
             ]
           }
         },
@@ -9799,42 +9821,42 @@
         "levels": {
           "liq_above": [
             {
-              "price": 1.4181899999999998,
-              "strength": 0.8048304353972184,
-              "dist_pct": 2.499999999999991
+              "price": 1.4189075000000002,
+              "strength": 0.7523096160486543,
+              "dist_pct": 2.5000000000000133
             },
             {
-              "price": 1.4424029999999999,
-              "strength": 0.7344229115470705,
+              "price": 1.4431327500000002,
+              "strength": 0.6661789961364637,
               "dist_pct": 4.249999999999998
             },
             {
-              "price": 1.428567,
-              "strength": 0.6834083579339616,
+              "price": 1.4292897500000001,
+              "strength": 0.6526317544137358,
               "dist_pct": 3.2499999999999973
             }
           ],
           "liq_below": [
             {
-              "price": 1.24524,
+              "price": 1.24587,
               "strength": 1.0,
               "dist_pct": -9.999999999999998
             },
             {
-              "price": 1.248699,
-              "strength": 0.8193490221870857,
+              "price": 1.2493307500000002,
+              "strength": 0.858282897439757,
               "dist_pct": -9.749999999999993
             },
             {
-              "price": 1.2279449999999998,
-              "strength": 0.6495062809244712,
-              "dist_pct": -11.250000000000004
+              "price": 1.2389485,
+              "strength": 0.6934004598686927,
+              "dist_pct": -10.500000000000009
             }
           ],
           "liq_method": "OI-delta weighted"
         },
         "confidence": {
-          "value": 0.35,
+          "value": 0.41,
           "label": "Medium",
           "notes": [
             "layers disagree"
@@ -9842,7 +9864,6 @@
         },
         "data_quality": {
           "missing": [
-            "funding_rate",
             "manual_etf_flow",
             "scheduled_events_not_configured"
           ]
@@ -9853,9 +9874,9 @@
     "SOL": {
       "coin": "SOL",
       "symbol": "SOLUSDT",
-      "price": 107.96,
+      "price": 108.24,
       "price_source": "OKX live ticker (SOL-USDT-SWAP)",
-      "price_time": "2026-10-21T21:21:22.073000+00:00",
+      "price_time": "2026-10-21T21:38:44.268000+00:00",
       "candle_time": "2026-10-21T20:00:00+00:00",
       "change_1h_pct": -0.231,
       "change_4h_pct": -0.249,
@@ -9867,10 +9888,12 @@
       "volatility_24h_pct": 0.352,
       "derivatives": {
         "open_interest": {
-          "unavailable": "451 Client Error:  for url: https://fapi.binance.com/fapi/v1/openInterest?symbol=SOLUSDT"
+          "openInterest": 923600035.84,
+          "source": "main checkpoint snapshot (USD value)"
         },
         "funding_rate": {
-          "unavailable": "451 Client Error:  for url: https://fapi.binance.com/fapi/v1/fundingRate?symbol=SOLUSDT&limit=1"
+          "fundingRate": 7.916e-05,
+          "source": "main checkpoint snapshot; converted from percent to decimal"
         },
         "global_long_short_ratio": {
           "longShortRatio": 2.22,
@@ -9878,13 +9901,13 @@
           "timestamp": "1792616400000"
         },
         "taker_buy_sell_ratio": {
-          "buySellRatio": 2.706111220279033,
-          "buy_size": 688.57,
-          "sell_size": 254.45000000000002,
+          "buySellRatio": 0.5544859569171467,
+          "buy_size": 552.39,
+          "sell_size": 996.22,
           "trade_count": 500,
           "source": "OKX public recent trades (up to 500; not a 1h aggregate)",
           "instrument": "SOL-USDT-SWAP",
-          "timestamp": "1792617680875"
+          "timestamp": "1792618723397"
         },
         "funding_history": [
           0.0001,
@@ -12874,8 +12897,8 @@
         "oi_history_count": 720,
         "taker_cvd_24h": 0.012840269206765214,
         "taker_cvd_count": 24,
-        "basis": -0.0004628772449546117,
-        "book_imbalance": 0.08718375782356284,
+        "basis": -0.000461723150798886,
+        "book_imbalance": -0.0007120841586930701,
         "recent_liquidations_usd": {
           "longs": 69784.6972,
           "shorts": 269749.984
@@ -12947,30 +12970,36 @@
             ]
           },
           "derivs": {
-            "score": 0.2529918742496395,
+            "score": -0.006901717859395145,
             "components": [
+              {
+                "name": "funding_crowding",
+                "score": -0.44,
+                "weight": 0.375,
+                "note": "funding 0.0079% (72th percentile of available history)"
+              },
               {
                 "name": "long_short_ratio",
                 "score": -0.399,
-                "weight": 0.3,
+                "weight": 0.188,
                 "note": "account long/short ratio 2.220; historical percentile unavailable"
               },
               {
                 "name": "price_vs_oi",
                 "score": 0.598,
-                "weight": 0.6,
+                "weight": 0.375,
                 "note": "price +1.2%, OI +5.0% over 24h"
               },
               {
                 "name": "perp_basis",
                 "score": 0.139,
-                "weight": 0.1,
+                "weight": 0.063,
                 "note": "perpetual basis -4.6 bps"
               }
             ]
           },
           "liquidity": {
-            "score": 0.1293260749178767,
+            "score": 0.14929422404952503,
             "components": [
               {
                 "name": "taker_cvd_24h",
@@ -12980,7 +13009,7 @@
               },
               {
                 "name": "liquidation_magnet",
-                "score": 0.32,
+                "score": 0.445,
                 "weight": 0.3,
                 "note": "estimated liquidation fuel above vs below; OI-delta weighted"
               },
@@ -12992,18 +13021,18 @@
               },
               {
                 "name": "book_imbalance",
-                "score": 0.174,
+                "score": -0.001,
                 "weight": 0.1,
-                "note": "top-400-level notional imbalance +0.09"
+                "note": "top-400-level notional imbalance -0.00"
               }
             ]
           },
           "onchain": {
-            "score": -0.08127981512904979,
+            "score": -0.07995908249223836,
             "components": [
               {
                 "name": "stablecoin_supply_30d",
-                "score": -0.021,
+                "score": -0.019,
                 "weight": 0.571,
                 "note": "global stablecoin supply -0.06% over 30d"
               },
@@ -13035,53 +13064,53 @@
         },
         "horizons": {
           "4h": {
-            "composite": 0.123,
-            "p_up": 0.548,
+            "composite": 0.029,
+            "p_up": 0.512,
             "coverage": 1.0,
             "bias": "Neutral",
             "range": [
-              106.89179825,
-              109.03887661
+              107.16902782,
+              109.32167473
             ]
           },
           "24h": {
-            "composite": 0.099,
-            "p_up": 0.539,
+            "composite": 0.018,
+            "p_up": 0.507,
             "coverage": 1.0,
             "bias": "Neutral",
             "range": [
-              105.36218602,
-              110.62186578
+              105.63544845,
+              110.90876947
             ]
           },
           "72h": {
-            "composite": 0.063,
-            "p_up": 0.525,
+            "composite": -0.018,
+            "p_up": 0.493,
             "coverage": 1.0,
             "bias": "Neutral",
             "range": [
-              103.50017012,
-              112.61200428
+              103.76860331,
+              112.9040695
             ]
           },
           "1w": {
-            "composite": 0.032,
-            "p_up": 0.513,
+            "composite": -0.043,
+            "p_up": 0.483,
             "coverage": 1.0,
             "bias": "Neutral",
             "range": [
-              101.22221706,
-              115.14627855
+              101.48474226,
+              115.44491654
             ]
           },
           "1m": {
-            "composite": -0.04,
-            "p_up": 0.484,
+            "composite": -0.071,
+            "p_up": 0.472,
             "coverage": 1.0,
             "bias": "Neutral",
             "range": [
-              94.47659188,
-              123.36771859
+              94.72162194,
+              123.68767932
             ]
           }
         },
@@ -13089,48 +13118,47 @@
         "levels": {
           "liq_above": [
             {
-              "price": 110.11919999999999,
-              "strength": 0.8106198396518488,
-              "dist_pct": 2.0000000000000018
+              "price": 110.1342,
+              "strength": 0.837347996457774,
+              "dist_pct": 1.750000000000007
             },
             {
-              "price": 113.35799999999999,
-              "strength": 0.7286923274941046,
-              "dist_pct": 5.000000000000004
+              "price": 111.4872,
+              "strength": 0.7984971687413017,
+              "dist_pct": 3.0000000000000027
             },
             {
-              "price": 111.46869999999998,
-              "strength": 0.722620598127453,
-              "dist_pct": 3.2499999999999973
+              "price": 113.3814,
+              "strength": 0.7933274472687625,
+              "dist_pct": 4.75000000000001
             }
           ],
           "liq_below": [
             {
-              "price": 99.59309999999999,
-              "strength": 1.0,
+              "price": 99.5808,
+              "strength": 0.9122605118890996,
+              "dist_pct": -7.9999999999999964
+            },
+            {
+              "price": 99.8514,
+              "strength": 0.7094411208899278,
               "dist_pct": -7.750000000000002
             },
             {
-              "price": 97.9737,
-              "strength": 0.625109593682431,
-              "dist_pct": -9.250000000000004
-            },
-            {
-              "price": 95.2747,
-              "strength": 0.6156035023594166,
-              "dist_pct": -11.749999999999993
+              "price": 95.2512,
+              "strength": 0.6711889391931974,
+              "dist_pct": -12.0
             }
           ],
           "liq_method": "OI-delta weighted"
         },
         "confidence": {
-          "value": 0.62,
+          "value": 0.67,
           "label": "High",
           "notes": []
         },
         "data_quality": {
           "missing": [
-            "funding_rate",
             "manual_etf_flow",
             "scheduled_events_not_configured"
           ]
