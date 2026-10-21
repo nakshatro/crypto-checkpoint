@@ -198,18 +198,52 @@ def load_manual_inputs():
   p=ROOT/"manual_inputs.json"
   return json.loads(p.read_text(encoding="utf-8")) if p.exists() else {}
  except Exception: return {}
+def automatic_macro_events():
+ """Fetch upcoming U.S. scheduled releases from the official BLS calendar."""
+ now=datetime.now(timezone.utc); out=[]
+ try:
+  r=S.get("https://www.bls.gov/schedule/news_release/bls.ics",timeout=(5,12)); r.raise_for_status()
+  text=re.sub(r"\\r?\\n[ \\t]","",r.text)
+  wanted=("consumer price index","producer price index","employment situation","job openings and labor turnover","productivity and costs","employment cost index","import and export price")
+  for block in re.findall(r"BEGIN:VEVENT(.*?)END:VEVENT",text,re.S):
+   sm=re.search(r"SUMMARY(?:;[^:]*)?:(.*)",block)
+   dt=re.search(r"DTSTART(?:;TZID=([^:;]+))?(?:;[^:]*)?:(\\d{8}T\\d{6}Z?|\\d{8})",block)
+   if not sm or not dt: continue
+   name=sm.group(1).replace("\\\\, ",", ").replace("\\\\;",";").strip()
+   if not any(x in name.lower() for x in wanted): continue
+   stamp=dt.group(2); tzname=dt.group(1)
+   try:
+    if len(stamp)==8: t=datetime.strptime(stamp,"%Y%m%d").replace(tzinfo=timezone.utc)
+    elif stamp.endswith("Z"): t=datetime.strptime(stamp,"%Y%m%dT%H%M%SZ").replace(tzinfo=timezone.utc)
+    else:
+     local=datetime.strptime(stamp,"%Y%m%dT%H%M%S")
+     from zoneinfo import ZoneInfo
+     t=local.replace(tzinfo=ZoneInfo(tzname or "America/New_York")).astimezone(timezone.utc)
+    hours=(t-now).total_seconds()/3600
+    if -1<=hours<=24*21: out.append({"name":name,"time_utc":t.isoformat(),"in_hours":round(hours,1),"source":"US BLS official calendar"})
+   except Exception: continue
+ except Exception: pass
+ try:
+  r=S.get("https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm",timeout=(5,12)); r.raise_for_status()
+  for match in re.finditer(r"(January|February|March|April|May|June|July|August|September|October|November|December)\\s+(\\d{1,2})\\s*[–-]\\s*(\\d{1,2})",r.text,re.I):
+   month,day,_=match.groups()
+   try:
+    t=datetime.strptime(month+" "+day+" "+str(now.year),"%B %d %Y").replace(tzinfo=timezone.utc)
+    if t<now-timedelta(days=3): t=t.replace(year=t.year+1)
+    hours=(t-now).total_seconds()/3600
+    if -24<=hours<=24*45: out.append({"name":"FOMC meeting (date only; announcement time not inferred)","time_utc":t.isoformat(),"in_hours":round(hours,1),"source":"Federal Reserve official calendar"})
+   except Exception: pass
+ except Exception: pass
+ unique={}
+ for e in out:
+  key=(e["name"],e["time_utc"][:10])
+  if key not in unique or e["in_hours"]<unique[key]["in_hours"]: unique[key]=e
+ return sorted(unique.values(),key=lambda x:x["in_hours"])[:12]
 def upcoming_manual_events(manual):
- out=[]; now=datetime.now(timezone.utc)
- for e in manual.get("events",[]):
-  try:
-   t=datetime.fromisoformat(e["time_utc"].replace("Z","+00:00"))
-   if t.tzinfo is None:t=t.replace(tzinfo=timezone.utc)
-   hours=(t-now).total_seconds()/3600
-   if -2<=hours<=24:out.append({"name":str(e.get("name","Scheduled event")),"in_hours":round(hours,1)})
-  except Exception: pass
- return out
+ # Retained for compatibility; all active events come from automatic feeds.
+ return []
 def global_model_context():
- manual=load_manual_inputs(); out={"stablecoin_30d":None,"fear_greed":None,"headlines":[],"events":upcoming_manual_events(manual),"manual":manual}
+ manual=load_manual_inputs(); out={"stablecoin_30d":None,"fear_greed":None,"headlines":[],"events":automatic_macro_events(),"manual":manual}
  try:
   j=get_json("https://stablecoins.llama.fi/stablecoincharts/all")
   if len(j)>=31:
@@ -527,28 +561,25 @@ def main():
   f24=next((x for x in v.get("forecasts",[]) if x.get("horizon")=="24h"),{}); med=f24.get("median_return_pct")
   if isinstance(p,(int,float)) and isinstance(med,(int,float)) and ((p>.55 and med<-.2) or (p<.45 and med>.2)):
    add_event(c+":forecast-conflict",f"CONFLICTING FORECASTS — {c}: model P(up) {p*100:.1f}% vs analogue median {med:+.3f}%.")
- # Optional user-defined trade levels. Empty by default; never fabricate entries or risk levels.
- trade_file=ROOT/"trade_levels.json"
- try: configured_trades=json.loads(trade_file.read_text(encoding="utf-8")).get("trades",[])
- except Exception: configured_trades=[]
- for trade in configured_trades:
-  try:
-   coin=str(trade.get("coin","")).upper(); side=str(trade.get("side","long")).lower()
-   price=(snap.get("coins",{}).get(coin,{}) or {}).get("price")
-   if price is None or side not in ("long","short"): continue
-   key=str(trade.get("id") or coin+"-"+side+"-"+str(trade.get("entry")))
-   entry=float(trade["entry"]); stop=float(trade["stop_loss"])
-   if (side=="long" and price<=stop) or (side=="short" and price>=stop):
-    add_event("trade:"+key+":stop",f"STOP-LOSS LEVEL REACHED — {coin} {side.upper()}: price {price:.6g}, stop {stop:.6g}. Verify exchange price; this alert does not place an order.")
-   for idx,tp in enumerate(trade.get("take_profits",[]) or [],1):
-    tp=float(tp)
-    if (side=="long" and price>=tp) or (side=="short" and price<=tp):
-     add_event("trade:"+key+":tp"+str(idx),f"TAKE-PROFIT LEVEL REACHED — {coin} {side.upper()}: price {price:.6g}, TP{idx} {tp:.6g}. This alert does not place an order.")
-   if not nstate.get("trade_entry_seen",{}).get(key) and ((side=="long" and price>=entry) or (side=="short" and price<=entry)):
-    add_event("trade:"+key+":entry",f"ENTRY LEVEL REACHED — {coin} {side.upper()}: price {price:.6g}, entry {entry:.6g}. Confirm setup and execute manually.")
-    nstate.setdefault("trade_entry_seen",{})[key]=now
-  except (TypeError,ValueError,KeyError):
-   continue
+ # Derive provisional trade levels only when model direction, confidence and data coverage pass thresholds.
+ generated_setups={}
+ for c,v in snap["coins"].items():
+  if "error" in v: continue
+  m=v.get("model",{}) or {}; h=(m.get("horizons",{}) or {}).get("24h",{}) or {}
+  p=h.get("p_up"); coverage=h.get("coverage",0); conf=(m.get("confidence",{}) or {}).get("value",0)
+  price=v.get("price"); band=h.get("range")
+  if not isinstance(p,(int,float)) or not isinstance(price,(int,float)) or not isinstance(band,list) or len(band)<2: continue
+  side="long" if p>=.60 else "short" if p<=.40 else None
+  if side is None or conf<.50 or coverage<.65: continue
+  edge=float(band[0] if side=="long" else band[1]); risk=price-edge if side=="long" else edge-price
+  if risk<=0: continue
+  risk=max(risk,price*.005); stop=price-risk if side=="long" else price+risk
+  target=price+1.5*risk if side=="long" else price-1.5*risk
+  setup={"coin":c,"side":side,"reference_price":price,"stop_loss":round(stop,8),"take_profit_1":round(target,8),"risk_pct":round(risk/price*100,2),"reward_risk":1.5,"p_up":p,"confidence":conf,"coverage":coverage}
+  generated_setups[c]=setup; prev=(nstate.get("last_setup",{}) or {}).get(c,{})
+  if prev.get("side")!=side or abs(float(prev.get("reference_price",price))-price)/price>=.015:
+   add_event("auto-setup:"+c+":"+side,f"PROVISIONAL SETUP — {c} {side.upper()} | reference ${price:,.6g} | SL ${stop:,.6g} | TP1 ${target:,.6g} | model P(up) {p*100:.1f}% | confidence {conf:.2f}. Experimental and uncalibrated; confirm structure before trading.")
+ nstate["last_setup"]=generated_setups
  if nstate.get("last_hourly_utc_hour")!=hour_key:
   lines=["CRYPTO CHECKPOINT — HOURLY","UTC "+now_dt.strftime("%Y-%m-%d %H:%M"),"Probabilities are experimental and uncalibrated."]
   for c in ("BTC","ETH","XRP","SOL"):
@@ -559,8 +590,8 @@ def main():
    lines.append(f"{c} price {v.get('price',0):,.6g} USD | 1h {v.get('change_1h_pct',0):+.2f}% | model P(up) {p*100:.1f}%" if isinstance(p,(int,float)) else f"{c}: model probability unavailable")
    lines.append(f"  Analogue median {med:+.3f}% | confidence {conf}" if isinstance(med,(int,float)) else f"  Analogue forecast unavailable | confidence {conf}")
   evs=snap.get("model_context",{}).get("events",[]) or []
-  lines.append("MACRO EVENTS: "+json.dumps(evs[:3],ensure_ascii=False)[:500] if evs else "MACRO EVENTS: not configured; add verified UTC events to manual_inputs.json.")
-  lines.append("TRADE LEVELS: no validated entry/SL/TP levels are currently produced; none will be invented.")
+  lines.append("MACRO EVENTS (UTC): "+json.dumps([{"name":e.get("name"),"time_utc":e.get("time_utc"),"in_hours":e.get("in_hours"),"source":e.get("source")} for e in evs[:4]],ensure_ascii=False)[:750] if evs else "MACRO EVENTS: automatic calendar feeds unavailable this run; retry next cycle.")
+  lines.append("AUTO TRADE SETUPS: generated only when direction, confidence and input coverage pass thresholds; otherwise NO TRADE.")
   notify_lines.insert(0,"\n".join(lines)); nstate["last_hourly_utc_hour"]=hour_key
  if notify_lines:
   message="\n\n".join(notify_lines)
