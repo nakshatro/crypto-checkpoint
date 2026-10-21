@@ -311,12 +311,22 @@ def advanced_model(coin,symbol,rows,derivs,ctx,price):
  else: missing.append("fear_greed")
  s,comps=layer_mean(nc); scores["news"]=s; details["news"]={"score":s,"components":comps}
  if s is None: missing.append("news_layer")
+ patterns=[]
+ cvd=derivs.get("taker_cvd_24h")
+ near_high=bool(d1) and price>=.99*max(x["c"] for x in d1[-20:])
+ if regime=="UPTREND" and fund_pr is not None and oi_chg is not None and cvd is not None and .30<=fund_pr<=.80 and 0<oi_chg<.08 and cvd>0:
+  patterns.append({"name":"HEALTHY_TREND","bias":1,"why":"uptrend, moderate funding percentile, OI growth below 8%, net taker buying"})
+ if near_high and cvd is not None and cvd<0 and oi_chg is not None and oi_chg<0:
+  patterns.append({"name":"EXHAUSTION","bias":-1,"why":"near 20-day high with negative taker flow and falling OI"})
+ adj=max(-.20,min(.20,sum(.10*p["bias"] for p in patterns)))
+ if oi_chg is None or cvd is None: missing.append("interaction_patterns_partially_unavailable")
  horizons={}
  daily_returns=[math.log(d1[i]["c"]/d1[i-1]["c"]) for i in range(1,len(d1)) if d1[i]["c"]>0 and d1[i-1]["c"]>0] if d1 else []
  sigma=statistics.pstdev(daily_returns[-30:]) if len(daily_returns)>=2 else None
  for hz,days in (("24h",1),("1w",7),("1m",30)):
   w={k:HORIZON_WEIGHTS[hz][k]*REGIME_MULT.get(regime,{}).get(k,1) for k,v in scores.items() if v is not None}
   tw=sum(w.values()); composite=sum(scores[k]*w[k] for k in w)/tw if tw else None
+  if composite is not None and hz in ("24h","1w"): composite=bounded(composite+adj)
   coverage=sum(HORIZON_WEIGHTS[hz][k] for k in w)
   p_up=(.5+.2*math.tanh(2*composite)) if composite is not None else None
   band=price*math.exp(sigma*math.sqrt(days)) if sigma is not None else None
@@ -325,7 +335,7 @@ def advanced_model(coin,symbol,rows,derivs,ctx,price):
  confidence=max(0,min(1,1-dispersion/.6))*(horizons["1w"]["coverage"] or 0)
  if ctx.get("events"): confidence*=.8
  if not ctx.get("events"): missing.append("scheduled_events_not_configured")
- return {"regime":regime,"vol_ratio":round(vol_ratio,3) if vol_ratio is not None else None,"layers":details,"horizons":horizons,"confidence":{"value":round(confidence,2),"label":"High" if confidence>=.6 else "Medium" if confidence>=.35 else "Low","notes":((["layers disagree"] if dispersion>.35 else [])+([ "scheduled event within 24h: "+", ".join(e["name"] for e in ctx.get("events",[])) ] if ctx.get("events") else []))},"data_quality":{"missing":sorted(set(missing))},"method":"five-layer weighted model; missing components excluded and weights renormalized; not calibrated"}
+ return {"regime":regime,"vol_ratio":round(vol_ratio,3) if vol_ratio is not None else None,"layers":details,"horizons":horizons,"patterns":patterns,"confidence":{"value":round(confidence,2),"label":"High" if confidence>=.6 else "Medium" if confidence>=.35 else "Low","notes":((["layers disagree"] if dispersion>.35 else [])+([ "scheduled event within 24h: "+", ".join(e["name"] for e in ctx.get("events",[])) ] if ctx.get("events") else []))},"data_quality":{"missing":sorted(set(missing))},"method":"five-layer weighted model; missing components excluded and weights renormalized; not calibrated"}
 
 
 def should_log_history(hist,now):
