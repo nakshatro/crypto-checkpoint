@@ -349,8 +349,13 @@ def main():
    deriv_data=derivatives(symbol)
    model=advanced_model(coin,symbol,rows,deriv_data,model_context,display_price)
    snap["coins"][coin]={"coin":coin,"symbol":symbol,"price":display_price,"price_source":price_source or "last completed OKX hourly candle (ticker unavailable)","price_time":price_time or datetime.fromtimestamp(last["t"]/1000,timezone.utc).isoformat(),"candle_time":datetime.fromtimestamp(last["t"]/1000,timezone.utc).isoformat(),"change_1h_pct":round(f["r1"],3),"change_4h_pct":round(f["r4"],3),"change_12h_pct":round(f["r12"],3),"change_24h_pct":round(f["r24"],3),"volume_ratio_24h":round(f["volratio"],3),"ma6_gap_pct":round(f["ma6gap"],3),"ma24_gap_pct":round(f["ma24gap"],3),"volatility_24h_pct":round(f["volatility24"],3),"derivatives":deriv_data,"forecasts":forecasts,"model":model}
-  except Exception as e:issues.append(coin+": "+str(e)[:200])
- write_json("latest.json",snap); write_json("forecasts.json",{"updated_at":now,"items":[{"coin":c,"price":v["price"],**f} for c,v in snap["coins"].items() for f in v["forecasts"]]})
+  except Exception as e:
+   issues.append(coin+": "+str(e)[:200]); snap["coins"][coin]={"coin":coin,"symbol":symbol,"error":str(e)[:200]}
+ successful=sum(1 for v in snap["coins"].values() if "error" not in v)
+ if successful==0:
+  write_json("status.json",{"updated_at":now,"ok":False,"coins_updated":[],"issues":issues,"message":"All assets failed; previous latest.json preserved."})
+  raise RuntimeError("All four assets failed; keeping previous latest.json")
+ write_json("latest.json",snap); write_json("forecasts.json",{"updated_at":now,"items":[{"coin":c,"price":v["price"],**f} for c,v in snap["coins"].items() if "error" not in v for f in v["forecasts"]]})
  status={"updated_at":now,"ok":bool(snap["coins"]),"coins_updated":list(snap["coins"]),"issues":issues}; histpath=DATA/"history.json"
  try: hist=json.loads(histpath.read_text(encoding="utf-8"))
  except Exception: hist=[]
