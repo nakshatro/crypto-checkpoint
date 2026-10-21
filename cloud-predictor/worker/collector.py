@@ -487,10 +487,17 @@ def evaluate_model_calibration(hist):
 
 def telegram(message):
  token=os.getenv("TELEGRAM_BOT_TOKEN","").strip(); chat=os.getenv("TELEGRAM_CHAT_ID","").strip()
- if not token or not chat:return "not_configured"
+ if not token or not chat:return "not_configured: missing TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID"
  try:
-  r=S.post("https://api.telegram.org/bot"+token+"/sendMessage",json={"chat_id":chat,"text":message,"disable_web_page_preview":True},timeout=15);r.raise_for_status();return "sent"
- except Exception as e:return "failed: "+str(e)[:160]
+  r=S.post("https://api.telegram.org/bot"+token+"/sendMessage",json={"chat_id":chat,"text":message,"disable_web_page_preview":True},timeout=15)
+  r.raise_for_status()
+  try: payload=r.json()
+  except Exception: return "failed: Telegram returned non-JSON response"
+  # Telegram may return HTTP 200 with ok=false; do not mistake that for delivery.
+  if not payload.get("ok"):
+   return "failed: Telegram API "+str(payload.get("error_code","unknown"))+": "+str(payload.get("description","unspecified error"))[:180]
+  return "sent: message_id="+str((payload.get("result") or {}).get("message_id","unknown"))
+ except Exception as e:return "failed: "+str(e)[:180]
 def main():
  now=datetime.now(timezone.utc).isoformat(); model_context=global_model_context(); model_context["btc_daily"]=daily_candles("BTCUSDT"); snap={"updated_at":now,"source":"OKX public hourly candles plus five-layer model; missing components disclosed","model_context":{"fear_greed":model_context.get("fear_greed",[])[-1] if model_context.get("fear_greed") else None,"stablecoin_30d":model_context.get("stablecoin_30d"),"headline_count":len(model_context.get("headlines",[])),"events":model_context.get("events",[])},"coins":{}}; issues=[]
  for coin,symbol in SYMBOLS.items():
