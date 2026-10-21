@@ -209,7 +209,7 @@ def automatic_macro_events():
    sm=re.search(r"SUMMARY(?:;[^:]*)?:(.*)",block)
    dt=re.search(r"DTSTART(?:;TZID=([^:;]+))?(?:;[^:]*)?:(\d{8}T\d{6}Z?|\d{8})",block)
    if not sm or not dt: continue
-   name=sm.group(1).replace("\\\\, ",", ").replace("\\\\;",";").strip()
+   name=sm.group(1).replace("\\, ",", ").replace("\\;",";").strip()
    if not any(x in name.lower() for x in wanted): continue
    stamp=dt.group(2); tzname=dt.group(1)
    try:
