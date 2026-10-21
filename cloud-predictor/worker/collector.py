@@ -670,7 +670,7 @@ def main():
   if prev.get("side")!=side or abs(float(prev.get("reference_price",price))-price)/price>=.015:
    add_event("auto-setup:"+c+":"+side,f"PROVISIONAL SETUP — {c} {side.upper()} | reference ${price:,.6g} | SL ${stop:,.6g} | TP1 ${target:,.6g} | model P(up) {p*100:.1f}% | confidence {conf:.2f}. Experimental and uncalibrated; confirm structure before trading.")
  nstate["last_setup"]=generated_setups
- if nstate.get("last_hourly_utc_hour")!=hour_key:
+ if nstate.get("last_hourly_utc_hour")!=hour_key or os.getenv("TELEGRAM_FORCE_SEND","").lower() in ("1","true","yes"):
   lines=["📊 CRYPTO CHECKPOINT | HOURLY","🕒 "+now_dt.strftime("%d %b %Y · %H:%M UTC"),"⚠️ Model probabilities are experimental, not calibrated.",""]
   for c in ("BTC","ETH","XRP","SOL"):
    v=snap["coins"].get(c,{})
