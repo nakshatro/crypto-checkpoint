@@ -29,6 +29,16 @@ jobs:
       - name: Check worker and dashboard syntax
         run: |
           python -m py_compile cloud-predictor/worker/collector.py
+          python - <<'PY'
+          import ast
+          from pathlib import Path
+          tree = ast.parse(Path("cloud-predictor/worker/collector.py").read_text(encoding="utf-8"))
+          names = {n.name for n in tree.body if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))}
+          assert "automatic_macro_events" in names
+          assert "global_model_context" in names
+          assert "main" in names
+          print("Worker syntax and automatic macro calendar hooks validated.")
+          PY
           python -c 'from pathlib import Path; h=Path("cloud-predictor/docs/index.html").read_text(encoding="utf-8"); Path("/tmp/forecast-lab.js").write_text(h.split("<script>",1)[1].split("</script>",1)[0],encoding="utf-8")'
           node --check /tmp/forecast-lab.js
 
