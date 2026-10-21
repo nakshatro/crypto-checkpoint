@@ -500,6 +500,66 @@ def telegram(message):
    return "failed: Telegram API "+str(payload.get("error_code","unknown"))+": "+str(payload.get("description","unspecified error"))[:180]
   return "sent: message_id="+str((payload.get("result") or {}).get("message_id","unknown"))
  except Exception as e:return "failed: "+str(e)[:180]
+def update_event_tracker(events,snap,hist,now_dt):
+ """Persist pre-event crypto forecasts and evaluate post-event market moves when timestamps are precise."""
+ path=DATA/"event_tracker.json"
+ try: store=json.loads(path.read_text(encoding="utf-8"))
+ except Exception: store={"events":[]}
+ records={x.get("key"):x for x in store.get("events",[]) if x.get("key")}
+ history=[]
+ for row in hist:
+  try: history.append((datetime.fromisoformat(row["updated_at"].replace("Z","+00:00")),row))
+  except Exception: pass
+ history.sort(key=lambda x:x[0])
+ def snapshot_at(ts,max_gap_hours=2):
+  if not history:return None
+  candidates=[(abs((t-ts).total_seconds()),row) for t,row in history if abs((t-ts).total_seconds())<=max_gap_hours*3600]
+  return min(candidates,key=lambda x:x[0])[1] if candidates else None
+ def prices(row):
+  return {c:{"price":v.get("price"),"model":{hz:((v.get("model",{}).get("horizons",{}) or {}).get(hz,{}) or {}).get("p_up") for hz in ("4h","24h","72h")},"analogue":{hz:next((f.get("median_return_pct") for f in v.get("forecasts",[]) if f.get("horizon")==hz),None) for hz in ("4h","24h","72h")}} for c,v in (row.get("coins",{}) or {}).items() if v.get("price") is not None and "error" not in v}
+ for e in events or []:
+  key="|".join((str(e.get("name","Event")),str(e.get("date_utc","")),str(e.get("source",""))))
+  rec=records.get(key,{"key":key,"event":e,"first_seen_utc":now_dt.isoformat(),"status":"scheduled","pre_event_history":[],"outcomes":{}})
+  rec["event"]=e
+  exact=bool(e.get("time_exact") and e.get("time_utc"))
+  try: event_dt=datetime.fromisoformat(e["time_utc"].replace("Z","+00:00")) if exact else None
+  except Exception: event_dt=None
+  if event_dt and now_dt < event_dt:
+   rec["status"]="scheduled"
+   current={"captured_at":now_dt.isoformat(),"coins":prices({"coins":snap.get("coins",{})})}
+   last=rec.get("pre_event_history",[])
+   if not last or (now_dt-datetime.fromisoformat(last[-1]["captured_at"])).total_seconds()>=3300:
+    last.append(current)
+   rec["pre_event_history"]=last[-48:]
+   rec["latest_pre_event"]=current
+  elif not exact:
+   rec["status"]="date_only_event_time_unknown"
+   rec["note"]="Calendar provides a date but not an exact release time; intraday event attribution is not calculated."
+  else:
+   rec["status"]="event_time_passed"
+   base_row=snapshot_at(event_dt,2)
+   base_prices=prices(base_row) if base_row else {}
+   rec["event_baseline"]={"target_time_utc":event_dt.isoformat(),"snapshot_time_utc":base_row.get("updated_at") if base_row else None,"coins":base_prices}
+   for label,hours in (("4h",4),("24h",24),("72h",72)):
+    target=event_dt+timedelta(hours=hours)
+    if now_dt < target: continue
+    future=snapshot_at(target,1.5)
+    if not future: continue
+    out={}
+    for coin,b in base_prices.items():
+     f=(future.get("coins",{}) or {}).get(coin,{})
+     if b.get("price") and f.get("price"):
+      out[coin]={"baseline_price":b["price"],"observed_price":f["price"],"return_pct":round((f["price"]/b["price"]-1)*100,3),"observation_time_utc":future.get("updated_at")}
+    rec.setdefault("outcomes",{})[label]={"target_time_utc":target.isoformat(),"coins":out}
+   if all(k in rec.get("outcomes",{}) for k in ("4h","24h","72h")): rec["status"]="outcomes_complete"
+   elif rec.get("outcomes"): rec["status"]="outcomes_partial"
+  records[key]=rec
+ # Retain latest 100 calendar events and their pre-event snapshots/outcomes.
+ ordered=sorted(records.values(),key=lambda x:(x.get("event",{}).get("date_utc",""),x.get("event",{}).get("name","")),reverse=True)[:100]
+ store={"updated_at":now_dt.isoformat(),"method":"Official calendar date/time plus archived model outlooks and observed crypto returns; no causal claim that the event caused the move.","events":ordered}
+ write_json("event_tracker.json",store)
+ return store
+
 def main():
  now=datetime.now(timezone.utc).isoformat(); model_context=global_model_context(); model_context["btc_daily"]=daily_candles("BTCUSDT"); snap={"updated_at":now,"source":"OKX public hourly candles plus five-layer model; missing components disclosed","model_context":{"fear_greed":model_context.get("fear_greed",[])[-1] if model_context.get("fear_greed") else None,"stablecoin_30d":model_context.get("stablecoin_30d"),"headline_count":len(model_context.get("headlines",[])),"events":model_context.get("events",[])},"coins":{}}; issues=[]
  for coin,symbol in SYMBOLS.items():
@@ -534,6 +594,7 @@ def main():
   hist.append({"updated_at":now,"coins":{c:{"price":v["price"],"forecasts":v["forecasts"],"model":v.get("model")} for c,v in snap["coins"].items() if "error" not in v}})
  hist=hist[-3000:]
  write_json("history.json",hist)
+ event_tracker=update_event_tracker(snap.get("model_context",{}).get("events",[]),snap,hist,now_dt)
  write_json("calibration.json",{"updated_at":now,"note":"Calibration requires future hourly observations; treat early samples cautiously. n>=100 per horizon is preferred.","horizons":evaluate_model_calibration(hist)})
  state_path=DATA/"notification_state.json"
  try: nstate=json.loads(state_path.read_text(encoding="utf-8"))
@@ -629,8 +690,12 @@ def main():
    for e in evs[:3]:
     event_name=str(e.get("name") or "Macro event")
     when=e.get("time_utc") or e.get("date_utc") or "time not confirmed"
-    countdown=(f" · in {e.get('in_hours'):.1f}h" if isinstance(e.get("in_hours"),(int,float)) else f" · in {e.get('days_away')}d" if isinstance(e.get("days_away"),(int,float)) else "")
-    lines.append(f"• {event_name} — {when}{countdown}")
+    countdown=(f" · in {e.get('in_hours'):.1f}h" if isinstance(e.get('in_hours'),(int,float)) else f" · in {e.get('days_away')}d" if isinstance(e.get('days_away'),(int,float)) else "")
+    key="|".join((str(e.get("name","Event")),str(e.get("date_utc","")),str(e.get("source",""))))
+    tracked=next((x for x in event_tracker.get("events",[]) if x.get("key")==key),{})
+    tracking=str(tracked.get("status","tracking pending")).replace("_"," ")
+    lines.append(f"• {event_name} — {when}{countdown} | tracker: {tracking}")
+   lines.append("Event tracker saves pre-event 4h/24h/72h outlooks and checks observed post-event returns when the calendar has an exact release time.")
   else:
    lines.append("🗓 MACRO EVENTS")
    lines.append("Calendar feeds unavailable this run; retrying automatically.")
