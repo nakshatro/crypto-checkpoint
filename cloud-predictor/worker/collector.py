@@ -129,10 +129,10 @@ def daily_candles(symbol):
  base=symbol.replace("USDT","")
  for inst in (base+"-USDT-SWAP",base+"-USDT"):
   try:
-   j=get_json("https://www.okx.com/api/v5/market/candles",{"instId":inst,"bar":"1Dutc","limit":"100"})
+   j=get_json("https://www.okx.com/api/v5/market/candles",{"instId":inst,"bar":"1Dutc","limit":"300"})
    if str(j.get("code"))=="0":
     rows=[{"t":int(x[0]),"o":float(x[1]),"h":float(x[2]),"l":float(x[3]),"c":float(x[4]),"v":float(x[7] or 0)} for x in reversed(j.get("data",[])) if len(x)>=9 and str(x[8])=="1"]
-    if len(rows)>=30:return rows
+    if len(rows)>=200:return rows
   except Exception: pass
  return None
 def ema_values(vals,n):
@@ -179,7 +179,7 @@ def layer_mean(items):
 def advanced_model(coin,symbol,rows,derivs,ctx,price):
  missing=[]; details={}; scores={}
  d1=daily_candles(symbol); regime="RANGE"; vol_ratio=None
- if d1 and len(d1)>=30:
+ if d1 and len(d1)>=200:
   closes=[x["c"] for x in d1]; e50=ema_values(closes,50); e200=ema_values(closes,200)
   rv7=ret_std(closes,7); rv90=ret_std(closes,90)
   vol_ratio=(rv7/rv90) if rv7 is not None and rv90 else None
