@@ -199,46 +199,49 @@ def load_manual_inputs():
   return json.loads(p.read_text(encoding="utf-8")) if p.exists() else {}
  except Exception: return {}
 def automatic_macro_events():
- """Fetch upcoming U.S. scheduled releases from the official BLS calendar."""
+ """Fetch maintained BLS release dates; preserve UTC uncertainty when calendar lacks timezone."""
  now=datetime.now(timezone.utc); out=[]
  try:
   r=S.get("https://www.bls.gov/schedule/news_release/bls.ics",timeout=(5,12)); r.raise_for_status()
   text=re.sub(r"\r?\n[ \t]","",r.text)
   wanted=("consumer price index","producer price index","employment situation","job openings and labor turnover","productivity and costs","employment cost index","import and export price")
   for block in re.findall(r"BEGIN:VEVENT(.*?)END:VEVENT",text,re.S):
-   sm=re.search(r"SUMMARY(?:;[^:]*)?:(.*)",block)
-   dt=re.search(r"DTSTART(?:;TZID=([^:;]+))?(?:;[^:]*)?:(\d{8}T\d{6}Z?|\d{8})",block)
+   sm=re.search(r"SUMMARY(?:;[^:]*)?:(.*)",block); dt=re.search(r"DTSTART(?:;TZID=([^:;]+))?(?:;[^:]*)?:(\d{8}T\d{6}Z?|\d{8})",block)
    if not sm or not dt: continue
    name=sm.group(1).replace("\\, ",", ").replace("\\;",";").strip()
    if not any(x in name.lower() for x in wanted): continue
    stamp=dt.group(2); tzname=dt.group(1)
    try:
-    if len(stamp)==8: t=datetime.strptime(stamp,"%Y%m%d").replace(tzinfo=timezone.utc)
-    elif stamp.endswith("Z"): t=datetime.strptime(stamp,"%Y%m%dT%H%M%SZ").replace(tzinfo=timezone.utc)
-    else:
-     local=datetime.strptime(stamp,"%Y%m%dT%H%M%S")
+    if len(stamp)==8: t=datetime.strptime(stamp,"%Y%m%d").replace(tzinfo=timezone.utc); time_exact=False
+    elif stamp.endswith("Z"): t=datetime.strptime(stamp,"%Y%m%dT%H%M%SZ").replace(tzinfo=timezone.utc); time_exact=True
+    elif tzname:
      from zoneinfo import ZoneInfo
-     t=local.replace(tzinfo=ZoneInfo(tzname or "America/New_York")).astimezone(timezone.utc)
+     t=datetime.strptime(stamp,"%Y%m%dT%H%M%S").replace(tzinfo=ZoneInfo(tzname)).astimezone(timezone.utc); time_exact=True
+    else:
+     # Date/time has no TZ metadata: retain the date but do not invent a UTC release hour.
+     t=datetime.strptime(stamp[:8],"%Y%m%d").replace(tzinfo=timezone.utc); time_exact=False
     hours=(t-now).total_seconds()/3600
-    if -1<=hours<=24*21: out.append({"name":name,"time_utc":t.isoformat(),"in_hours":round(hours,1),"source":"US BLS official calendar"})
+    if -1<=hours<=24*21: out.append({"name":name,"time_utc":t.isoformat() if time_exact else None,"date_utc":t.strftime("%Y-%m-%d"),"time_exact":time_exact,"in_hours":round(hours,1) if time_exact else None,"source":"US BLS official calendar"})
    except Exception: continue
  except Exception: pass
+ # Official Fed calendar can be updated; meeting days are date-only, not release times.
  try:
   r=S.get("https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm",timeout=(5,12)); r.raise_for_status()
-  for match in re.finditer(r"(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{1,2})\s*[–-]\s*(\d{1,2})",r.text,re.I):
+  html=r.text
+  for match in re.finditer(r"(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{1,2})\s*[–-]\s*(\d{1,2})",html,re.I):
    month,day,_=match.groups()
    try:
     t=datetime.strptime(month+" "+day+" "+str(now.year),"%B %d %Y").replace(tzinfo=timezone.utc)
     if t<now-timedelta(days=3): t=t.replace(year=t.year+1)
     hours=(t-now).total_seconds()/3600
-    if -24<=hours<=24*45: out.append({"name":"FOMC meeting (date only; announcement time not inferred)","time_utc":t.isoformat(),"in_hours":round(hours,1),"source":"Federal Reserve official calendar"})
+    if -24<=hours<=24*45: out.append({"name":"FOMC meeting (date only; announcement time not inferred)","time_utc":None,"date_utc":t.strftime("%Y-%m-%d"),"time_exact":False,"in_hours":None,"days_away":round(hours/24,1),"source":"Federal Reserve official calendar"})
    except Exception: pass
  except Exception: pass
  unique={}
  for e in out:
-  key=(e["name"],e["time_utc"][:10])
-  if key not in unique or e["in_hours"]<unique[key]["in_hours"]: unique[key]=e
- return sorted(unique.values(),key=lambda x:x["in_hours"])[:12]
+  key=(e["name"],e["date_utc"])
+  if key not in unique: unique[key]=e
+ return sorted(unique.values(),key=lambda x:(x.get("days_away",x.get("in_hours",999999)) if x.get("in_hours") is None else x["in_hours"]))[:12]
 def upcoming_manual_events(manual):
  # Retained for compatibility; all active events come from automatic feeds.
  return []
