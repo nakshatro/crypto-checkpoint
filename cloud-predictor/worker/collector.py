@@ -221,18 +221,18 @@ def advanced_model(coin,symbol,rows,derivs,ctx,price):
  fr=derivs.get("funding_rate"); funding=None
  if isinstance(fr,dict) and fr.get("fundingRate") is not None: funding=float(fr["fundingRate"])
  elif isinstance(fr,list) and fr and fr[-1].get("fundingRate") is not None: funding=float(fr[-1]["fundingRate"])
- if funding is not None: dc.append(("funding_crowding",bounded(-funding/.001)*(.4 if regime in ("UPTREND","DOWNTREND") else 1),.30,f"latest funding {funding*100:.4f}% (historical percentile unavailable)"))
+ if funding is not None: dc.append(("funding_crowding",bounded(-funding/.001)*(.4 if regime in ("UPTREND","DOWNTREND") else 1),.30,f"latest funding {funding*100:.4f}% (historical percentile unavailable)"))\n else: missing.append("funding_rate")\n missing.append("historical_funding_percentile")
  else: missing.append("funding_rate")
  ls=derivs.get("global_long_short_ratio")
  if isinstance(ls,dict) and ls.get("longShortRatio") is not None:
   ratio=float(ls["longShortRatio"]); dc.append(("long_short_ratio",bounded(-math.log(max(ratio,.01))*.5),.15,f"account long/short ratio {ratio:.3f}"))
- dc.append(("price_vs_oi",None,.30,"24h OI change unavailable from a single snapshot"))
+ dc.append(("price_vs_oi",None,.30,"24h OI change unavailable from a single snapshot"))\n missing.append("open_interest_change_24h")
  s,comps=layer_mean(dc); scores["derivs"]=s; details["derivs"]={"score":s,"components":comps}
  if s is None: missing.append("derivatives_layer")
  lc=[]; tr=derivs.get("taker_buy_sell_ratio")
  if isinstance(tr,dict) and tr.get("buySellRatio") is not None:
   ratio=float(tr["buySellRatio"]); lc.append(("recent_taker_flow",bounded((ratio-1)/.5),.4,f"buy/sell size ratio {ratio:.3f}; recent sample, not 24h CVD"))
- lc.extend([("liquidation_magnet",None,.30,"not computed: reliable 168h OI-change series unavailable"),("recent_liquidation_flow",None,.20,"liquidation-flow endpoint not verified")])
+ lc.extend([("liquidation_magnet",None,.30,"not computed: reliable 168h OI-change series unavailable"),("recent_liquidation_flow",None,.20,"liquidation-flow endpoint not verified")])\n missing.extend(["liquidation_magnet","liquidation_flow"])
  s,comps=layer_mean(lc); scores["liquidity"]=s; details["liquidity"]={"score":s,"components":comps}
  if s is None: missing.append("liquidity_layer")
  oc=[]; stable=ctx.get("stablecoin_30d")
@@ -247,7 +247,7 @@ def advanced_model(coin,symbol,rows,derivs,ctx,price):
  if etf is not None:
   oc.append(("manual_etf_flow",bounded(float(etf)/({"BTC":1.5e9,"ETH":5e8,"SOL":1e8,"XRP":1e8}[coin])),.4,f"verified manual 5d ETF flow ${float(etf)/1e6:+.0f}M"))
  else:
-  oc.append(("manual_etf_flow",None,.4,"ETF flow unknown; optional verified input not set"))
+  oc.append(("manual_etf_flow",None,.4,"ETF flow unknown; optional verified input not set"))\n  missing.append("manual_etf_flow")
  s,comps=layer_mean(oc); scores["onchain"]=s; details["onchain"]={"score":s,"components":comps}
  if s is None: missing.append("onchain_layer")
  words=[]; terms={"BTC":("bitcoin","btc"),"ETH":("ethereum","ether","eth"),"SOL":("solana","sol"),"XRP":("xrp","ripple")}[coin]
@@ -277,7 +277,7 @@ def advanced_model(coin,symbol,rows,derivs,ctx,price):
   horizons[hz]={"composite":round(composite,3) if composite is not None else None,"p_up":round(p_up,3) if p_up is not None else None,"coverage":round(coverage,3),"bias":"Bullish" if composite is not None and composite>.15 else "Bearish" if composite is not None and composite<-.15 else "Neutral" if composite is not None else "Unavailable","range":[round(price/math.exp(sigma*math.sqrt(days)),8),round(band,8)] if band else None}
  layer_vals=[x for x in scores.values() if x is not None]; dispersion=statistics.pstdev(layer_vals) if len(layer_vals)>1 else .5
  confidence=max(0,min(1,1-dispersion/.6))*(horizons["1w"]["coverage"] or 0)
- if ctx.get("events"): confidence*=.8
+ if ctx.get("events"): confidence*=.8\n if not ctx.get("events"): missing.append("scheduled_events_not_configured")
  return {"regime":regime,"vol_ratio":round(vol_ratio,3) if vol_ratio is not None else None,"layers":details,"horizons":horizons,"confidence":{"value":round(confidence,2),"label":"High" if confidence>=.6 else "Medium" if confidence>=.35 else "Low","notes":((["layers disagree"] if dispersion>.35 else [])+([ "scheduled event within 24h: "+", ".join(e["name"] for e in ctx.get("events",[])) ] if ctx.get("events") else []))},"data_quality":{"missing":sorted(set(missing))},"method":"five-layer weighted model; missing components excluded and weights renormalized; not calibrated"}
 
 def telegram(message):
@@ -313,9 +313,9 @@ def main():
  hist.append({"updated_at":now,"coins":{c:{"price":v["price"],"forecasts":v["forecasts"]} for c,v in snap["coins"].items()}}); write_json("history.json",hist[-500:])
  alerts=[]
  for c,v in snap["coins"].items():
-  f=next((x for x in v["forecasts"] if x["horizon"]=="24h"),None)
-  if f and f["analogue_count"]>=40 and f["up_frequency_pct"] is not None and abs(f["up_frequency_pct"]-50)>=15:
-   alerts.append(f'{c} {"BULLISH" if f["up_frequency_pct"]>50 else "BEARISH"} analogue lean | price {v["price"]:.6g} | 24h up-frequency {f["up_frequency_pct"]}% | median return {f["median_return_pct"]}%')
+  m=v.get("model",{}); h=(m.get("horizons",{}) or {}).get("24h",{}); conf=(m.get("confidence",{}) or {}).get("value",0)
+  if h.get("p_up") is not None and conf>=.35 and abs(h["p_up"]-.5)>=.08:
+   alerts.append(f'{c} {"BULLISH" if h["p_up"]>.5 else "BEARISH"} model lean | price {v["price"]:.6g} | 24h P(up) {h["p_up"]*100:.1f}% | confidence {conf:.2f}')
  if alerts: status["telegram"]=telegram("Crypto Checkpoint cloud alert\n"+now+"\n\n"+"\n".join(alerts))
  write_json("status.json",status); print(json.dumps(status,indent=2))
  if not snap["coins"]: raise RuntimeError("No coin data updated; inspect status.json")
