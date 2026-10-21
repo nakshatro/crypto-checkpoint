@@ -115,6 +115,28 @@ def derivatives(symbol):
     if row.get("funding") is not None: out["funding_rate"]={"fundingRate":float(row.get("funding"))/100,"source":"main checkpoint snapshot; converted from percent to decimal"}
  except Exception:
   pass
+ # OKX historical derivatives enrich the model when public Rubik endpoints respond.
+ base=symbol.replace("USDT","")
+ try:
+  j=get_json("https://www.okx.com/api/v5/public/funding-rate-history",{"instId":base+"-USDT-SWAP","limit":"100"})
+  if str(j.get("code"))=="0" and j.get("data"):
+   out["funding_history"]=[float(x["fundingRate"]) for x in reversed(j["data"]) if x.get("fundingRate") not in (None,"")]
+ except Exception as e: out["funding_history_unavailable"]=str(e)[:120]
+ try:
+  j=get_json("https://www.okx.com/api/v5/rubik/stat/contracts/open-interest-volume",{"ccy":base,"period":"1H"})
+  rows=sorted(j.get("data",[]),key=lambda x:int(x[0])) if str(j.get("code"))=="0" else []
+  if len(rows)>=25:
+   vals=[float(x[1]) for x in rows if len(x)>1 and x[1] not in (None,"")]
+   if len(vals)>=25 and vals[-25]: out["oi_change_24h"]=vals[-1]/vals[-25]-1
+   out["oi_history_count"]=len(rows)
+ except Exception as e: out["oi_history_unavailable"]=str(e)[:120]
+ try:
+  j=get_json("https://www.okx.com/api/v5/rubik/stat/taker-volume",{"ccy":base,"instType":"CONTRACTS","period":"1H"})
+  rows=sorted(j.get("data",[]),key=lambda x:int(x[0])) if str(j.get("code"))=="0" else []
+  last=rows[-24:]
+  sell=sum(float(x[1]) for x in last if len(x)>2); buy=sum(float(x[2]) for x in last if len(x)>2)
+  if buy+sell>0: out["taker_cvd_24h"]=(buy-sell)/(buy+sell); out["taker_cvd_count"]=len(last)
+ except Exception as e: out["taker_cvd_unavailable"]=str(e)[:120]
  return out
 
 # ---------- five-layer checkpoint model (adapted from BUILD PROMPT.docx) ----------
