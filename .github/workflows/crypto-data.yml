@@ -15,7 +15,7 @@ permissions:
 
 concurrency:
   group: crypto-checkpoint-data
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   update-data:
@@ -67,5 +67,6 @@ jobs:
             echo "No data changes to commit."
           else
             git commit -m "Update crypto market and forecast snapshots"
+            git pull --rebase origin main
             git push
           fi
