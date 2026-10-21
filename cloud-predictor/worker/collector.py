@@ -483,13 +483,73 @@ def main():
  hist=hist[-3000:]
  write_json("history.json",hist)
  write_json("calibration.json",{"updated_at":now,"note":"Calibration requires future hourly observations; treat early samples cautiously. n>=100 per horizon is preferred.","horizons":evaluate_model_calibration(hist)})
- alerts=[]
+ state_path=DATA/"notification_state.json"
+ try: nstate=json.loads(state_path.read_text(encoding="utf-8"))
+ except Exception: nstate={}
+ hour_key=now_dt.strftime("%Y-%m-%dT%H"); notify_lines=[]; event_keys=[]
+ def add_event(key,line):
+  previous=(nstate.get("last_event_sent",{}) or {}).get(key)
+  try: recent=previous and (now_dt-datetime.fromisoformat(previous.replace("Z","+00:00"))).total_seconds()<4*3600
+  except Exception: recent=False
+  if not recent: notify_lines.append(line); event_keys.append(key)
  for c,v in snap["coins"].items():
   if "error" in v: continue
-  m=v.get("model",{}); h=(m.get("horizons",{}) or {}).get("24h",{}); conf=(m.get("confidence",{}) or {}).get("value",0)
-  if h.get("p_up") is not None and conf>=.35 and abs(h["p_up"]-.5)>=.08:
-   alerts.append(f'{c} {"BULLISH" if h["p_up"]>.5 else "BEARISH"} model lean | price {v["price"]:.6g} | 24h P(up) {h["p_up"]*100:.1f}% | confidence {conf:.2f}')
- if alerts: status["telegram"]=telegram("Crypto Checkpoint cloud alert\n"+now+"\n\n"+"\n".join(alerts))
+  ch1=float(v.get("change_1h_pct") or 0); ch4=float(v.get("change_4h_pct") or 0); vr=float(v.get("volume_ratio_24h") or 0)
+  if abs(ch1)>=1.5: add_event(c+":price-impulse",f"PRICE MOVE — {c}: {ch1:+.2f}% over 1h; 4h {ch4:+.2f}%. Confirm candle close.")
+  if vr>=2.0: add_event(c+":volume-spike",f"VOLUME SPIKE — {c}: {vr:.2f}x baseline; volume alone is not a signal.")
+  if ch1*ch4<0 and abs(ch1)>=.8 and abs(ch4)>=1: add_event(c+":possible-reversal",f"POSSIBLE REVERSAL — {c}: 1h {ch1:+.2f}% opposes 4h {ch4:+.2f}%.")
+  d=v.get("derivatives",{}) or {}; oi=d.get("oi_change_24h")
+  if isinstance(oi,(int,float)) and abs(oi)>=.08: add_event(c+":oi-shift",f"OPEN INTEREST — {c}: 24h change {oi*100:+.1f}%; direction is not implied.")
+  fr=d.get("funding_rate")
+  if isinstance(fr,list) and fr: fr=fr[-1]
+  try: funding=float(fr.get("fundingRate")) if isinstance(fr,dict) and fr.get("fundingRate") is not None else None
+  except Exception: funding=None
+  if funding is not None and abs(funding)>=.0005: add_event(c+":funding-extreme",f"FUNDING — {c}: {funding*100:.4f}% per interval; verify source and interval.")
+  liq=d.get("recent_liquidations_usd")
+  if isinstance(liq,dict):
+   longs=float(liq.get("longs") or 0); shorts=float(liq.get("shorts") or 0)
+   if max(longs,shorts)>=1000000: add_event(c+":liquidation",f"LIQUIDATIONS — {c}: recent sample longs {longs:,.0f} USD; shorts {shorts:,.0f} USD.")
+  m=v.get("model",{}) or {}; h=(m.get("horizons",{}) or {}).get("24h",{}) or {}; p=h.get("p_up"); conf=(m.get("confidence",{}) or {}).get("value",0)
+  prior=(nstate.get("last_model",{}) or {}).get(c,{})
+  if isinstance(p,(int,float)) and isinstance(prior.get("p_up"),(int,float)):
+   op=prior["p_up"]
+   if (op-.5)*(p-.5)<0 or abs(p-op)>=.12: add_event(c+":model-shift",f"MODEL OUTLOOK CHANGE — {c}: P(up) {op*100:.1f}% → {p*100:.1f}%; confidence {conf:.2f}. Uncalibrated.")
+ if issues: add_event("data:collection-issues","DATA QUALITY — "+"; ".join(issues[:4]))
+ missing=[]
+ for c,v in snap["coins"].items():
+  if "error" in v: missing.append(c+": model unavailable"); continue
+  names=((v.get("model",{}) or {}).get("data_quality",{}) or {}).get("missing",[]) or []
+  if names: missing.append(c+": "+", ".join(str(x) for x in names[:3]))
+ if missing: add_event("data:missing-inputs","DATA QUALITY — missing inputs: "+"; ".join(missing[:4]))
+ for c,v in snap["coins"].items():
+  if "error" in v: continue
+  p=((v.get("model",{}) or {}).get("horizons",{}) or {}).get("24h",{}).get("p_up")
+  f24=next((x for x in v.get("forecasts",[]) if x.get("horizon")=="24h"),{}); med=f24.get("median_return_pct")
+  if isinstance(p,(int,float)) and isinstance(med,(int,float)) and ((p>.55 and med<-.2) or (p<.45 and med>.2)):
+   add_event(c+":forecast-conflict",f"CONFLICTING FORECASTS — {c}: model P(up) {p*100:.1f}% vs analogue median {med:+.3f}%.")
+ if nstate.get("last_hourly_utc_hour")!=hour_key:
+  lines=["CRYPTO CHECKPOINT — HOURLY","UTC "+now_dt.strftime("%Y-%m-%d %H:%M"),"Probabilities are experimental and uncalibrated."]
+  for c in ("BTC","ETH","XRP","SOL"):
+   v=snap["coins"].get(c,{})
+   if "error" in v: lines.append(f"{c}: DATA UNAVAILABLE — {v.get('error','')[:90]}"); continue
+   m=v.get("model",{}) or {}; p=((m.get("horizons",{}) or {}).get("24h",{}) or {}).get("p_up"); conf=(m.get("confidence",{}) or {}).get("label","unknown")
+   f24=next((x for x in v.get("forecasts",[]) if x.get("horizon")=="24h"),{}); med=f24.get("median_return_pct")
+   lines.append(f"{c} price {v.get('price',0):,.6g} USD | 1h {v.get('change_1h_pct',0):+.2f}% | model P(up) {p*100:.1f}%" if isinstance(p,(int,float)) else f"{c}: model probability unavailable")
+   lines.append(f"  Analogue median {med:+.3f}% | confidence {conf}" if isinstance(med,(int,float)) else f"  Analogue forecast unavailable | confidence {conf}")
+  evs=snap.get("model_context",{}).get("events",[]) or []
+  lines.append("MACRO EVENTS: "+json.dumps(evs[:3],ensure_ascii=False)[:500] if evs else "MACRO EVENTS: not configured; add verified UTC events to manual_inputs.json.")
+  lines.append("TRADE LEVELS: no validated entry/SL/TP levels are currently produced; none will be invented.")
+  notify_lines.insert(0,"\n".join(lines)); nstate["last_hourly_utc_hour"]=hour_key
+ if notify_lines:
+  message="\n\n".join(notify_lines)
+  if len(message)>3800: message=message[:3750]+"\n… truncated; see Forecast Lab."
+  status["telegram"]=telegram(message)
+  if status["telegram"]=="sent":
+   for key in event_keys: nstate.setdefault("last_event_sent",{})[key]=now
+   nstate["last_model"]={c:{"p_up":((v.get("model",{}).get("horizons",{}) or {}).get("24h",{}) or {}).get("p_up")} for c,v in snap["coins"].items() if "error" not in v}
+   write_json("notification_state.json",nstate)
+ elif not os.getenv("TELEGRAM_BOT_TOKEN","").strip() or not os.getenv("TELEGRAM_CHAT_ID","").strip():
+  status["telegram"]="not_configured"
  write_json("status.json",status); print(json.dumps(status,indent=2))
  if not snap["coins"]: raise RuntimeError("No coin data updated; inspect status.json")
 if __name__=="__main__":main()
