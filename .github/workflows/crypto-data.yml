@@ -26,6 +26,12 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Check worker and dashboard syntax
+        run: |
+          python -m py_compile cloud-predictor/worker/collector.py
+          python -c 'from pathlib import Path; h=Path("cloud-predictor/docs/index.html").read_text(encoding="utf-8"); Path("/tmp/forecast-lab.js").write_text(h.split("<script>",1)[1].split("</script>",1)[0],encoding="utf-8")'
+          node --check /tmp/forecast-lab.js
+
       - name: Update existing crypto market data
         run: python scripts/update_data.py
 
