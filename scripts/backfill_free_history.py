@@ -109,19 +109,19 @@ for coin, symbol in COINS.items():
         start_ms, end_ms = int(datetime(START_YEAR,1,1,tzinfo=timezone.utc).timestamp()*1000), int(NOW.timestamp()*1000)
         cursor = start_ms
         while cursor < end_ms:
-        url = f"https://fapi.binance.com/fapi/v1/fundingRate?symbol={symbol}&startTime={cursor}&endTime={end_ms}&limit=1000"
-        try:
-            batch = json.loads(get(url).decode("utf-8"))
-            if not isinstance(batch, list) or not batch: break
-            rows.extend([[x.get("fundingTime"), x.get("fundingRate"), x.get("markPrice")] for x in batch])
-            nxt = int(batch[-1]["fundingTime"]) + 1
-            if nxt <= cursor: break
-            cursor = nxt
-            if len(batch) < 1000: break
-            time.sleep(0.15)
-        except Exception as e:
-            manifest["coverage"][f"{coin}_funding"] = {"status":"partial_or_unavailable","error":str(e)[:180]}
-            break
+            url = f"https://fapi.binance.com/fapi/v1/fundingRate?symbol={symbol}&startTime={cursor}&endTime={end_ms}&limit=1000"
+            try:
+                batch = json.loads(get(url).decode("utf-8"))
+                if not isinstance(batch, list) or not batch: break
+                rows.extend([[x.get("fundingTime"), x.get("fundingRate"), x.get("markPrice")] for x in batch])
+                nxt = int(batch[-1]["fundingTime"]) + 1
+                if nxt <= cursor: break
+                cursor = nxt
+                if len(batch) < 1000: break
+                time.sleep(0.15)
+            except Exception as e:
+                manifest["coverage"][f"{coin}_funding"] = {"status":"partial_or_unavailable","error":str(e)[:180]}
+                break
     uniq = {str(r[0]):r for r in rows}
     rows = sorted(uniq.values(), key=lambda x:int(x[0]))
     path = OUT / f"{coin.lower()}_funding.csv.gz"
