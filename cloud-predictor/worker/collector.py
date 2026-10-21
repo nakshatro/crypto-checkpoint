@@ -303,8 +303,15 @@ def advanced_model(coin,symbol,rows,derivs,ctx,price):
    ratio=float(tr["buySellRatio"]); lc.append(("recent_taker_flow",bounded((ratio-1)/.5),.40,f"buy/sell size ratio {ratio:.3f}; recent sample, not 24h CVD"))
    missing.append("taker_cvd_24h")
   else: missing.append("taker_cvd_24h")
- lc.extend([("liquidation_magnet",None,.30,"not computed: reliable 168h OI-change series unavailable"),("recent_liquidation_flow",None,.20,"liquidation-flow endpoint not verified"),("book_imbalance",None,.10,"order-book imbalance not fetched")])
- missing.extend(["liquidation_magnet","liquidation_flow","book_imbalance"])
+ lc.append(("liquidation_magnet",None,.30,"not computed: reliable 168h OI-change series unavailable")); missing.append("liquidation_magnet")
+ liq=derivs.get("recent_liquidations_usd")
+ if isinstance(liq,dict) and (float(liq.get("longs",0))+float(liq.get("shorts",0)))>0:
+  longs=float(liq.get("longs",0)); shorts=float(liq.get("shorts",0)); lc.append(("recent_liquidation_flow",.3*(longs-shorts)/(longs+shorts),.20,f"liquidated longs ${longs/1e6:.1f}M vs shorts ${shorts/1e6:.1f}M"))
+ else:
+  lc.append(("recent_liquidation_flow",None,.20,"liquidation-flow endpoint unavailable")); missing.append("liquidation_flow")
+ book=derivs.get("book_imbalance")
+ if book is not None: lc.append(("book_imbalance",bounded(float(book)*2),.10,f"top-400-level notional imbalance {float(book):+.2f}"))
+ else: lc.append(("book_imbalance",None,.10,"order-book imbalance unavailable")); missing.append("book_imbalance")
  s,comps=layer_mean(lc); scores["liquidity"]=s; details["liquidity"]={"score":s,"components":comps}
  if s is None: missing.append("liquidity_layer")
  oc=[]; stable=ctx.get("stablecoin_30d")
