@@ -2,6 +2,10 @@ name: Crypto Checkpoint Data Refresh
 
 on:
   workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/crypto-data.yml"
+      - "cloud-predictor/worker/collector.py"
   schedule:
     # GitHub Actions schedules are best-effort; these minutes avoid the quarter-hour marks.
     - cron: "7,22,37,52 * * * *"
