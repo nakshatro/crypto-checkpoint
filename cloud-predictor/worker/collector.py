@@ -8,7 +8,7 @@ ROOT=Path(__file__).resolve().parents[1]; DATA=ROOT/"docs"/"data"; DATA.mkdir(pa
 SYMBOLS={"BTC":"BTCUSDT","ETH":"ETHUSDT","XRP":"XRPUSDT","SOL":"SOLUSDT"}; HORIZONS={"4h":4,"24h":24,"72h":72}
 S=requests.Session(); S.headers.update({"User-Agent":"CryptoCheckpointForecast/1.0"})
 def get_json(url,params=None):
- r=S.get(url,params=params,timeout=15); r.raise_for_status(); return r.json()
+ r=S.get(url,params=params,timeout=(4,8)); r.raise_for_status(); return r.json()
 def write_json(name,obj): (DATA/name).write_text(json.dumps(obj,indent=2,allow_nan=False),encoding="utf-8")
 def pct(a,b): return (a/b-1)*100 if b else 0
 def mean(xs): return statistics.fmean(xs) if xs else 0
@@ -90,8 +90,10 @@ def derivatives(symbol):
    sell=float(row[1]) if len(row)>1 and row[1] not in (None,"") else 0
    buy=float(row[2]) if len(row)>2 and row[2] not in (None,"") else 0
    if sell>0: out["taker_buy_sell_ratio"]={"buySellRatio":buy/sell,"source":"OKX public taker volume","timestamp":row[0] if row else None}
+   else: out["taker_buy_sell_ratio"]={"unavailable":"OKX returned zero sell volume in latest row"}
+  else: out["taker_buy_sell_ratio"]={"unavailable":"OKX returned no taker-volume rows; code="+str(j.get("code"))+" msg="+str(j.get("msg"))[:100]}
  except Exception as e:
-  out.setdefault("taker_buy_sell_ratio",{"unavailable":"OKX: "+str(e)[:120]})
+  out["taker_buy_sell_ratio"]={"unavailable":"OKX: "+str(e)[:120]}
  # Fallback to the main checkpoint snapshot for OI/funding when Binance futures is blocked.
  try:
   market=json.loads((ROOT.parent/"data"/"market.json").read_text(encoding="utf-8"))
