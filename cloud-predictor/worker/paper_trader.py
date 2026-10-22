@@ -27,13 +27,21 @@ def candidate(coin,v,now):
  try: dt=datetime.fromisoformat(stamp.replace("Z","+00:00"))
  except Exception: dt=datetime.fromisoformat(now.replace("Z","+00:00"))
  key=coin+"|"+side+"|"+dt.strftime("%Y-%m-%dT%H")
- return {"trade_id":key,"coin":coin,"side":side,"signal_time_utc":dt.isoformat(),"entry_price":float(price),"stop_loss":round(stop,10),"take_profit_1":round(tp,10),"p_up":float(p),"confidence":float(conf),"coverage":float(cov),"risk_pct":round(risk/price*100,4),"reward_risk":1.5,"status":"open","exit_price":None,"exit_time_utc":None,"exit_reason":None,"gross_return_pct":None,"net_return_pct":None,"round_trip_cost_pct":round(2*(FEE_SIDE+SLIP_SIDE)*100,4),"evaluation":"Completed 1h candles; if stop and target both hit in one candle, stop is assumed first."}
+ fr=((v.get("derivatives") or {}).get("funding_rate") or {})
+ if isinstance(fr,list): fr=fr[-1] if fr else {}
+ try: funding_rate=float(fr.get("fundingRate")) if isinstance(fr,dict) and fr.get("fundingRate") is not None else None
+ except Exception: funding_rate=None
+ return {"trade_id":key,"coin":coin,"side":side,"funding_rate_at_entry":funding_rate,"funding_source_at_entry":fr.get("source") if isinstance(fr,dict) else None,"signal_time_utc":dt.isoformat(),"entry_price":float(price),"stop_loss":round(stop,10),"take_profit_1":round(tp,10),"p_up":float(p),"confidence":float(conf),"coverage":float(cov),"risk_pct":round(risk/price*100,4),"reward_risk":1.5,"status":"open","exit_price":None,"exit_time_utc":None,"exit_reason":None,"gross_return_pct":None,"net_return_pct":None,"round_trip_cost_pct":round(2*(FEE_SIDE+SLIP_SIDE)*100,4),"evaluation":"Completed 1h candles; if stop and target both hit in one candle, stop is assumed first."}
 def close(t,price,ts,reason):
  e=t["entry_price"]; gross=(price/e-1)*100 if t["side"]=="long" else (e/price-1)*100; cost=2*(FEE_SIDE+SLIP_SIDE)*100
- t.update(status="closed",exit_price=round(price,10),exit_time_utc=datetime.fromtimestamp(ts/1000,timezone.utc).isoformat(),exit_reason=reason,gross_return_pct=round(gross,4),net_return_pct=round(gross-cost,4))
+ start=datetime.fromisoformat(t["signal_time_utc"].replace("Z","+00:00")); end=datetime.fromtimestamp(ts/1000,timezone.utc)
+ intervals=max(0,int((end-start).total_seconds()//(8*3600)))
+ rate=t.get("funding_rate_at_entry"); funding_cost=(float(rate)*intervals*100*(1 if t["side"]=="long" else -1)) if isinstance(rate,(int,float)) else None
+ net=gross-cost-(funding_cost or 0)
+ t.update(status="closed",exit_price=round(price,10),exit_time_utc=end.isoformat(),exit_reason=reason,gross_return_pct=round(gross,4),fees_slippage_cost_pct=round(cost,4),funding_intervals_estimate=intervals,funding_cost_pct_estimate=round(funding_cost,4) if funding_cost is not None else None,funding_note="Estimate using entry funding rate held constant; not historical realized funding." if funding_cost is not None else "Funding unavailable; net return excludes funding.",net_return_pct=round(net,4))
 def main():
  now=datetime.now(timezone.utc).isoformat(); snap=read(DATA/"latest.json",{}); path=DATA/"paper_trades.json"
- store=read(path,{"created_at":now,"method":"Paper simulation only. No real orders.","assumptions":{"fee_per_side_pct":FEE_SIDE*100,"slippage_per_side_pct":SLIP_SIDE*100,"max_hold_hours":MAX_HOURS,"same_candle_stop_target":"stop first"},"trades":[]})
+ store=read(path,{"created_at":now,"method":"Paper simulation only. No real orders.","assumptions":{"fee_per_side_pct":FEE_SIDE*100,"slippage_per_side_pct":SLIP_SIDE*100,"max_hold_hours":MAX_HOURS,"same_candle_stop_target":"stop first","funding":"estimated from entry funding rate and 8h intervals; not realized historical funding"},"trades":[]})
  trades=store.get("trades",[]); errors=[]
  for t in trades:
   if t.get("status")!="open":continue
