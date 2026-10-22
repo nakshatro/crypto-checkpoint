@@ -245,6 +245,38 @@ def automatic_macro_events():
      if -24<=hours<=24*45: out.append({"name":"FOMC meeting (date only; announcement time not inferred)","time_utc":None,"date_utc":t.strftime("%Y-%m-%d"),"time_exact":False,"in_hours":None,"days_away":round(hours/24,1),"source":"Federal Reserve official calendar"})
     except Exception: pass
  except Exception: pass
+ # Fallback to the official BLS HTML schedules if its ICS feed is blocked or changes format.
+ # These pages provide actual release dates and Eastern release times.
+ if not out:
+  try:
+   from html import unescape
+   pages=[
+    ("CPI","https://www.bls.gov/schedule/news_release/cpi.htm","Consumer Price Index"),
+    ("PPI","https://www.bls.gov/schedule/news_release/ppi.htm","Producer Price Index"),
+    ("Employment Situation","https://www.bls.gov/schedule/news_release/empsit.htm","Employment Situation"),
+    ("JOLTS","https://www.bls.gov/schedule/news_release/jolts.htm","Job Openings and Labor Turnover Survey"),
+    ("Employment Cost Index","https://www.bls.gov/schedule/news_release/eci.htm","Employment Cost Index"),
+   ]
+   from zoneinfo import ZoneInfo
+   eastern=ZoneInfo("America/New_York")
+   for short,url,label in pages:
+    try:
+     rr=S.get(url,timeout=(5,12)); rr.raise_for_status()
+     raw=unescape(re.sub(r"<[^>]+>"," ",rr.text))
+     raw=re.sub(r"\\s+"," ",raw)
+     # Schedule rows commonly read: October 2026 Nov. 10, 2026 08:30 AM
+     pat=r"([A-Za-z]+)\\s+(20\\d{2})\\s+([A-Za-z]{3,9}\\.?\\s+\\d{1,2},?\\s+20\\d{2})\\s+(\\d{1,2}:\\d{2}\\s+[AP]M)"
+     for m in re.finditer(pat,raw):
+      try:
+       rel=re.sub(r"\\.(?=\\s)","",m.group(3))
+       t=datetime.strptime(rel+" "+m.group(4),"%b %d, %Y %I:%M %p").replace(tzinfo=eastern).astimezone(timezone.utc)
+       hours=(t-now).total_seconds()/3600
+       if -1<=hours<=24*45:
+        out.append({"name":label+" ("+m.group(1)+" "+m.group(2)+")","time_utc":t.isoformat(),"date_utc":t.strftime("%Y-%m-%d"),"time_exact":True,"in_hours":round(hours,1),"source":"US BLS official HTML schedule"})
+      except Exception: continue
+    except Exception: continue
+  except Exception: pass
+ # If the official ICS feed is empty, also retain official FOMC meeting dates parsed above.
  unique={}
  for e in out:
   key=(e["name"],e["date_utc"])
