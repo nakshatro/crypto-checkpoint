@@ -6,6 +6,8 @@ on:
     paths:
       - ".github/workflows/crypto-data.yml"
       - "cloud-predictor/worker/collector.py"
+      - "cloud-predictor/worker/paper_trader.py"
+      - "cloud-predictor/worker/calibration_review.py"
       - "cloud-predictor/docs/index.html"
   schedule:
     # Refresh twice per hour; GitHub Actions schedules are best-effort.
@@ -60,6 +62,12 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           TELEGRAM_FORCE_SEND: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' }}
         run: python cloud-predictor/worker/collector.py
+
+      - name: Evaluate forecast calibration by coin and horizon
+        run: python cloud-predictor/worker/calibration_review.py
+
+      - name: Update paper-trading ledger
+        run: python cloud-predictor/worker/paper_trader.py
 
       - name: Commit updated snapshots
         run: |
