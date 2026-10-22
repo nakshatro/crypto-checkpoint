@@ -1,6 +1,6 @@
 {
-  "updated_at": "2026-10-22T20:32:36.036201+00:00",
-  "method": "Nearest archived snapshot within 90m of target; historical-rate baseline is in-sample and descriptive, not a deployable benchmark. Separate coin/horizon samples; overlapping forecasts are not independent.",
+  "updated_at": "2026-10-22T20:33:32.320452+00:00",
+  "method": "Nearest archived snapshot within 90m of target. Historical base-rate baseline is expanding and uses only earlier matured outcomes for that coin/horizon (starts at 50% until prior outcomes exist), avoiding look-ahead. Separate coin/horizon samples; overlapping forecast windows are not independent.",
   "horizons": {
     "4h": {
       "BTC": {
@@ -8,9 +8,8 @@
         "brier": 0.32268,
         "coinflip_brier": 0.25,
         "skill_vs_coinflip": -0.29071,
-        "historical_base_rate_up": 0.0,
-        "historical_rate_brier_in_sample": 0.0,
-        "skill_vs_historical_rate_in_sample": null,
+        "expanding_historical_base_rate_brier": 0.06308,
+        "skill_vs_expanding_historical_rate": -4.11542,
         "directional_hit_rate": 0.0,
         "rows": [
           {
@@ -20,7 +19,8 @@
             "price_at_outcome": 84290.7,
             "p_up": 0.587,
             "actual_up": false,
-            "return_pct": -0.4126
+            "return_pct": -0.4126,
+            "base_rate_p_up": 0.5
           },
           {
             "forecast_time_utc": "2026-10-22T00:44:19.919439+00:00",
@@ -29,7 +29,8 @@
             "price_at_outcome": 82746.6,
             "p_up": 0.607,
             "actual_up": false,
-            "return_pct": -1.8319
+            "return_pct": -1.8319,
+            "base_rate_p_up": 0.25
           },
           {
             "forecast_time_utc": "2026-10-22T05:17:56.179078+00:00",
@@ -38,7 +39,8 @@
             "price_at_outcome": 81846.9,
             "p_up": 0.578,
             "actual_up": false,
-            "return_pct": -1.0873
+            "return_pct": -1.0873,
+            "base_rate_p_up": 0.1667
           },
           {
             "forecast_time_utc": "2026-10-22T10:22:24.685872+00:00",
@@ -47,7 +49,8 @@
             "price_at_outcome": 81565.2,
             "p_up": 0.55,
             "actual_up": false,
-            "return_pct": -0.5552
+            "return_pct": -0.5552,
+            "base_rate_p_up": 0.125
           },
           {
             "forecast_time_utc": "2026-10-22T11:39:25.677473+00:00",
@@ -56,7 +59,8 @@
             "price_at_outcome": 81565.2,
             "p_up": 0.545,
             "actual_up": false,
-            "return_pct": -0.3745
+            "return_pct": -0.3745,
+            "base_rate_p_up": 0.125
           },
           {
             "forecast_time_utc": "2026-10-22T15:26:22.376006+00:00",
@@ -65,7 +69,8 @@
             "price_at_outcome": 81390.2,
             "p_up": 0.538,
             "actual_up": false,
-            "return_pct": -0.2146
+            "return_pct": -0.2146,
+            "base_rate_p_up": 0.0833
           }
         ]
       },
@@ -74,9 +79,8 @@
         "brier": 0.23471,
         "coinflip_brier": 0.25,
         "skill_vs_coinflip": 0.06114,
-        "historical_base_rate_up": 0.0,
-        "historical_rate_brier_in_sample": 0.0,
-        "skill_vs_historical_rate_in_sample": null,
+        "expanding_historical_base_rate_brier": 0.06308,
+        "skill_vs_expanding_historical_rate": -2.72092,
         "directional_hit_rate": 0.6667,
         "rows": [
           {
@@ -86,7 +90,8 @@
             "price_at_outcome": 2477.07,
             "p_up": 0.505,
             "actual_up": false,
-            "return_pct": -0.5995
+            "return_pct": -0.5995,
+            "base_rate_p_up": 0.5
           },
           {
             "forecast_time_utc": "2026-10-22T00:44:19.919439+00:00",
@@ -95,7 +100,8 @@
             "price_at_outcome": 2439.02,
             "p_up": 0.524,
             "actual_up": false,
-            "return_pct": -1.5361
+            "return_pct": -1.5361,
+            "base_rate_p_up": 0.25
           },
           {
             "forecast_time_utc": "2026-10-22T05:17:56.179078+00:00",
@@ -104,7 +110,8 @@
             "price_at_outcome": 2404.52,
             "p_up": 0.491,
             "actual_up": false,
-            "return_pct": -1.4145
+            "return_pct": -1.4145,
+            "base_rate_p_up": 0.1667
           },
           {
             "forecast_time_utc": "2026-10-22T10:22:24.685872+00:00",
@@ -113,7 +120,8 @@
             "price_at_outcome": 2399.25,
             "p_up": 0.466,
             "actual_up": false,
-            "return_pct": -0.4002
+            "return_pct": -0.4002,
+            "base_rate_p_up": 0.125
           },
           {
             "forecast_time_utc": "2026-10-22T11:39:25.677473+00:00",
@@ -122,7 +130,8 @@
             "price_at_outcome": 2399.25,
             "p_up": 0.457,
             "actual_up": false,
-            "return_pct": -0.1702
+            "return_pct": -0.1702,
+            "base_rate_p_up": 0.125
           },
           {
             "forecast_time_utc": "2026-10-22T15:26:22.376006+00:00",
@@ -131,7 +140,8 @@
             "price_at_outcome": 2385.1,
             "p_up": 0.46,
             "actual_up": false,
-            "return_pct": -0.5898
+            "return_pct": -0.5898,
+            "base_rate_p_up": 0.0833
           }
         ]
       },
@@ -140,9 +150,8 @@
         "brier": 0.25756,
         "coinflip_brier": 0.25,
         "skill_vs_coinflip": -0.03025,
-        "historical_base_rate_up": 0.1667,
-        "historical_rate_brier_in_sample": 0.13889,
-        "skill_vs_historical_rate_in_sample": -0.85446,
+        "expanding_historical_base_rate_brier": 0.19734,
+        "skill_vs_expanding_historical_rate": -0.30518,
         "directional_hit_rate": 0.3333,
         "rows": [
           {
@@ -152,7 +161,8 @@
             "price_at_outcome": 107.32,
             "p_up": 0.505,
             "actual_up": false,
-            "return_pct": -0.5191
+            "return_pct": -0.5191,
+            "base_rate_p_up": 0.5
           },
           {
             "forecast_time_utc": "2026-10-22T00:44:19.919439+00:00",
@@ -161,7 +171,8 @@
             "price_at_outcome": 105.08,
             "p_up": 0.529,
             "actual_up": false,
-            "return_pct": -2.0872
+            "return_pct": -2.0872,
+            "base_rate_p_up": 0.25
           },
           {
             "forecast_time_utc": "2026-10-22T05:17:56.179078+00:00",
@@ -170,7 +181,8 @@
             "price_at_outcome": 103.89,
             "p_up": 0.521,
             "actual_up": false,
-            "return_pct": -1.1325
+            "return_pct": -1.1325,
+            "base_rate_p_up": 0.1667
           },
           {
             "forecast_time_utc": "2026-10-22T10:22:24.685872+00:00",
@@ -179,7 +191,8 @@
             "price_at_outcome": 104.6,
             "p_up": 0.507,
             "actual_up": true,
-            "return_pct": 0.0957
+            "return_pct": 0.0957,
+            "base_rate_p_up": 0.125
           },
           {
             "forecast_time_utc": "2026-10-22T11:39:25.677473+00:00",
@@ -188,7 +201,8 @@
             "price_at_outcome": 104.6,
             "p_up": 0.52,
             "actual_up": false,
-            "return_pct": -0.0191
+            "return_pct": -0.0191,
+            "base_rate_p_up": 0.125
           },
           {
             "forecast_time_utc": "2026-10-22T15:26:22.376006+00:00",
@@ -197,7 +211,8 @@
             "price_at_outcome": 103.53,
             "p_up": 0.475,
             "actual_up": false,
-            "return_pct": -1.0229
+            "return_pct": -1.0229,
+            "base_rate_p_up": 0.25
           }
         ]
       },
@@ -206,9 +221,8 @@
         "brier": 0.19373,
         "coinflip_brier": 0.25,
         "skill_vs_coinflip": 0.22508,
-        "historical_base_rate_up": 0.0,
-        "historical_rate_brier_in_sample": 0.0,
-        "skill_vs_historical_rate_in_sample": null,
+        "expanding_historical_base_rate_brier": 0.06308,
+        "skill_vs_expanding_historical_rate": -2.07121,
         "directional_hit_rate": 1.0,
         "rows": [
           {
@@ -218,7 +232,8 @@
             "price_at_outcome": 1.3652,
             "p_up": 0.442,
             "actual_up": false,
-            "return_pct": -1.3085
+            "return_pct": -1.3085,
+            "base_rate_p_up": 0.5
           },
           {
             "forecast_time_utc": "2026-10-22T00:44:19.919439+00:00",
@@ -227,7 +242,8 @@
             "price_at_outcome": 1.3428,
             "p_up": 0.395,
             "actual_up": false,
-            "return_pct": -1.6408
+            "return_pct": -1.6408,
+            "base_rate_p_up": 0.25
           },
           {
             "forecast_time_utc": "2026-10-22T05:17:56.179078+00:00",
@@ -236,7 +252,8 @@
             "price_at_outcome": 1.3287,
             "p_up": 0.483,
             "actual_up": false,
-            "return_pct": -1.05
+            "return_pct": -1.05,
+            "base_rate_p_up": 0.1667
           },
           {
             "forecast_time_utc": "2026-10-22T10:22:24.685872+00:00",
@@ -245,7 +262,8 @@
             "price_at_outcome": 1.3212,
             "p_up": 0.439,
             "actual_up": false,
-            "return_pct": -0.8778
+            "return_pct": -0.8778,
+            "base_rate_p_up": 0.125
           },
           {
             "forecast_time_utc": "2026-10-22T11:39:25.677473+00:00",
@@ -254,7 +272,8 @@
             "price_at_outcome": 1.3212,
             "p_up": 0.453,
             "actual_up": false,
-            "return_pct": -0.6093
+            "return_pct": -0.6093,
+            "base_rate_p_up": 0.125
           },
           {
             "forecast_time_utc": "2026-10-22T15:26:22.376006+00:00",
@@ -263,7 +282,8 @@
             "price_at_outcome": 1.3104,
             "p_up": 0.424,
             "actual_up": false,
-            "return_pct": -0.8174
+            "return_pct": -0.8174,
+            "base_rate_p_up": 0.0833
           }
         ]
       },
@@ -272,9 +292,8 @@
         "brier": 0.25217,
         "coinflip_brier": 0.25,
         "skill_vs_coinflip": -0.00869,
-        "historical_base_rate_up": 0.0417,
-        "historical_rate_brier_in_sample": 0.03993,
-        "skill_vs_historical_rate_in_sample": -5.31526,
+        "expanding_historical_base_rate_brier": 0.09664,
+        "skill_vs_expanding_historical_rate": -1.60927,
         "directional_hit_rate": 0.5,
         "rows": [
           {
@@ -284,7 +303,8 @@
             "price_at_outcome": 84290.7,
             "p_up": 0.587,
             "actual_up": false,
-            "return_pct": -0.4126
+            "return_pct": -0.4126,
+            "base_rate_p_up": 0.5
           },
           {
             "forecast_time_utc": "2026-10-22T00:44:19.919439+00:00",
@@ -293,7 +313,8 @@
             "price_at_outcome": 82746.6,
             "p_up": 0.607,
             "actual_up": false,
-            "return_pct": -1.8319
+            "return_pct": -1.8319,
+            "base_rate_p_up": 0.25
           },
           {
             "forecast_time_utc": "2026-10-22T05:17:56.179078+00:00",
@@ -302,7 +323,8 @@
             "price_at_outcome": 81846.9,
             "p_up": 0.578,
             "actual_up": false,
-            "return_pct": -1.0873
+            "return_pct": -1.0873,
+            "base_rate_p_up": 0.1667
           },
           {
             "forecast_time_utc": "2026-10-22T10:22:24.685872+00:00",
@@ -311,7 +333,8 @@
             "price_at_outcome": 81565.2,
             "p_up": 0.55,
             "actual_up": false,
-            "return_pct": -0.5552
+            "return_pct": -0.5552,
+            "base_rate_p_up": 0.125
           },
           {
             "forecast_time_utc": "2026-10-22T11:39:25.677473+00:00",
@@ -320,7 +343,8 @@
             "price_at_outcome": 81565.2,
             "p_up": 0.545,
             "actual_up": false,
-            "return_pct": -0.3745
+            "return_pct": -0.3745,
+            "base_rate_p_up": 0.125
           },
           {
             "forecast_time_utc": "2026-10-22T15:26:22.376006+00:00",
@@ -329,7 +353,8 @@
             "price_at_outcome": 81390.2,
             "p_up": 0.538,
             "actual_up": false,
-            "return_pct": -0.2146
+            "return_pct": -0.2146,
+            "base_rate_p_up": 0.0833
           },
           {
             "forecast_time_utc": "2026-10-21T21:17:17.781125+00:00",
@@ -338,7 +363,8 @@
             "price_at_outcome": 2477.07,
             "p_up": 0.505,
             "actual_up": false,
-            "return_pct": -0.5995
+            "return_pct": -0.5995,
+            "base_rate_p_up": 0.5
           },
           {
             "forecast_time_utc": "2026-10-22T00:44:19.919439+00:00",
@@ -347,7 +373,8 @@
             "price_at_outcome": 2439.02,
             "p_up": 0.524,
             "actual_up": false,
-            "return_pct": -1.5361
+            "return_pct": -1.5361,
+            "base_rate_p_up": 0.25
           },
           {
             "forecast_time_utc": "2026-10-22T05:17:56.179078+00:00",
@@ -356,7 +383,8 @@
             "price_at_outcome": 2404.52,
             "p_up": 0.491,
             "actual_up": false,
-            "return_pct": -1.4145
+            "return_pct": -1.4145,
+            "base_rate_p_up": 0.1667
           },
           {
             "forecast_time_utc": "2026-10-22T10:22:24.685872+00:00",
@@ -365,7 +393,8 @@
             "price_at_outcome": 2399.25,
             "p_up": 0.466,
             "actual_up": false,
-            "return_pct": -0.4002
+            "return_pct": -0.4002,
+            "base_rate_p_up": 0.125
           },
           {
             "forecast_time_utc": "2026-10-22T11:39:25.677473+00:00",
@@ -374,7 +403,8 @@
             "price_at_outcome": 2399.25,
             "p_up": 0.457,
             "actual_up": false,
-            "return_pct": -0.1702
+            "return_pct": -0.1702,
+            "base_rate_p_up": 0.125
           },
           {
             "forecast_time_utc": "2026-10-22T15:26:22.376006+00:00",
@@ -383,7 +413,8 @@
             "price_at_outcome": 2385.1,
             "p_up": 0.46,
             "actual_up": false,
-            "return_pct": -0.5898
+            "return_pct": -0.5898,
+            "base_rate_p_up": 0.0833
           },
           {
             "forecast_time_utc": "2026-10-21T21:17:17.781125+00:00",
@@ -392,7 +423,8 @@
             "price_at_outcome": 107.32,
             "p_up": 0.505,
             "actual_up": false,
-            "return_pct": -0.5191
+            "return_pct": -0.5191,
+            "base_rate_p_up": 0.5
           },
           {
             "forecast_time_utc": "2026-10-22T00:44:19.919439+00:00",
@@ -401,7 +433,8 @@
             "price_at_outcome": 105.08,
             "p_up": 0.529,
             "actual_up": false,
-            "return_pct": -2.0872
+            "return_pct": -2.0872,
+            "base_rate_p_up": 0.25
           },
           {
             "forecast_time_utc": "2026-10-22T05:17:56.179078+00:00",
@@ -410,7 +443,8 @@
             "price_at_outcome": 103.89,
             "p_up": 0.521,
             "actual_up": false,
-            "return_pct": -1.1325
+            "return_pct": -1.1325,
+            "base_rate_p_up": 0.1667
           },
           {
             "forecast_time_utc": "2026-10-22T10:22:24.685872+00:00",
@@ -419,7 +453,8 @@
             "price_at_outcome": 104.6,
             "p_up": 0.507,
             "actual_up": true,
-            "return_pct": 0.0957
+            "return_pct": 0.0957,
+            "base_rate_p_up": 0.125
           },
           {
             "forecast_time_utc": "2026-10-22T11:39:25.677473+00:00",
@@ -428,7 +463,8 @@
             "price_at_outcome": 104.6,
             "p_up": 0.52,
             "actual_up": false,
-            "return_pct": -0.0191
+            "return_pct": -0.0191,
+            "base_rate_p_up": 0.125
           },
           {
             "forecast_time_utc": "2026-10-22T15:26:22.376006+00:00",
@@ -437,7 +473,8 @@
             "price_at_outcome": 103.53,
             "p_up": 0.475,
             "actual_up": false,
-            "return_pct": -1.0229
+            "return_pct": -1.0229,
+            "base_rate_p_up": 0.25
           },
           {
             "forecast_time_utc": "2026-10-21T21:17:17.781125+00:00",
@@ -446,7 +483,8 @@
             "price_at_outcome": 1.3652,
             "p_up": 0.442,
             "actual_up": false,
-            "return_pct": -1.3085
+            "return_pct": -1.3085,
+            "base_rate_p_up": 0.5
           },
           {
             "forecast_time_utc": "2026-10-22T00:44:19.919439+00:00",
@@ -455,7 +493,8 @@
             "price_at_outcome": 1.3428,
             "p_up": 0.395,
             "actual_up": false,
-            "return_pct": -1.6408
+            "return_pct": -1.6408,
+            "base_rate_p_up": 0.25
           },
           {
             "forecast_time_utc": "2026-10-22T05:17:56.179078+00:00",
@@ -464,7 +503,8 @@
             "price_at_outcome": 1.3287,
             "p_up": 0.483,
             "actual_up": false,
-            "return_pct": -1.05
+            "return_pct": -1.05,
+            "base_rate_p_up": 0.1667
           },
           {
             "forecast_time_utc": "2026-10-22T10:22:24.685872+00:00",
@@ -473,7 +513,8 @@
             "price_at_outcome": 1.3212,
             "p_up": 0.439,
             "actual_up": false,
-            "return_pct": -0.8778
+            "return_pct": -0.8778,
+            "base_rate_p_up": 0.125
           },
           {
             "forecast_time_utc": "2026-10-22T11:39:25.677473+00:00",
@@ -482,7 +523,8 @@
             "price_at_outcome": 1.3212,
             "p_up": 0.453,
             "actual_up": false,
-            "return_pct": -0.6093
+            "return_pct": -0.6093,
+            "base_rate_p_up": 0.125
           },
           {
             "forecast_time_utc": "2026-10-22T15:26:22.376006+00:00",
@@ -491,7 +533,8 @@
             "price_at_outcome": 1.3104,
             "p_up": 0.424,
             "actual_up": false,
-            "return_pct": -0.8174
+            "return_pct": -0.8174,
+            "base_rate_p_up": 0.0833
           }
         ]
       }
@@ -502,9 +545,8 @@
         "brier": 0.35285,
         "coinflip_brier": 0.25,
         "skill_vs_coinflip": -0.41141,
-        "historical_base_rate_up": 0.0,
-        "historical_rate_brier_in_sample": 0.0,
-        "skill_vs_historical_rate_in_sample": null,
+        "expanding_historical_base_rate_brier": 0.25,
+        "skill_vs_expanding_historical_rate": -0.41141,
         "directional_hit_rate": 0.0,
         "rows": [
           {
@@ -514,7 +556,8 @@
             "price_at_outcome": 81320.2,
             "p_up": 0.598,
             "actual_up": false,
-            "return_pct": -3.7368
+            "return_pct": -3.7368,
+            "base_rate_p_up": 0.5
           },
           {
             "forecast_time_utc": "2026-10-21T21:17:17.781125+00:00",
@@ -523,7 +566,8 @@
             "price_at_outcome": 81320.2,
             "p_up": 0.59,
             "actual_up": false,
-            "return_pct": -3.9221
+            "return_pct": -3.9221,
+            "base_rate_p_up": 0.5
           }
         ]
       },
@@ -532,9 +576,8 @@
         "brier": 0.24211,
         "coinflip_brier": 0.25,
         "skill_vs_coinflip": 0.03155,
-        "historical_base_rate_up": 0.0,
-        "historical_rate_brier_in_sample": 0.0,
-        "skill_vs_historical_rate_in_sample": null,
+        "expanding_historical_base_rate_brier": 0.25,
+        "skill_vs_expanding_historical_rate": 0.03155,
         "directional_hit_rate": 1.0,
         "rows": [
           {
@@ -544,7 +587,8 @@
             "price_at_outcome": 2382.18,
             "p_up": 0.485,
             "actual_up": false,
-            "return_pct": -4.3347
+            "return_pct": -4.3347,
+            "base_rate_p_up": 0.5
           },
           {
             "forecast_time_utc": "2026-10-21T21:17:17.781125+00:00",
@@ -553,7 +597,8 @@
             "price_at_outcome": 2382.18,
             "p_up": 0.499,
             "actual_up": false,
-            "return_pct": -4.4073
+            "return_pct": -4.4073,
+            "base_rate_p_up": 0.5
           }
         ]
       },
@@ -562,9 +607,8 @@
         "brier": 0.24603,
         "coinflip_brier": 0.25,
         "skill_vs_coinflip": 0.01587,
-        "historical_base_rate_up": 0.0,
-        "historical_rate_brier_in_sample": 0.0,
-        "skill_vs_historical_rate_in_sample": null,
+        "expanding_historical_base_rate_brier": 0.25,
+        "skill_vs_expanding_historical_rate": 0.01587,
         "directional_hit_rate": 1.0,
         "rows": [
           {
@@ -574,7 +618,8 @@
             "price_at_outcome": 103.37,
             "p_up": 0.492,
             "actual_up": false,
-            "return_pct": -4.225
+            "return_pct": -4.225,
+            "base_rate_p_up": 0.5
           },
           {
             "forecast_time_utc": "2026-10-21T21:17:17.781125+00:00",
@@ -583,7 +628,8 @@
             "price_at_outcome": 103.37,
             "p_up": 0.5,
             "actual_up": false,
-            "return_pct": -4.1806
+            "return_pct": -4.1806,
+            "base_rate_p_up": 0.5
           }
         ]
       },
@@ -592,9 +638,8 @@
         "brier": 0.19317,
         "coinflip_brier": 0.25,
         "skill_vs_coinflip": 0.22731,
-        "historical_base_rate_up": 0.0,
-        "historical_rate_brier_in_sample": 0.0,
-        "skill_vs_historical_rate_in_sample": null,
+        "expanding_historical_base_rate_brier": 0.25,
+        "skill_vs_expanding_historical_rate": 0.22731,
         "directional_hit_rate": 1.0,
         "rows": [
           {
@@ -604,7 +649,8 @@
             "price_at_outcome": 1.3012,
             "p_up": 0.443,
             "actual_up": false,
-            "return_pct": -6.3952
+            "return_pct": -6.3952,
+            "base_rate_p_up": 0.5
           },
           {
             "forecast_time_utc": "2026-10-21T21:17:17.781125+00:00",
@@ -613,7 +659,8 @@
             "price_at_outcome": 1.3012,
             "p_up": 0.436,
             "actual_up": false,
-            "return_pct": -5.9351
+            "return_pct": -5.9351,
+            "base_rate_p_up": 0.5
           }
         ]
       },
@@ -622,9 +669,8 @@
         "brier": 0.25854,
         "coinflip_brier": 0.25,
         "skill_vs_coinflip": -0.03417,
-        "historical_base_rate_up": 0.0,
-        "historical_rate_brier_in_sample": 0.0,
-        "skill_vs_historical_rate_in_sample": null,
+        "expanding_historical_base_rate_brier": 0.25,
+        "skill_vs_expanding_historical_rate": -0.03417,
         "directional_hit_rate": 0.75,
         "rows": [
           {
@@ -634,7 +680,8 @@
             "price_at_outcome": 81320.2,
             "p_up": 0.598,
             "actual_up": false,
-            "return_pct": -3.7368
+            "return_pct": -3.7368,
+            "base_rate_p_up": 0.5
           },
           {
             "forecast_time_utc": "2026-10-21T21:17:17.781125+00:00",
@@ -643,7 +690,8 @@
             "price_at_outcome": 81320.2,
             "p_up": 0.59,
             "actual_up": false,
-            "return_pct": -3.9221
+            "return_pct": -3.9221,
+            "base_rate_p_up": 0.5
           },
           {
             "forecast_time_utc": "2026-10-21T20:19:20.778513+00:00",
@@ -652,7 +700,8 @@
             "price_at_outcome": 2382.18,
             "p_up": 0.485,
             "actual_up": false,
-            "return_pct": -4.3347
+            "return_pct": -4.3347,
+            "base_rate_p_up": 0.5
           },
           {
             "forecast_time_utc": "2026-10-21T21:17:17.781125+00:00",
@@ -661,7 +710,8 @@
             "price_at_outcome": 2382.18,
             "p_up": 0.499,
             "actual_up": false,
-            "return_pct": -4.4073
+            "return_pct": -4.4073,
+            "base_rate_p_up": 0.5
           },
           {
             "forecast_time_utc": "2026-10-21T20:19:20.778513+00:00",
@@ -670,7 +720,8 @@
             "price_at_outcome": 103.37,
             "p_up": 0.492,
             "actual_up": false,
-            "return_pct": -4.225
+            "return_pct": -4.225,
+            "base_rate_p_up": 0.5
           },
           {
             "forecast_time_utc": "2026-10-21T21:17:17.781125+00:00",
@@ -679,7 +730,8 @@
             "price_at_outcome": 103.37,
             "p_up": 0.5,
             "actual_up": false,
-            "return_pct": -4.1806
+            "return_pct": -4.1806,
+            "base_rate_p_up": 0.5
           },
           {
             "forecast_time_utc": "2026-10-21T20:19:20.778513+00:00",
@@ -688,7 +740,8 @@
             "price_at_outcome": 1.3012,
             "p_up": 0.443,
             "actual_up": false,
-            "return_pct": -6.3952
+            "return_pct": -6.3952,
+            "base_rate_p_up": 0.5
           },
           {
             "forecast_time_utc": "2026-10-21T21:17:17.781125+00:00",
@@ -697,7 +750,8 @@
             "price_at_outcome": 1.3012,
             "p_up": 0.436,
             "actual_up": false,
-            "return_pct": -5.9351
+            "return_pct": -5.9351,
+            "base_rate_p_up": 0.5
           }
         ]
       }
