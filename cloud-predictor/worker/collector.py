@@ -269,7 +269,9 @@ def automatic_macro_events():
      for m in re.finditer(pat,raw):
       try:
        rel=re.sub(r"\\.(?=\\s)","",m.group(3))
-       t=datetime.strptime(rel+" "+m.group(4),"%b %d, %Y %I:%M %p").replace(tzinfo=eastern).astimezone(timezone.utc)
+       try: parsed=datetime.strptime(rel+" "+m.group(4),"%b %d, %Y %I:%M %p")
+       except ValueError: parsed=datetime.strptime(rel+" "+m.group(4),"%B %d, %Y %I:%M %p")
+       t=parsed.replace(tzinfo=eastern).astimezone(timezone.utc)
        hours=(t-now).total_seconds()/3600
        if -1<=hours<=24*45:
         out.append({"name":label+" ("+m.group(1)+" "+m.group(2)+")","time_utc":t.isoformat(),"date_utc":t.strftime("%Y-%m-%d"),"time_exact":True,"in_hours":round(hours,1),"source":"US BLS official HTML schedule"})
