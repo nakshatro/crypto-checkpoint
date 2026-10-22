@@ -1,3 +1,4 @@
+# Full-system refresh trigger requested 2026-10-23; no runtime behavior changed.
 #!/usr/bin/env python3
 """Experimental Crypto Checkpoint: analogue scenarios plus a five-layer probabilistic model."""
 import json, math, os, statistics, time, re, bisect
