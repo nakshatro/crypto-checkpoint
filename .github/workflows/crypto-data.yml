@@ -8,8 +8,8 @@ on:
       - "cloud-predictor/worker/collector.py"
       - "cloud-predictor/docs/index.html"
   schedule:
-    # GitHub Actions schedules are best-effort; these minutes avoid the quarter-hour marks.
-    - cron: "7,22,37,52 * * * *"
+    # Refresh twice per hour; GitHub Actions schedules are best-effort.
+    - cron: "*/30 * * * *"
 
 permissions:
   contents: write
