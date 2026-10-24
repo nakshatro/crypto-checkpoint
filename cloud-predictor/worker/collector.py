@@ -59,16 +59,22 @@ def make_forecasts(rows):
  n=len(rows)
  if n<180: raise RuntimeError("Not enough completed hourly candles")
  cur=feature(rows,n-1); out=[]
- # A wider analogue sample reduces quantile jitter between refreshes. Ranges are
- # percentage returns, not absolute prices; 0.1 percentage-point rounding prevents
- # meaningless display flicker while still allowing real volatility changes.
+ # Blend a broad analogue pool with rolling volatility to reduce neighbour-selection jitter.
  analogue_window=120
+ returns=[pct(rows[i]["c"],rows[i-1]["c"]) for i in range(max(1,n-169),n) if rows[i-1]["c"]]
+ hourly_sigma=statistics.pstdev(returns) if len(returns)>1 else 0.0
+ volatility_weight=0.35
+ z=1.281551565545
  for label,h in HORIZONS.items():
   candidates=[(dist(cur,feature(rows,i)),pct(rows[i+h]["c"],rows[i]["c"])) for i in range(30,n-h-1)]
   candidates.sort(key=lambda x:x[0]); vals=[x[1] for x in candidates[:analogue_window]]
   count=len(vals); up=sum(x>0 for x in vals)
-  lo=quantile_linear(vals,.10); hi=quantile_linear(vals,.90)
-  out.append({"horizon":label,"hours":h,"analogue_count":count,"analogue_window":analogue_window,"up_frequency_pct":round(up/count*100,1) if count else None,"median_return_pct":round(statistics.median(vals),1) if vals else 0,"range_10_90_pct":[round(round(lo*10)/10,1),round(round(hi*10)/10,1)] if vals else [0,0],"range_method":"10th/90th linear-interpolated quantiles from up to 120 nearest historical analogues; rounded to 0.1 percentage point. Range may widen or shift when volatility/regime changes.","interpretation":"historical analogue frequency, not calibrated probability"})
+  analogue_lo=quantile_linear(vals,.10); analogue_hi=quantile_linear(vals,.90)
+  vol_bound=z*hourly_sigma*math.sqrt(h)
+  lo=(1-volatility_weight)*analogue_lo+volatility_weight*(-vol_bound)
+  hi=(1-volatility_weight)*analogue_hi+volatility_weight*vol_bound
+  lo,hi=min(lo,hi),max(lo,hi)
+  out.append({"horizon":label,"hours":h,"analogue_count":count,"analogue_window":analogue_window,"up_frequency_pct":round(up/count*100,1) if count else None,"median_return_pct":round(statistics.median(vals),1) if vals else 0,"range_10_90_pct":[round(round(lo*10)/10,1),round(round(hi*10)/10,1)] if vals else [0,0],"range_method":"Blended interval: 65% empirical 10th/90th quantiles of 120 nearest historical analogues + 35% rolling 168h volatility envelope (normal 10th/90th proxy); rounded to 0.1 percentage point. Recompute on completed candles; genuine regime changes can move the range.","rolling_168h_hourly_sigma_pct":round(hourly_sigma,4),"volatility_blend_weight":volatility_weight,"interpretation":"historical analogue frequency, not calibrated probability"})
  return cur,out
 def derivatives(symbol):
  out={}
