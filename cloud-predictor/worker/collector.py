@@ -50,15 +50,25 @@ def fetch_rows(symbol):
    last_error=RuntimeError("OKX "+inst+": only "+str(len(rows))+" completed hourly candles")
   except Exception as e: last_error=e
  raise last_error or RuntimeError("No OKX hourly history for "+symbol)
+def quantile_linear(values,q):
+ if not values:return 0.0
+ xs=sorted(values); pos=(len(xs)-1)*q; lo=int(math.floor(pos)); hi=int(math.ceil(pos))
+ if lo==hi:return xs[lo]
+ return xs[lo]+(xs[hi]-xs[lo])*(pos-lo)
 def make_forecasts(rows):
  n=len(rows)
  if n<180: raise RuntimeError("Not enough completed hourly candles")
  cur=feature(rows,n-1); out=[]
+ # A wider analogue sample reduces quantile jitter between refreshes. Ranges are
+ # percentage returns, not absolute prices; 0.1 percentage-point rounding prevents
+ # meaningless display flicker while still allowing real volatility changes.
+ analogue_window=120
  for label,h in HORIZONS.items():
   candidates=[(dist(cur,feature(rows,i)),pct(rows[i+h]["c"],rows[i]["c"])) for i in range(30,n-h-1)]
-  candidates.sort(key=lambda x:x[0]); vals=[x[1] for x in candidates[:60]]
-  vals_sorted=sorted(vals); count=len(vals); up=sum(x>0 for x in vals)
-  out.append({"horizon":label,"hours":h,"analogue_count":count,"up_frequency_pct":round(up/count*100,1) if count else None,"median_return_pct":round(statistics.median(vals),3) if vals else 0,"range_10_90_pct":[round(vals_sorted[max(0,int((count-1)*.1))],3),round(vals_sorted[max(0,int((count-1)*.9))],3)] if vals else [0,0],"interpretation":"historical analogue frequency, not calibrated probability"})
+  candidates.sort(key=lambda x:x[0]); vals=[x[1] for x in candidates[:analogue_window]]
+  count=len(vals); up=sum(x>0 for x in vals)
+  lo=quantile_linear(vals,.10); hi=quantile_linear(vals,.90)
+  out.append({"horizon":label,"hours":h,"analogue_count":count,"analogue_window":analogue_window,"up_frequency_pct":round(up/count*100,1) if count else None,"median_return_pct":round(statistics.median(vals),1) if vals else 0,"range_10_90_pct":[round(round(lo*10)/10,1),round(round(hi*10)/10,1)] if vals else [0,0],"range_method":"10th/90th linear-interpolated quantiles from up to 120 nearest historical analogues; rounded to 0.1 percentage point. Range may widen or shift when volatility/regime changes.","interpretation":"historical analogue frequency, not calibrated probability"})
  return cur,out
 def derivatives(symbol):
  out={}
