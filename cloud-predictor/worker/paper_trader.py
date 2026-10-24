@@ -7,7 +7,7 @@ import requests
 ROOT=Path(__file__).resolve().parents[1]; DATA=ROOT/"docs"/"data"; DATA.mkdir(parents=True,exist_ok=True)
 S=requests.Session(); S.headers.update({"User-Agent":"CryptoCheckpointPaperTrader/1.0"})
 SYMS={"BTC":"BTC-USDT-SWAP","ETH":"ETH-USDT-SWAP","XRP":"XRP-USDT-SWAP","SOL":"SOL-USDT-SWAP"}
-FEE_SIDE=.0005; SLIP_SIDE=.0002; MAX_HOURS=24
+FEE_SIDE=.0005; SLIP_SIDE=.0002; MAX_HOURS=72; REENTRY_COOLDOWN_HOURS=72; MAX_OPEN_TRADES=2
 def read(p,d):
  try:return json.loads(p.read_text(encoding="utf-8"))
  except Exception:return d
@@ -41,7 +41,7 @@ def close(t,price,ts,reason):
  t.update(status="closed",exit_price=round(price,10),exit_time_utc=end.isoformat(),exit_reason=reason,gross_return_pct=round(gross,4),fees_slippage_cost_pct=round(cost,4),funding_intervals_estimate=intervals,funding_cost_pct_estimate=round(funding_cost,4) if funding_cost is not None else None,funding_note="Estimate using entry funding rate held constant; not historical realized funding." if funding_cost is not None else "Funding unavailable; net return excludes funding.",net_return_pct=round(net,4))
 def main():
  now=datetime.now(timezone.utc).isoformat(); snap=read(DATA/"latest.json",{}); path=DATA/"paper_trades.json"
- store=read(path,{"created_at":now,"method":"Paper simulation only. No real orders.","assumptions":{"fee_per_side_pct":FEE_SIDE*100,"slippage_per_side_pct":SLIP_SIDE*100,"max_hold_hours":MAX_HOURS,"same_candle_stop_target":"stop first","funding":"estimated from entry funding rate and 8h intervals; not realized historical funding"},"trades":[]})
+ store=read(path,{"created_at":now,"method":"Paper simulation only. No real orders. One open position per coin; 72h re-entry cooldown; top-ranked candidates only; max two simultaneous trades.","assumptions":{"fee_per_side_pct":FEE_SIDE*100,"slippage_per_side_pct":SLIP_SIDE*100,"max_hold_hours":MAX_HOURS,"reentry_cooldown_hours":REENTRY_COOLDOWN_HOURS,"max_simultaneous_open_trades":MAX_OPEN_TRADES,"same_candle_stop_target":"stop first","funding":"estimated from entry funding rate and 8h intervals; not realized historical funding"},"trades":[]})
  trades=store.get("trades",[]); errors=[]
  for t in trades:
   if t.get("status")!="open":continue
@@ -52,13 +52,35 @@ def main():
     tp=(c["h"]>=t["take_profit_1"]) if t["side"]=="long" else (c["l"]<=t["take_profit_1"])
     if sl:close(t,t["stop_loss"],c["t"]+3600000,"stop_loss");break
     if tp:close(t,t["take_profit_1"],c["t"]+3600000,"take_profit_1");break
-    if c["t"]+3600000>=start+MAX_HOURS*3600000:close(t,c["c"],c["t"]+3600000,"time_exit_24h");break
+    if c["t"]+3600000>=start+MAX_HOURS*3600000:close(t,c["c"],c["t"]+3600000,"time_exit_72h");break
   except Exception as e:errors.append(t["coin"]+": "+str(e)[:150])
+ # Enforce one open position per coin, a 72h cooldown after the latest entry,
+ # and a portfolio cap. Rank all qualifying candidates, then take only the strongest.
+ now_dt=datetime.now(timezone.utc)
  active={t["coin"] for t in trades if t.get("status")=="open"}
+ last_entry={}
+ for old in trades:
+  try:
+   dt=datetime.fromisoformat(old["signal_time_utc"].replace("Z","+00:00"))
+   if old["coin"] not in last_entry or dt>last_entry[old["coin"]]:last_entry[old["coin"]]=dt
+  except Exception:pass
+ open_count=sum(t.get("status")=="open" for t in trades)
+ candidates=[]
  for coin,v in (snap.get("coins") or {}).items():
   if coin not in SYMS or "error" in v or coin in active:continue
+  last=last_entry.get(coin)
+  if last and (now_dt-last).total_seconds()<REENTRY_COOLDOWN_HOURS*3600:continue
   t=candidate(coin,v,now)
-  if t and not any(x.get("trade_id")==t["trade_id"] for x in trades):trades.append(t);active.add(coin)
+  if not t or any(x.get("trade_id")==t["trade_id"] for x in trades):continue
+  # Rank signal strength using probability distance from 50%, confidence, coverage,
+  # with a mild penalty for larger stop distance. Ranking selects, it does not promise edge.
+  t["selection_score"]=round(abs(t["p_up"]-.5)*2*0.50+t["confidence"]*0.30+t["coverage"]*0.20-min(t["risk_pct"]/100,0.10)*0.10,6)
+  candidates.append(t)
+ candidates.sort(key=lambda t:(t["selection_score"],t["confidence"],t["coverage"]),reverse=True)
+ slots=max(0,MAX_OPEN_TRADES-open_count)
+ for t in candidates[:slots]:
+  t["selection_rule"]="Top-ranked eligible signal; one open trade per coin; 72h re-entry cooldown; max two simultaneous portfolio trades."
+  trades.append(t);active.add(t["coin"])
  closed=[t for t in trades if t.get("status")=="closed"]; wins=sum((t.get("net_return_pct") or 0)>0 for t in closed)
  summary={"closed_trades":len(closed),"open_trades":sum(t.get("status")=="open" for t in trades),"wins_net":wins,"losses_or_flat_net":len(closed)-wins,"win_rate_net_pct":round(100*wins/len(closed),2) if closed else None,"mean_net_return_pct":round(sum(t.get("net_return_pct",0) or 0 for t in closed)/len(closed),4) if closed else None,"compounded_net_return_pct":round((math.prod(1+(t.get("net_return_pct",0) or 0)/100 for t in closed)-1)*100,4) if closed else None}
  store.update(updated_at=now,trades=trades[-2000:],summary=summary,errors=errors[-20:]);path.write_text(json.dumps(store,indent=2,allow_nan=False),encoding="utf-8")
