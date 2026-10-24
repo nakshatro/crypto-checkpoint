@@ -7,7 +7,7 @@ import requests
 ROOT=Path(__file__).resolve().parents[1]; DATA=ROOT/"docs"/"data"; DATA.mkdir(parents=True,exist_ok=True)
 S=requests.Session(); S.headers.update({"User-Agent":"CryptoCheckpointPaperTrader/1.0"})
 SYMS={"BTC":"BTC-USDT-SWAP","ETH":"ETH-USDT-SWAP","XRP":"XRP-USDT-SWAP","SOL":"SOL-USDT-SWAP"}
-FEE_SIDE=.0005; SLIP_SIDE=.0002; MAX_HOURS=72; REENTRY_COOLDOWN_HOURS=72; MAX_OPEN_TRADES=2
+FEE_SIDE=.0005; SLIP_SIDE=.0002; MAX_HOURS=72; REENTRY_COOLDOWN_HOURS=72; MAX_OPEN_TRADES=1
 def read(p,d):
  try:return json.loads(p.read_text(encoding="utf-8"))
  except Exception:return d
@@ -41,9 +41,9 @@ def close(t,price,ts,reason):
  t.update(status="closed",exit_price=round(price,10),exit_time_utc=end.isoformat(),exit_reason=reason,gross_return_pct=round(gross,4),fees_slippage_cost_pct=round(cost,4),funding_intervals_estimate=intervals,funding_cost_pct_estimate=round(funding_cost,4) if funding_cost is not None else None,funding_note="Estimate using entry funding rate held constant; not historical realized funding." if funding_cost is not None else "Funding unavailable; net return excludes funding.",net_return_pct=round(net,4))
 def main():
  now=datetime.now(timezone.utc).isoformat(); snap=read(DATA/"latest.json",{}); path=DATA/"paper_trades.json"
- store=read(path,{"created_at":now,"method":"Paper simulation only. No real orders. One open position per coin; 72h re-entry cooldown; top-ranked candidates only; max two simultaneous trades.","assumptions":{"fee_per_side_pct":FEE_SIDE*100,"slippage_per_side_pct":SLIP_SIDE*100,"max_hold_hours":MAX_HOURS,"reentry_cooldown_hours":REENTRY_COOLDOWN_HOURS,"max_simultaneous_open_trades":MAX_OPEN_TRADES,"same_candle_stop_target":"stop first","funding":"estimated from entry funding rate and 8h intervals; not realized historical funding"},"trades":[]})
+ store=read(path,{"created_at":now,"method":"Paper simulation only. No real orders. One open position per coin; 72h re-entry cooldown; top-ranked candidates only; max two simultaneous trades.","assumptions":{"fee_per_side_pct":FEE_SIDE*100,"slippage_per_side_pct":SLIP_SIDE*100,"max_hold_hours":MAX_HOURS,"reentry_cooldown_hours":REENTRY_COOLDOWN_HOURS,"max_simultaneous_open_trades":MAX_OPEN_TRADES,"signal_gate":{"long_p_up_min":0.65,"short_p_up_max":0.35,"confidence_min":0.65,"coverage_min":0.80},"same_candle_stop_target":"stop first","funding":"estimated from entry funding rate and 8h intervals; not realized historical funding"},"trades":[]})
  trades=store.get("trades",[]); errors=[]
- store["method"]="Paper simulation only. One open position per coin; 72h re-entry cooldown; strongest eligible candidates selected; max two simultaneous trades."
+ store["method"]="Paper simulation only. One portfolio position at a time; strict high-conviction signal gate; 72h re-entry cooldown after exit; 72h max hold; only strongest eligible signal selected."
  store["assumptions"]={"fee_per_side_pct":FEE_SIDE*100,"slippage_per_side_pct":SLIP_SIDE*100,"max_hold_hours":MAX_HOURS,"reentry_cooldown_hours":REENTRY_COOLDOWN_HOURS,"max_simultaneous_open_trades":MAX_OPEN_TRADES,"same_candle_stop_target":"stop first","funding":"estimated from entry funding rate and 8h intervals; not realized historical funding"}
  for t in trades:
   if t.get("status")!="open":continue
