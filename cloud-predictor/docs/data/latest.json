@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-10-24T18:13:56.509722+00:00",
+  "updated_at": "2026-10-24T18:15:07.732847+00:00",
   "source": "OKX public hourly candles plus five-layer model; missing components disclosed",
   "model_context": {
     "fear_greed": 51,
@@ -11,9 +11,9 @@
     "BTC": {
       "coin": "BTC",
       "symbol": "BTCUSDT",
-      "price": 80307.5,
+      "price": 80341.0,
       "price_source": "OKX live ticker (BTC-USDT-SWAP)",
-      "price_time": "2026-10-24T18:13:58.176000+00:00",
+      "price_time": "2026-10-24T18:15:09.077000+00:00",
       "candle_time": "2026-10-24T17:00:00+00:00",
       "change_1h_pct": 0.073,
       "change_4h_pct": -0.541,
@@ -25,26 +25,26 @@
       "volatility_24h_pct": 0.315,
       "derivatives": {
         "open_interest": {
-          "openInterest": 7717401587.64,
+          "openInterest": 7714298482.12,
           "source": "main checkpoint snapshot (USD value)"
         },
         "funding_rate": {
-          "fundingRate": 1.343e-05,
+          "fundingRate": 1.434e-05,
           "source": "main checkpoint snapshot; converted from percent to decimal"
         },
         "global_long_short_ratio": {
-          "longShortRatio": 2.14,
+          "longShortRatio": 2.13,
           "source": "OKX public account long/short ratio",
           "timestamp": "1792864800000"
         },
         "taker_buy_sell_ratio": {
-          "buySellRatio": 0.16194081598230853,
-          "buy_size": 259.23,
-          "sell_size": 1600.77,
+          "buySellRatio": 4.470981942323242,
+          "buy_size": 995.33,
+          "sell_size": 222.62,
           "trade_count": 500,
           "source": "OKX public recent trades (up to 500; not a 1h aggregate)",
           "instrument": "BTC-USDT-SWAP",
-          "timestamp": "1792865638594"
+          "timestamp": "1792865708875"
         },
         "funding_history": [
           2.02484424372e-05,
@@ -3034,8 +3034,8 @@
         "oi_history_count": 720,
         "taker_cvd_24h": -0.09084426371912972,
         "taker_cvd_count": 24,
-        "basis": -0.0005401308510544896,
-        "book_imbalance": 0.0074316573143064545,
+        "basis": -0.0004516200469535915,
+        "book_imbalance": 0.041195948690737706,
         "recent_liquidations_usd": {
           "longs": 0.0,
           "shorts": 1313315.7943399996
@@ -3045,37 +3045,49 @@
         {
           "horizon": "4h",
           "hours": 4,
-          "analogue_count": 60,
+          "analogue_count": 120,
+          "analogue_window": 120,
           "up_frequency_pct": 45.0,
-          "median_return_pct": -0.073,
+          "median_return_pct": -0.1,
           "range_10_90_pct": [
-            -0.991,
-            0.817
+            -0.8,
+            0.8
           ],
+          "range_method": "Blended interval: 65% empirical 10th/90th quantiles of 120 nearest historical analogues + 35% rolling 168h volatility envelope (normal 10th/90th proxy); rounded to 0.1 percentage point. Recompute on completed candles; genuine regime changes can move the range.",
+          "rolling_168h_hourly_sigma_pct": 0.3046,
+          "volatility_blend_weight": 0.35,
           "interpretation": "historical analogue frequency, not calibrated probability"
         },
         {
           "horizon": "24h",
           "hours": 24,
-          "analogue_count": 60,
-          "up_frequency_pct": 53.3,
-          "median_return_pct": 0.151,
+          "analogue_count": 120,
+          "analogue_window": 120,
+          "up_frequency_pct": 55.0,
+          "median_return_pct": 0.2,
           "range_10_90_pct": [
-            -2.529,
-            2.019
+            -2.0,
+            1.5
           ],
+          "range_method": "Blended interval: 65% empirical 10th/90th quantiles of 120 nearest historical analogues + 35% rolling 168h volatility envelope (normal 10th/90th proxy); rounded to 0.1 percentage point. Recompute on completed candles; genuine regime changes can move the range.",
+          "rolling_168h_hourly_sigma_pct": 0.3046,
+          "volatility_blend_weight": 0.35,
           "interpretation": "historical analogue frequency, not calibrated probability"
         },
         {
           "horizon": "72h",
           "hours": 72,
-          "analogue_count": 60,
-          "up_frequency_pct": 58.3,
-          "median_return_pct": 0.167,
+          "analogue_count": 120,
+          "analogue_window": 120,
+          "up_frequency_pct": 52.5,
+          "median_return_pct": 0.1,
           "range_10_90_pct": [
-            -3.631,
-            1.852
+            -3.5,
+            2.4
           ],
+          "range_method": "Blended interval: 65% empirical 10th/90th quantiles of 120 nearest historical analogues + 35% rolling 168h volatility envelope (normal 10th/90th proxy); rounded to 0.1 percentage point. Recompute on completed candles; genuine regime changes can move the range.",
+          "rolling_168h_hourly_sigma_pct": 0.3046,
+          "volatility_blend_weight": 0.35,
           "interpretation": "historical analogue frequency, not calibrated probability"
         }
       ],
@@ -3101,19 +3113,19 @@
             ]
           },
           "derivs": {
-            "score": 0.02767859986838921,
+            "score": 0.023458133164537372,
             "components": [
               {
                 "name": "funding_crowding",
-                "score": 0.24,
+                "score": 0.232,
                 "weight": 0.375,
-                "note": "funding 0.0013% (20th percentile of available history)"
+                "note": "funding 0.0014% (21th percentile of available history)"
               },
               {
                 "name": "long_short_ratio",
-                "score": -0.38,
+                "score": -0.378,
                 "weight": 0.188,
-                "note": "account long/short ratio 2.140; historical percentile unavailable"
+                "note": "account long/short ratio 2.130; historical percentile unavailable"
               },
               {
                 "name": "price_vs_oi",
@@ -3123,14 +3135,14 @@
               },
               {
                 "name": "perp_basis",
-                "score": 0.162,
+                "score": 0.135,
                 "weight": 0.063,
-                "note": "perpetual basis -5.4 bps"
+                "note": "perpetual basis -4.5 bps"
               }
             ]
           },
           "liquidity": {
-            "score": -0.49958556296203654,
+            "score": -0.47007484268648886,
             "components": [
               {
                 "name": "taker_cvd_24h",
@@ -3140,7 +3152,7 @@
               },
               {
                 "name": "liquidation_magnet",
-                "score": -0.259,
+                "score": -0.183,
                 "weight": 0.3,
                 "note": "estimated liquidation fuel above vs below; OI-delta weighted"
               },
@@ -3152,9 +3164,9 @@
               },
               {
                 "name": "book_imbalance",
-                "score": 0.015,
+                "score": 0.082,
                 "weight": 0.1,
-                "note": "top-400-level notional imbalance +0.01"
+                "note": "top-400-level notional imbalance +0.04"
               }
             ]
           },
@@ -3189,53 +3201,53 @@
         },
         "horizons": {
           "4h": {
-            "composite": -0.087,
-            "p_up": 0.466,
+            "composite": -0.08,
+            "p_up": 0.468,
             "coverage": 1.0,
             "bias": "Neutral",
             "range": [
-              79892.9227434,
-              80724.22856482
+              79926.24980391,
+              80757.90240172
             ]
           },
           "24h": {
-            "composite": -0.074,
-            "p_up": 0.471,
+            "composite": -0.067,
+            "p_up": 0.473,
             "coverage": 1.0,
             "bias": "Neutral",
             "range": [
-              79295.79372675,
-              81332.11426666
+              79328.87169693,
+              81366.04168101
             ]
           },
           "72h": {
-            "composite": -0.025,
-            "p_up": 0.49,
+            "composite": -0.02,
+            "p_up": 0.492,
             "coverage": 1.0,
             "bias": "Neutral",
             "range": [
-              78563.26270778,
-              82090.46230983
+              78596.03510514,
+              82124.70606648
             ]
           },
           "1w": {
-            "composite": 0.006,
-            "p_up": 0.502,
+            "composite": 0.009,
+            "p_up": 0.504,
             "coverage": 1.0,
             "bias": "Neutral",
             "range": [
-              77658.44974829,
-              83046.91346729
+              77690.844706,
+              83081.55620429
             ]
           },
           "1m": {
-            "composite": 0.022,
+            "composite": 0.023,
             "p_up": 0.509,
             "coverage": 1.0,
             "bias": "Neutral",
             "range": [
-              74920.16836913,
-              86082.22187215
+              74951.42106209,
+              86118.1307777
             ]
           }
         },
@@ -3243,42 +3255,42 @@
         "levels": {
           "liq_above": [
             {
-              "price": 85728.25625,
+              "price": 85764.0175,
               "strength": 1.0,
               "dist_pct": 6.7500000000000115
             },
             {
-              "price": 86531.33125,
-              "strength": 0.6568235420646202,
-              "dist_pct": 7.750000000000012
+              "price": 85161.45999999999,
+              "strength": 0.7823444433681962,
+              "dist_pct": 5.999999999999983
             },
             {
-              "price": 85125.95000000001,
-              "strength": 0.6125619714254371,
-              "dist_pct": 6.000000000000005
+              "price": 86567.42749999999,
+              "strength": 0.7340127186087525,
+              "dist_pct": 7.74999999999999
             }
           ],
           "liq_below": [
             {
-              "price": 73682.13125,
-              "strength": 0.6275204373542652,
-              "dist_pct": -8.249999999999991
+              "price": 78332.47499999999,
+              "strength": 0.8473355529833182,
+              "dist_pct": -2.5000000000000133
             },
             {
-              "price": 79102.88750000001,
-              "strength": 0.6225029524285787,
-              "dist_pct": -1.4999999999999902
+              "price": 73712.8675,
+              "strength": 0.7153871397817887,
+              "dist_pct": -8.250000000000012
             },
             {
-              "price": 74886.74375000001,
-              "strength": 0.5973249560011421,
-              "dist_pct": -6.749999999999989
+              "price": 79135.885,
+              "strength": 0.6917341147080932,
+              "dist_pct": -1.5000000000000013
             }
           ],
           "liq_method": "OI-delta weighted"
         },
         "confidence": {
-          "value": 0.57,
+          "value": 0.59,
           "label": "Medium",
           "notes": []
         },
@@ -3294,9 +3306,9 @@
     "ETH": {
       "coin": "ETH",
       "symbol": "ETHUSDT",
-      "price": 2324.95,
+      "price": 2326.11,
       "price_source": "OKX live ticker (ETH-USDT-SWAP)",
-      "price_time": "2026-10-24T18:14:01.664000+00:00",
+      "price_time": "2026-10-24T18:15:13.067000+00:00",
       "candle_time": "2026-10-24T17:00:00+00:00",
       "change_1h_pct": 0.206,
       "change_4h_pct": -1.922,
@@ -3321,13 +3333,13 @@
           "timestamp": "1792864800000"
         },
         "taker_buy_sell_ratio": {
-          "buySellRatio": 1.2173343855334715,
-          "buy_size": 1989.94,
-          "sell_size": 1634.67,
+          "buySellRatio": 10.099423503325943,
+          "buy_size": 6832.26,
+          "sell_size": 676.5,
           "trade_count": 500,
           "source": "OKX public recent trades (up to 500; not a 1h aggregate)",
           "instrument": "ETH-USDT-SWAP",
-          "timestamp": "1792865641350"
+          "timestamp": "1792865712743"
         },
         "funding_history": [
           1.09616503395e-05,
@@ -6317,8 +6329,8 @@
         "oi_history_count": 720,
         "taker_cvd_24h": -0.07829463884233756,
         "taker_cvd_count": 24,
-        "basis": -0.0005287638961731329,
-        "book_imbalance": 0.04594933367555478,
+        "basis": -0.0004984359423878128,
+        "book_imbalance": 0.007929128487745572,
         "recent_liquidations_usd": {
           "longs": 0.0,
           "shorts": 1172927.5769000002
@@ -6328,37 +6340,49 @@
         {
           "horizon": "4h",
           "hours": 4,
-          "analogue_count": 60,
-          "up_frequency_pct": 46.7,
-          "median_return_pct": -0.021,
+          "analogue_count": 120,
+          "analogue_window": 120,
+          "up_frequency_pct": 49.2,
+          "median_return_pct": -0.0,
           "range_10_90_pct": [
-            -1.59,
-            0.947
+            -1.5,
+            0.9
           ],
+          "range_method": "Blended interval: 65% empirical 10th/90th quantiles of 120 nearest historical analogues + 35% rolling 168h volatility envelope (normal 10th/90th proxy); rounded to 0.1 percentage point. Recompute on completed candles; genuine regime changes can move the range.",
+          "rolling_168h_hourly_sigma_pct": 0.4869,
+          "volatility_blend_weight": 0.35,
           "interpretation": "historical analogue frequency, not calibrated probability"
         },
         {
           "horizon": "24h",
           "hours": 24,
-          "analogue_count": 60,
-          "up_frequency_pct": 56.7,
-          "median_return_pct": 0.202,
+          "analogue_count": 120,
+          "analogue_window": 120,
+          "up_frequency_pct": 50.0,
+          "median_return_pct": 0.0,
           "range_10_90_pct": [
-            -2.174,
-            2.577
+            -3.2,
+            2.4
           ],
+          "range_method": "Blended interval: 65% empirical 10th/90th quantiles of 120 nearest historical analogues + 35% rolling 168h volatility envelope (normal 10th/90th proxy); rounded to 0.1 percentage point. Recompute on completed candles; genuine regime changes can move the range.",
+          "rolling_168h_hourly_sigma_pct": 0.4869,
+          "volatility_blend_weight": 0.35,
           "interpretation": "historical analogue frequency, not calibrated probability"
         },
         {
           "horizon": "72h",
           "hours": 72,
-          "analogue_count": 60,
-          "up_frequency_pct": 46.7,
-          "median_return_pct": -0.359,
+          "analogue_count": 120,
+          "analogue_window": 120,
+          "up_frequency_pct": 40.8,
+          "median_return_pct": -0.7,
           "range_10_90_pct": [
-            -4.346,
-            2.623
+            -5.1,
+            3.3
           ],
+          "range_method": "Blended interval: 65% empirical 10th/90th quantiles of 120 nearest historical analogues + 35% rolling 168h volatility envelope (normal 10th/90th proxy); rounded to 0.1 percentage point. Recompute on completed candles; genuine regime changes can move the range.",
+          "rolling_168h_hourly_sigma_pct": 0.4869,
+          "volatility_blend_weight": 0.35,
           "interpretation": "historical analogue frequency, not calibrated probability"
         }
       ],
@@ -6390,7 +6414,7 @@
             ]
           },
           "derivs": {
-            "score": 0.10672548214984605,
+            "score": 0.1061568330163713,
             "components": [
               {
                 "name": "funding_crowding",
@@ -6412,14 +6436,14 @@
               },
               {
                 "name": "perp_basis",
-                "score": 0.159,
+                "score": 0.15,
                 "weight": 0.063,
-                "note": "perpetual basis -5.3 bps"
+                "note": "perpetual basis -5.0 bps"
               }
             ]
           },
           "liquidity": {
-            "score": -0.45096554995770244,
+            "score": -0.45169310805817614,
             "components": [
               {
                 "name": "taker_cvd_24h",
@@ -6429,7 +6453,7 @@
               },
               {
                 "name": "liquidation_magnet",
-                "score": -0.29,
+                "score": -0.267,
                 "weight": 0.3,
                 "note": "estimated liquidation fuel above vs below; OI-delta weighted"
               },
@@ -6441,9 +6465,9 @@
               },
               {
                 "name": "book_imbalance",
-                "score": 0.092,
+                "score": 0.016,
                 "weight": 0.1,
-                "note": "top-400-level notional imbalance +0.05"
+                "note": "top-400-level notional imbalance +0.01"
               }
             ]
           },
@@ -6483,8 +6507,8 @@
             "coverage": 1.0,
             "bias": "Neutral",
             "range": [
-              2308.8960111,
-              2341.11561392
+              2310.0480012,
+              2342.28367951
             ]
           },
           "24h": {
@@ -6493,8 +6517,8 @@
             "coverage": 1.0,
             "bias": "Bearish",
             "range": [
-              2285.82250962,
-              2364.74725388
+              2286.96298753,
+              2365.92711015
             ]
           },
           "72h": {
@@ -6503,28 +6527,28 @@
             "coverage": 1.0,
             "bias": "Bearish",
             "range": [
-              2257.59729665,
-              2394.31209034
+              2258.723692,
+              2395.50669755
             ]
           },
           "1w": {
-            "composite": -0.152,
+            "composite": -0.153,
             "p_up": 0.441,
             "coverage": 1.0,
             "bias": "Bearish",
             "range": [
-              2222.85680845,
-              2431.73221142
+              2223.96587054,
+              2432.94548886
             ]
           },
           "1m": {
-            "composite": -0.203,
+            "composite": -0.204,
             "p_up": 0.423,
             "coverage": 1.0,
             "bias": "Bearish",
             "range": [
-              2118.55806913,
-              2551.44882799
+              2119.61509287,
+              2552.72183629
             ]
           }
         },
@@ -6532,36 +6556,36 @@
         "levels": {
           "liq_above": [
             {
-              "price": 2510.946,
-              "strength": 0.6901467499909195,
+              "price": 2512.1988,
+              "strength": 0.5885034308712952,
               "dist_pct": 8.000000000000007
             },
             {
-              "price": 2441.1974999999998,
-              "strength": 0.6504638325210258,
-              "dist_pct": 5.000000000000004
+              "price": 2558.7210000000005,
+              "strength": 0.41962544262351253,
+              "dist_pct": 10.000000000000009
             },
             {
-              "price": 2557.4449999999997,
-              "strength": 0.6314043692813195,
-              "dist_pct": 9.999999999999986
+              "price": 2436.600225,
+              "strength": 0.41301221697673357,
+              "dist_pct": 4.75000000000001
             }
           ],
           "liq_below": [
             {
-              "price": 2179.640625,
-              "strength": 0.8312322343413038,
-              "dist_pct": -6.249999999999989
+              "price": 2180.728125,
+              "strength": 0.5387307995086238,
+              "dist_pct": -6.25
             },
             {
-              "price": 2173.8282499999996,
-              "strength": 0.7919620643315874,
-              "dist_pct": -6.500000000000005
+              "price": 2174.91285,
+              "strength": 0.49660066933001357,
+              "dist_pct": -6.499999999999995
             },
             {
-              "price": 2272.6386249999996,
-              "strength": 0.6687744730562287,
-              "dist_pct": -2.2500000000000075
+              "price": 2215.619775,
+              "strength": 0.37229136294563847,
+              "dist_pct": -4.749999999999998
             }
           ],
           "liq_method": "OI-delta weighted"
@@ -6583,9 +6607,9 @@
     "XRP": {
       "coin": "XRP",
       "symbol": "XRPUSDT",
-      "price": 1.2779,
+      "price": 1.2787,
       "price_source": "OKX live ticker (XRP-USDT-SWAP)",
-      "price_time": "2026-10-24T18:14:04.970000+00:00",
+      "price_time": "2026-10-24T18:15:15.767000+00:00",
       "candle_time": "2026-10-24T17:00:00+00:00",
       "change_1h_pct": -0.047,
       "change_4h_pct": -0.577,
@@ -6597,26 +6621,26 @@
       "volatility_24h_pct": 0.431,
       "derivatives": {
         "open_interest": {
-          "openInterest": 399114145.96,
+          "openInterest": 398951930.42,
           "source": "main checkpoint snapshot (USD value)"
         },
         "funding_rate": {
-          "fundingRate": -1.319e-05,
+          "fundingRate": -1.0329999999999998e-05,
           "source": "main checkpoint snapshot; converted from percent to decimal"
         },
         "global_long_short_ratio": {
-          "longShortRatio": 3.81,
+          "longShortRatio": 3.82,
           "source": "OKX public account long/short ratio",
           "timestamp": "1792864800000"
         },
         "taker_buy_sell_ratio": {
-          "buySellRatio": 3.13760263957107,
-          "buy_size": 836.83,
-          "sell_size": 266.71,
+          "buySellRatio": 0.8904556156373704,
+          "buy_size": 344.17,
+          "sell_size": 386.51,
           "trade_count": 500,
           "source": "OKX public recent trades (up to 500; not a 1h aggregate)",
           "instrument": "XRP-USDT-SWAP",
-          "timestamp": "1792865643699"
+          "timestamp": "1792865715269"
         },
         "funding_history": [
           0.0001,
@@ -6720,7 +6744,7 @@
           3.03202459195e-05,
           -3.31013325535e-05
         ],
-        "oi_change_24h": -0.021859856102128483,
+        "oi_change_24h": -0.02152700411446995,
         "oi_series": [
           [
             1790276400000,
@@ -9600,14 +9624,14 @@
           ],
           [
             1792864800000,
-            107961437.4686
+            107998175.741
           ]
         ],
         "oi_history_count": 720,
         "taker_cvd_24h": -0.08118977816936658,
         "taker_cvd_count": 24,
-        "basis": -0.00046929996089161823,
-        "book_imbalance": 0.05398236859524608,
+        "basis": -0.00046904315196992963,
+        "book_imbalance": 0.05661611015659289,
         "recent_liquidations_usd": {
           "longs": 329986.81710000004,
           "shorts": 103171.20209999998
@@ -9617,37 +9641,49 @@
         {
           "horizon": "4h",
           "hours": 4,
-          "analogue_count": 60,
-          "up_frequency_pct": 45.0,
-          "median_return_pct": -0.098,
+          "analogue_count": 120,
+          "analogue_window": 120,
+          "up_frequency_pct": 42.5,
+          "median_return_pct": -0.1,
           "range_10_90_pct": [
-            -1.141,
-            0.938
+            -1.4,
+            1.1
           ],
+          "range_method": "Blended interval: 65% empirical 10th/90th quantiles of 120 nearest historical analogues + 35% rolling 168h volatility envelope (normal 10th/90th proxy); rounded to 0.1 percentage point. Recompute on completed candles; genuine regime changes can move the range.",
+          "rolling_168h_hourly_sigma_pct": 0.4934,
+          "volatility_blend_weight": 0.35,
           "interpretation": "historical analogue frequency, not calibrated probability"
         },
         {
           "horizon": "24h",
           "hours": 24,
-          "analogue_count": 60,
-          "up_frequency_pct": 50.0,
-          "median_return_pct": 0.012,
+          "analogue_count": 120,
+          "analogue_window": 120,
+          "up_frequency_pct": 51.7,
+          "median_return_pct": 0.3,
           "range_10_90_pct": [
-            -3.428,
-            2.998
+            -3.0,
+            2.8
           ],
+          "range_method": "Blended interval: 65% empirical 10th/90th quantiles of 120 nearest historical analogues + 35% rolling 168h volatility envelope (normal 10th/90th proxy); rounded to 0.1 percentage point. Recompute on completed candles; genuine regime changes can move the range.",
+          "rolling_168h_hourly_sigma_pct": 0.4934,
+          "volatility_blend_weight": 0.35,
           "interpretation": "historical analogue frequency, not calibrated probability"
         },
         {
           "horizon": "72h",
           "hours": 72,
-          "analogue_count": 60,
-          "up_frequency_pct": 51.7,
-          "median_return_pct": 0.818,
+          "analogue_count": 120,
+          "analogue_window": 120,
+          "up_frequency_pct": 45.0,
+          "median_return_pct": -0.2,
           "range_10_90_pct": [
-            -6.903,
-            3.24
+            -6.3,
+            3.9
           ],
+          "range_method": "Blended interval: 65% empirical 10th/90th quantiles of 120 nearest historical analogues + 35% rolling 168h volatility envelope (normal 10th/90th proxy); rounded to 0.1 percentage point. Recompute on completed candles; genuine regime changes can move the range.",
+          "rolling_168h_hourly_sigma_pct": 0.4934,
+          "volatility_blend_weight": 0.35,
           "interpretation": "historical analogue frequency, not calibrated probability"
         }
       ],
@@ -9679,23 +9715,23 @@
             ]
           },
           "derivs": {
-            "score": 0.09060685363178048,
+            "score": 0.08335557580724842,
             "components": [
               {
                 "name": "funding_crowding",
-                "score": 0.64,
+                "score": 0.62,
                 "weight": 0.375,
-                "note": "funding -0.0013% (18th percentile of available history)"
+                "note": "funding -0.0010% (19th percentile of available history)"
               },
               {
                 "name": "long_short_ratio",
-                "score": -0.669,
+                "score": -0.67,
                 "weight": 0.188,
-                "note": "account long/short ratio 3.810; historical percentile unavailable"
+                "note": "account long/short ratio 3.820; historical percentile unavailable"
               },
               {
                 "name": "price_vs_oi",
-                "score": -0.087,
+                "score": -0.086,
                 "weight": 0.375,
                 "note": "price -2.6%, OI -2.2% over 24h"
               },
@@ -9708,7 +9744,7 @@
             ]
           },
           "liquidity": {
-            "score": -0.3470419597030152,
+            "score": -0.343150839974663,
             "components": [
               {
                 "name": "taker_cvd_24h",
@@ -9718,7 +9754,7 @@
               },
               {
                 "name": "liquidation_magnet",
-                "score": -0.215,
+                "score": -0.204,
                 "weight": 0.3,
                 "note": "estimated liquidation fuel above vs below; OI-delta weighted"
               },
@@ -9730,9 +9766,9 @@
               },
               {
                 "name": "book_imbalance",
-                "score": 0.108,
+                "score": 0.113,
                 "weight": 0.1,
-                "note": "top-400-level notional imbalance +0.05"
+                "note": "top-400-level notional imbalance +0.06"
               }
             ]
           },
@@ -9761,53 +9797,53 @@
         },
         "horizons": {
           "4h": {
-            "composite": -0.166,
-            "p_up": 0.436,
+            "composite": -0.167,
+            "p_up": 0.435,
             "coverage": 1.0,
             "bias": "Bearish",
             "range": [
-              1.26723861,
-              1.28865108
+              1.26803194,
+              1.28945781
             ]
           },
           "24h": {
-            "composite": -0.202,
+            "composite": -0.203,
             "p_up": 0.423,
             "coverage": 1.0,
             "bias": "Bearish",
             "range": [
-              1.25194275,
-              1.30439544
+              1.2527265,
+              1.30521202
             ]
           },
           "72h": {
-            "composite": -0.211,
+            "composite": -0.212,
             "p_up": 0.42,
             "coverage": 1.0,
             "bias": "Bearish",
             "range": [
-              1.2332756,
-              1.32413907
+              1.23404767,
+              1.32496802
             ]
           },
           "1w": {
-            "composite": -0.234,
-            "p_up": 0.413,
+            "composite": -0.235,
+            "p_up": 0.412,
             "coverage": 1.0,
             "bias": "Bearish",
             "range": [
-              1.21036644,
-              1.34920166
+              1.21112417,
+              1.35004629
             ]
           },
           "1m": {
             "composite": -0.257,
-            "p_up": 0.406,
+            "p_up": 0.405,
             "coverage": 1.0,
             "bias": "Bearish",
             "range": [
-              1.14204086,
-              1.42992118
+              1.14275581,
+              1.43081635
             ]
           }
         },
@@ -9815,36 +9851,36 @@
         "levels": {
           "liq_above": [
             {
-              "price": 1.418469,
-              "strength": 0.9545967396937006,
-              "dist_pct": 10.999999999999988
+              "price": 1.41616025,
+              "strength": 0.7911468641432708,
+              "dist_pct": 10.749999999999993
             },
             {
-              "price": 1.42805325,
-              "strength": 0.766853065745889,
+              "price": 1.42894725,
+              "strength": 0.7654954179438904,
               "dist_pct": 11.749999999999993
             },
             {
-              "price": 1.33221075,
-              "strength": 0.7525981510362973,
-              "dist_pct": 4.249999999999998
+              "price": 1.4001765,
+              "strength": 0.6455347415516424,
+              "dist_pct": 9.499999999999996
             }
           ],
           "liq_below": [
             {
-              "price": 1.226784,
-              "strength": 0.9627540407525033,
+              "price": 1.227552,
+              "strength": 0.8496090671658915,
               "dist_pct": -3.9999999999999925
             },
             {
-              "price": 1.2459525,
-              "strength": 0.9394639965755445,
-              "dist_pct": -2.500000000000002
+              "price": 1.2467325,
+              "strength": 0.84173187350971,
+              "dist_pct": -2.499999999999991
             },
             {
-              "price": 1.24914725,
-              "strength": 0.8405916088988841,
-              "dist_pct": -2.2499999999999964
+              "price": 1.2499292499999999,
+              "strength": 0.8334807967152922,
+              "dist_pct": -2.2500000000000075
             }
           ],
           "liq_method": "OI-delta weighted"
@@ -9866,9 +9902,9 @@
     "SOL": {
       "coin": "SOL",
       "symbol": "SOLUSDT",
-      "price": 100.67,
+      "price": 100.73,
       "price_source": "OKX live ticker (SOL-USDT-SWAP)",
-      "price_time": "2026-10-24T18:14:08.070000+00:00",
+      "price_time": "2026-10-24T18:15:19.866000+00:00",
       "candle_time": "2026-10-24T17:00:00+00:00",
       "change_1h_pct": 0.01,
       "change_4h_pct": -0.908,
@@ -9893,13 +9929,13 @@
           "timestamp": "1792864800000"
         },
         "taker_buy_sell_ratio": {
-          "buySellRatio": 0.2758860658643105,
-          "buy_size": 848.38,
-          "sell_size": 3075.11,
+          "buySellRatio": 0.7640096215675535,
+          "buy_size": 1283.2,
+          "sell_size": 1679.56,
           "trade_count": 500,
           "source": "OKX public recent trades (up to 500; not a 1h aggregate)",
           "instrument": "SOL-USDT-SWAP",
-          "timestamp": "1792865646238"
+          "timestamp": "1792865718483"
         },
         "funding_history": [
           2.23816216074e-05,
@@ -12889,8 +12925,8 @@
         "oi_history_count": 720,
         "taker_cvd_24h": -0.06884151034281027,
         "taker_cvd_count": 24,
-        "basis": -0.0004963271788762871,
-        "book_imbalance": -0.0632975756507682,
+        "basis": -0.0005952380952381178,
+        "book_imbalance": -0.05124226320202679,
         "recent_liquidations_usd": {
           "longs": 428516.7857999999,
           "shorts": 232646.20539999998
@@ -12900,37 +12936,49 @@
         {
           "horizon": "4h",
           "hours": 4,
-          "analogue_count": 60,
-          "up_frequency_pct": 58.3,
-          "median_return_pct": 0.082,
+          "analogue_count": 120,
+          "analogue_window": 120,
+          "up_frequency_pct": 53.3,
+          "median_return_pct": 0.0,
           "range_10_90_pct": [
-            -1.532,
-            0.899
+            -1.4,
+            1.0
           ],
+          "range_method": "Blended interval: 65% empirical 10th/90th quantiles of 120 nearest historical analogues + 35% rolling 168h volatility envelope (normal 10th/90th proxy); rounded to 0.1 percentage point. Recompute on completed candles; genuine regime changes can move the range.",
+          "rolling_168h_hourly_sigma_pct": 0.5143,
+          "volatility_blend_weight": 0.35,
           "interpretation": "historical analogue frequency, not calibrated probability"
         },
         {
           "horizon": "24h",
           "hours": 24,
-          "analogue_count": 60,
-          "up_frequency_pct": 55.0,
-          "median_return_pct": 0.446,
+          "analogue_count": 120,
+          "analogue_window": 120,
+          "up_frequency_pct": 50.8,
+          "median_return_pct": 0.0,
           "range_10_90_pct": [
-            -5.467,
-            2.266
+            -3.9,
+            2.7
           ],
+          "range_method": "Blended interval: 65% empirical 10th/90th quantiles of 120 nearest historical analogues + 35% rolling 168h volatility envelope (normal 10th/90th proxy); rounded to 0.1 percentage point. Recompute on completed candles; genuine regime changes can move the range.",
+          "rolling_168h_hourly_sigma_pct": 0.5143,
+          "volatility_blend_weight": 0.35,
           "interpretation": "historical analogue frequency, not calibrated probability"
         },
         {
           "horizon": "72h",
           "hours": 72,
-          "analogue_count": 60,
-          "up_frequency_pct": 38.3,
-          "median_return_pct": -0.91,
+          "analogue_count": 120,
+          "analogue_window": 120,
+          "up_frequency_pct": 41.7,
+          "median_return_pct": -0.9,
           "range_10_90_pct": [
-            -6.957,
-            3.588
+            -6.5,
+            4.1
           ],
+          "range_method": "Blended interval: 65% empirical 10th/90th quantiles of 120 nearest historical analogues + 35% rolling 168h volatility envelope (normal 10th/90th proxy); rounded to 0.1 percentage point. Recompute on completed candles; genuine regime changes can move the range.",
+          "rolling_168h_hourly_sigma_pct": 0.5143,
+          "volatility_blend_weight": 0.35,
           "interpretation": "historical analogue frequency, not calibrated probability"
         }
       ],
@@ -12962,7 +13010,7 @@
             ]
           },
           "derivs": {
-            "score": 0.19271473196565325,
+            "score": 0.19456931164743754,
             "components": [
               {
                 "name": "funding_crowding",
@@ -12984,14 +13032,14 @@
               },
               {
                 "name": "perp_basis",
-                "score": 0.149,
+                "score": 0.179,
                 "weight": 0.063,
-                "note": "perpetual basis -5.0 bps"
+                "note": "perpetual basis -6.0 bps"
               }
             ]
           },
           "liquidity": {
-            "score": -0.3047692479338275,
+            "score": -0.29925807838617113,
             "components": [
               {
                 "name": "taker_cvd_24h",
@@ -13001,7 +13049,7 @@
               },
               {
                 "name": "liquidation_magnet",
-                "score": -0.115,
+                "score": -0.105,
                 "weight": 0.3,
                 "note": "estimated liquidation fuel above vs below; OI-delta weighted"
               },
@@ -13013,9 +13061,9 @@
               },
               {
                 "name": "book_imbalance",
-                "score": -0.127,
+                "score": -0.102,
                 "weight": 0.1,
-                "note": "top-400-level notional imbalance -0.06"
+                "note": "top-400-level notional imbalance -0.05"
               }
             ]
           },
@@ -13050,53 +13098,53 @@
         },
         "horizons": {
           "4h": {
-            "composite": -0.069,
-            "p_up": 0.472,
+            "composite": -0.067,
+            "p_up": 0.473,
             "coverage": 1.0,
             "bias": "Neutral",
             "range": [
-              99.81715576,
-              101.530131
+              99.87664746,
+              101.59064364
             ]
           },
           "24h": {
-            "composite": -0.091,
-            "p_up": 0.464,
+            "composite": -0.088,
+            "p_up": 0.465,
             "coverage": 1.0,
             "bias": "Neutral",
             "range": [
-              98.59377674,
-              102.78994511
+              98.6525393,
+              102.85120861
             ]
           },
           "72h": {
-            "composite": -0.1,
+            "composite": -0.098,
             "p_up": 0.461,
             "coverage": 1.0,
             "bias": "Neutral",
             "range": [
-              97.10107305,
-              104.37010202
+              97.15894594,
+              104.4323073
             ]
           },
           "1w": {
-            "composite": -0.113,
+            "composite": -0.111,
             "p_up": 0.456,
             "coverage": 1.0,
             "bias": "Neutral",
             "range": [
-              95.26963974,
-              106.37647972
+              95.32642109,
+              106.43988082
             ]
           },
           "1m": {
-            "composite": -0.204,
+            "composite": -0.203,
             "p_up": 0.423,
             "coverage": 1.0,
             "bias": "Bearish",
             "range": [
-              89.81069962,
-              112.84233329
+              89.8642274,
+              112.90958809
             ]
           }
         },
@@ -13104,36 +13152,36 @@
         "levels": {
           "liq_above": [
             {
-              "price": 109.98197499999999,
-              "strength": 1.0,
-              "dist_pct": 9.24999999999998
+              "price": 110.04752500000001,
+              "strength": 0.8213229616359425,
+              "dist_pct": 9.250000000000004
             },
             {
-              "price": 105.955175,
-              "strength": 0.6767487372583583,
+              "price": 106.018325,
+              "strength": 0.6999776634604168,
               "dist_pct": 5.249999999999999
             },
             {
-              "price": 111.24034999999999,
-              "strength": 0.5908387781620793,
-              "dist_pct": 10.499999999999998
+              "price": 109.040225,
+              "strength": 0.6231585680699397,
+              "dist_pct": 8.250000000000002
             }
           ],
           "liq_below": [
             {
-              "price": 94.378125,
-              "strength": 0.6991069359508348,
+              "price": 94.434375,
+              "strength": 1.0,
               "dist_pct": -6.25
             },
             {
-              "price": 94.62979999999999,
-              "strength": 0.6154850623198398,
-              "dist_pct": -6.000000000000016
+              "price": 96.95262500000001,
+              "strength": 0.6424681231411578,
+              "dist_pct": -3.7499999999999867
             },
             {
-              "price": 97.14654999999999,
-              "strength": 0.5022926715145548,
-              "dist_pct": -3.500000000000014
+              "price": 95.441675,
+              "strength": 0.5395919502063986,
+              "dist_pct": -5.249999999999999
             }
           ],
           "liq_method": "OI-delta weighted"
