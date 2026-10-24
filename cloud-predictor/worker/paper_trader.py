@@ -43,6 +43,8 @@ def main():
  now=datetime.now(timezone.utc).isoformat(); snap=read(DATA/"latest.json",{}); path=DATA/"paper_trades.json"
  store=read(path,{"created_at":now,"method":"Paper simulation only. No real orders. One open position per coin; 72h re-entry cooldown; top-ranked candidates only; max two simultaneous trades.","assumptions":{"fee_per_side_pct":FEE_SIDE*100,"slippage_per_side_pct":SLIP_SIDE*100,"max_hold_hours":MAX_HOURS,"reentry_cooldown_hours":REENTRY_COOLDOWN_HOURS,"max_simultaneous_open_trades":MAX_OPEN_TRADES,"same_candle_stop_target":"stop first","funding":"estimated from entry funding rate and 8h intervals; not realized historical funding"},"trades":[]})
  trades=store.get("trades",[]); errors=[]
+ store["method"]="Paper simulation only. One open position per coin; 72h re-entry cooldown; strongest eligible candidates selected; max two simultaneous trades."
+ store["assumptions"]={"fee_per_side_pct":FEE_SIDE*100,"slippage_per_side_pct":SLIP_SIDE*100,"max_hold_hours":MAX_HOURS,"reentry_cooldown_hours":REENTRY_COOLDOWN_HOURS,"max_simultaneous_open_trades":MAX_OPEN_TRADES,"same_candle_stop_target":"stop first","funding":"estimated from entry funding rate and 8h intervals; not realized historical funding"}
  for t in trades:
   if t.get("status")!="open":continue
   try:
