@@ -318,6 +318,30 @@ def automatic_macro_events():
      if -1<=hours<=24*75:out.append({"name":title,"time_utc":t.isoformat(),"date_utc":t.strftime("%Y-%m-%d"),"time_exact":True,"in_hours":round(hours,1),"source":"US BLS official monthly release schedule","url":url})
     except Exception:continue
   except Exception:continue
+ # Fallback: scrape release-specific BLS schedules if monthly-list markup changes.
+ if not any(e.get("source")=="US BLS official monthly release schedule" for e in out):
+  from html import unescape
+  pages=[
+   ("CPI","https://www.bls.gov/schedule/news_release/cpi.htm","Consumer Price Index"),
+   ("PPI","https://www.bls.gov/schedule/news_release/ppi.htm","Producer Price Index"),
+   ("Employment Situation","https://www.bls.gov/schedule/news_release/empsit.htm","Employment Situation"),
+   ("JOLTS","https://www.bls.gov/schedule/news_release/jolts.htm","Job Openings and Labor Turnover Survey"),
+   ("Employment Cost Index","https://www.bls.gov/schedule/news_release/eci.htm","Employment Cost Index"),
+  ]
+  for short,url,label in pages:
+   try:
+    resp=S.get(url,timeout=(5,12));resp.raise_for_status()
+    raw=unescape(re.sub(r"<[^>]+>"," ",resp.text));raw=re.sub(r"\s+"," ",raw)
+    pattern=r"([A-Za-z]+)\s+(20\d{2})\s+([A-Za-z]{3,9})\.?\s+(\d{1,2}),?\s+(20\d{2})\s+(\d{1,2}:\d{2}\s+[AP]M)"
+    for m in re.finditer(pattern,raw):
+     try:
+      date_text=m.group(3)+" "+m.group(4)+" "+m.group(5)+" "+m.group(6)
+      try:dt=datetime.strptime(date_text,"%b %d %Y %I:%M %p")
+      except ValueError:dt=datetime.strptime(date_text,"%B %d %Y %I:%M %p")
+      t=dt.replace(tzinfo=eastern).astimezone(timezone.utc);hours=(t-now).total_seconds()/3600
+      if -1<=hours<=24*75:out.append({"name":label+" (reference month "+m.group(1)+" "+m.group(2)+")","time_utc":t.isoformat(),"date_utc":t.strftime("%Y-%m-%d"),"time_exact":True,"in_hours":round(hours,1),"source":"US BLS official release-specific schedule","url":url})
+     except Exception:continue
+   except Exception:continue
  try:
   resp=S.get("https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm",timeout=(5,12));resp.raise_for_status()
   html=re.sub(r"<[^>]+>"," ",resp.text);html=re.sub(r"\s+"," ",html)
