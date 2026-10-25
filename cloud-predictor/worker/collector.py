@@ -360,7 +360,7 @@ def upcoming_manual_events(manual):
  # Retained for compatibility; all active events come from automatic feeds.
  return []
 def global_model_context():
- manual=load_manual_inputs(); etf_auto=automatic_etf_flows(); merged_flows=dict(manual.get("etf_flow_5d_usd") or {}); merged_flows.update(etf_auto.get("flows_usd") or {}); manual["etf_flow_5d_usd"]=merged_flows; manual["etf_flow_metadata"]=etf_auto.get("metadata",{}); out={"stablecoin_30d":None,"fear_greed":None,"headlines":[],"events":automatic_macro_events(),"manual":manual,"etf_flow_metadata":manual["etf_flow_metadata"]}
+ manual=load_manual_inputs(); etf_auto=automatic_etf_flows(); merged_flows=dict(manual.get("etf_flow_5d_usd") or {}); merged_flows.update(etf_auto.get("flows_usd") or {}); manual["etf_flow_5d_usd"]=merged_flows; manual["etf_flow_metadata"]=etf_auto.get("metadata",{}); events=automatic_macro_events(); live_bls=sum(1 for e in events if e.get("source")=="US BLS official monthly release schedule"); fallback_bls=sum(1 for e in events if "fallback" in str(e.get("source","")).lower()); fomc=sum(1 for e in events if e.get("source")=="Federal Reserve official calendar"); macro_status={"status":"ok" if live_bls>0 else ("degraded" if events else "unavailable"),"live_bls_events":live_bls,"fallback_bls_events":fallback_bls,"fomc_events":fomc,"checked_at":datetime.now(timezone.utc).isoformat(),"note":"Fallback events are estimates from a stored calendar and must not be treated as live-verified." if fallback_bls else ("Official BLS schedule parsed." if live_bls else "No verified official BLS events parsed.")}; out={"stablecoin_30d":None,"fear_greed":None,"headlines":[],"events":events,"macro_status":macro_status,"manual":manual,"etf_flow_metadata":manual["etf_flow_metadata"]}
  try:
   j=get_json("https://stablecoins.llama.fi/stablecoincharts/all")
   if len(j)>=31:
@@ -678,7 +678,7 @@ def update_event_tracker(events,snap,hist,now_dt):
  return store
 
 def main():
- now=datetime.now(timezone.utc).isoformat(); model_context=global_model_context(); model_context["btc_daily"]=daily_candles("BTCUSDT"); snap={"updated_at":now,"source":"OKX public hourly candles plus five-layer model; missing components disclosed","model_context":{"fear_greed":model_context.get("fear_greed",[])[-1] if model_context.get("fear_greed") else None,"stablecoin_30d":model_context.get("stablecoin_30d"),"headline_count":len(model_context.get("headlines",[])),"events":model_context.get("events",[]),"etf_flows":model_context.get("etf_flow_metadata",{})},"coins":{}}; issues=[]
+ now=datetime.now(timezone.utc).isoformat(); model_context=global_model_context(); model_context["btc_daily"]=daily_candles("BTCUSDT"); snap={"updated_at":now,"source":"OKX public hourly candles plus five-layer model; missing components disclosed","model_context":{"fear_greed":model_context.get("fear_greed",[])[-1] if model_context.get("fear_greed") else None,"stablecoin_30d":model_context.get("stablecoin_30d"),"headline_count":len(model_context.get("headlines",[])),"events":model_context.get("events",[]),"macro_status":model_context.get("macro_status",{}),"etf_flows":model_context.get("etf_flow_metadata",{})},"coins":{}}; issues=[]
  for coin,symbol in SYMBOLS.items():
   try:
    rows=fetch_rows(symbol); f,forecasts=make_forecasts(rows); last=rows[-1]
