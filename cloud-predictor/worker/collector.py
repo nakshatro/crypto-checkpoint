@@ -292,7 +292,7 @@ def automatic_macro_events():
  # Official Fed calendar can be updated; meeting days are date-only, not release times.
  try:
   r=S.get("https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm",timeout=(5,12)); r.raise_for_status()
-  html=unescape(re.sub(r"<[^>]+>"," ",r.text)); html=re.sub(r"\s+"," ",html)
+  html=re.sub(r"<[^>]+>"," ",r.text); html=re.sub(r"\s+"," ",html)
   year_sections=list(re.finditer(r"(20\d{2})\s+FOMC Meetings",html,re.I))
   for yi,ym in enumerate(year_sections):
    year=int(ym.group(1))
