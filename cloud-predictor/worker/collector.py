@@ -6,6 +6,7 @@ import json, math, os, statistics, time, re, bisect
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 import requests
+import xml.etree.ElementTree as ET
 ROOT=Path(__file__).resolve().parents[1]; DATA=ROOT/"docs"/"data"; DATA.mkdir(parents=True,exist_ok=True)
 SYMBOLS={"BTC":"BTCUSDT","ETH":"ETHUSDT","XRP":"XRPUSDT","SOL":"SOLUSDT"}; HORIZONS={"4h":4,"24h":24,"72h":72}
 S=requests.Session(); S.headers.update({"User-Agent":"CryptoCheckpointForecast/1.0"})
@@ -400,8 +401,44 @@ def fetch_prediction_market_outlooks(events):
 def upcoming_manual_events(manual):
  # Retained for compatibility; all active events come from automatic feeds.
  return []
+def fetch_macro_news(limit=3):
+ """Fetch recent macro/geopolitical headlines; label likely transmission channel, not causal certainty."""
+ queries=[
+  '"Iran" OR "United States" OR "Strait of Hormuz" OR oil OR "Middle East" markets',
+  'Ukraine Russia ceasefire peace talks sanctions energy markets',
+  '"Federal Reserve" OR FOMC OR inflation OR "Treasury yields" OR dollar markets'
+ ]
+ found=[]; seen=set()
+ impact_rules=[
+  (("ceasefire","peace talks","truce","de-escalation","deal reached"),"RISK-ON POTENTIAL","Could ease oil/risk-premium pressure if credible; verify scope and implementation."),
+  (("attack","strike","escalation","missile","strait of hormuz","shipping disruption"),"RISK-OFF / OIL RISK","Could lift oil and inflation expectations, pressure risk assets if sustained."),
+  (("fed","fomc","rate cut","rate hike","inflation","cpi","pce","treasury yield","dollar"),"RATES / USD","Direction depends on surprise versus expectations; watch US 2Y yield and DXY."),
+  (("sanction","tariff","trade war","export ban"),"POLICY / SUPPLY","Potential energy, trade and inflation channel; impact depends on details.")
+ ]
+ for query in queries:
+  try:
+   r=S.get("https://news.google.com/rss/search",params={"q":query+" when:3d","hl":"en-US","gl":"US","ceid":"US:en"},timeout=(4,8));r.raise_for_status()
+   root=ET.fromstring(r.content)
+   for item in root.iter():
+    if item.tag.split("}")[-1]!="item":continue
+    title=(item.findtext("title") or "").strip()
+    link=(item.findtext("link") or "").strip()
+    pub=(item.findtext("pubDate") or "").strip()
+    source_node=next((n for n in item if n.tag.split("}")[-1]=="source"),None)
+    source=(source_node.text or "").strip() if source_node is not None else ""
+    if not title or title.lower() in seen:continue
+    low=title.lower()
+    if not any(k in low for k in ("iran","ukraine","russia","ceasefire","peace talk","oil","hormuz","fed","fomc","inflation","cpi","pce","treasury","yield","dollar","sanction","tariff","shipping","missile","strike","energy")):continue
+    seen.add(title.lower()); tag="MONITOR"; note="Headline only; market impact not yet confirmed."
+    for keys,label,desc in impact_rules:
+     if any(k in low for k in keys):tag=label;note=desc;break
+    found.append({"title":title,"source":source,"published":pub,"url":link,"impact_tag":tag,"impact_note":note})
+  except Exception:pass
+ found.sort(key=lambda x:x.get("published",""),reverse=True)
+ return found[:limit]
+
 def global_model_context():
- manual=load_manual_inputs(); etf_auto=automatic_etf_flows(); merged_flows=dict(manual.get("etf_flow_5d_usd") or {}); merged_flows.update(etf_auto.get("flows_usd") or {}); manual["etf_flow_5d_usd"]=merged_flows; manual["etf_flow_metadata"]=etf_auto.get("metadata",{}); events=automatic_macro_events(); prediction_markets=fetch_prediction_market_outlooks(events); live_bls=sum(1 for e in events if e.get("source")=="US BLS official monthly release schedule"); fallback_bls=sum(1 for e in events if "fallback" in str(e.get("source","")).lower()); fomc=sum(1 for e in events if e.get("source")=="Federal Reserve official calendar"); macro_status={"status":"ok" if live_bls>0 else ("degraded" if events else "unavailable"),"live_bls_events":live_bls,"fallback_bls_events":fallback_bls,"fomc_events":fomc,"checked_at":datetime.now(timezone.utc).isoformat(),"note":"Fallback events are estimates from a stored calendar and must not be treated as live-verified." if fallback_bls else ("Official BLS schedule parsed." if live_bls else "No verified official BLS events parsed.")}; out={"stablecoin_30d":None,"fear_greed":None,"headlines":[],"events":events,"macro_status":macro_status,"prediction_markets":prediction_markets,"manual":manual,"etf_flow_metadata":manual["etf_flow_metadata"]}
+ manual=load_manual_inputs(); etf_auto=automatic_etf_flows(); merged_flows=dict(manual.get("etf_flow_5d_usd") or {}); merged_flows.update(etf_auto.get("flows_usd") or {}); manual["etf_flow_5d_usd"]=merged_flows; manual["etf_flow_metadata"]=etf_auto.get("metadata",{}); events=automatic_macro_events(); prediction_markets=fetch_prediction_market_outlooks(events); macro_news=fetch_macro_news(); live_bls=sum(1 for e in events if e.get("source")=="US BLS official monthly release schedule"); fallback_bls=sum(1 for e in events if "fallback" in str(e.get("source","")).lower()); fomc=sum(1 for e in events if e.get("source")=="Federal Reserve official calendar"); macro_status={"status":"ok" if live_bls>0 else ("degraded" if events else "unavailable"),"live_bls_events":live_bls,"fallback_bls_events":fallback_bls,"fomc_events":fomc,"checked_at":datetime.now(timezone.utc).isoformat(),"note":"Fallback events are estimates from a stored calendar and must not be treated as live-verified." if fallback_bls else ("Official BLS schedule parsed." if live_bls else "No verified official BLS events parsed.")}; out={"stablecoin_30d":None,"fear_greed":None,"headlines":[],"events":events,"macro_status":macro_status,"prediction_markets":prediction_markets,"macro_news":macro_news,"manual":manual,"etf_flow_metadata":manual["etf_flow_metadata"]}
  try:
   j=get_json("https://stablecoins.llama.fi/stablecoincharts/all")
   if len(j)>=31:
@@ -724,7 +761,7 @@ def update_event_tracker(events,snap,hist,now_dt):
  return store
 
 def main():
- now=datetime.now(timezone.utc).isoformat(); model_context=global_model_context(); model_context["btc_daily"]=daily_candles("BTCUSDT"); snap={"updated_at":now,"source":"OKX public hourly candles plus five-layer model; missing components disclosed","model_context":{"fear_greed":model_context.get("fear_greed",[])[-1] if model_context.get("fear_greed") else None,"stablecoin_30d":model_context.get("stablecoin_30d"),"headline_count":len(model_context.get("headlines",[])),"events":model_context.get("events",[]),"macro_status":model_context.get("macro_status",{}),"prediction_markets":model_context.get("prediction_markets",{}),"etf_flows":model_context.get("etf_flow_metadata",{})},"coins":{}}; issues=[]
+ now=datetime.now(timezone.utc).isoformat(); model_context=global_model_context(); model_context["btc_daily"]=daily_candles("BTCUSDT"); snap={"updated_at":now,"source":"OKX public hourly candles plus five-layer model; missing components disclosed","model_context":{"fear_greed":model_context.get("fear_greed",[])[-1] if model_context.get("fear_greed") else None,"stablecoin_30d":model_context.get("stablecoin_30d"),"headline_count":len(model_context.get("headlines",[])),"events":model_context.get("events",[]),"macro_status":model_context.get("macro_status",{}),"prediction_markets":model_context.get("prediction_markets",{}),"macro_news":model_context.get("macro_news",[]),"etf_flows":model_context.get("etf_flow_metadata",{})},"coins":{}}; issues=[]
  for coin,symbol in SYMBOLS.items():
   try:
    rows=fetch_rows(symbol); f,forecasts=make_forecasts(rows); last=rows[-1]
@@ -867,6 +904,17 @@ def main():
    start_date=meta.get("period_start","?"); end_date=meta.get("period_end","?")
    lines.append(f"{sign} {coin} {value/1_000_000:+,.1f}M · {start_date[5:]}–{end_date[5:]} ({meta.get('sessions','?')} sessions)")
   lines.append("XRP is holdings-derived; BTC/ETH/SOL use reported ETF totals.")
+  news=snap.get("model_context",{}).get("macro_news",[]) or []
+  lines.extend(["","━━━━━━━━━━━━━━━━━━","🌍 MACRO & GEOPOLITICAL NEWS"])
+  if news:
+   for item in news[:2]:
+    title=str(item.get("title") or "Macro headline")
+    source=str(item.get("source") or "News source")
+    tag=str(item.get("impact_tag") or "MONITOR")
+    lines.append(f"• [{tag}] {title[:145]}")
+    lines.append(f"  {source} · {str(item.get('published') or '')[:25]}")
+    lines.append(f"  {str(item.get('impact_note') or 'Headline only; impact not confirmed.')[:150]}")
+  else: lines.append("No fresh relevant macro/geopolitical headlines parsed.")
   evs=snap.get("model_context",{}).get("events",[]) or []
   lines.extend(["","━━━━━━━━━━━━━━━━━━","🗓 MACRO WATCH"])
   if evs:
