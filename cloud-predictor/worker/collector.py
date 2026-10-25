@@ -373,6 +373,27 @@ def automatic_macro_events():
       if -1<=hours<=24*75:out.append({"name":title[:180],"time_utc":t.isoformat(),"date_utc":t.strftime("%Y-%m-%d"),"time_exact":True,"in_hours":round(hours,1),"source":"US BLS official monthly release schedule (text fallback)","url":url})
      except Exception:continue
    except Exception:continue
+ # Last-resort official BLS year calendar parser. Parse visible release rows even if
+ # individual schedule endpoints change their table markup.
+ if not any(str(e.get("source","")).startswith("US BLS") for e in out):
+  try:
+   from html import unescape
+   year_url=f"https://www.bls.gov/schedule/{now.year}/"
+   resp=S.get(year_url,timeout=(5,12));resp.raise_for_status()
+   visible=unescape(re.sub(r"</(?:tr|p|div|li|h[1-6])\s*>", "\n", resp.text, flags=re.I))
+   visible=re.sub(r"<[^>]+>", " ", visible)
+   visible=re.sub(r"[ \t\xa0]+"," ",visible)
+   row_pattern=re.compile(r"(?im)^\s*(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday),?\s+([A-Za-z]+)\s+(\d{1,2}),\s*(20\d{2})\s+(\d{1,2}:\d{2})\s*([AP]M)\s+(.+?)\s*$")
+   for m in row_pattern.finditer(visible):
+    month,day,year,clock,ampm,title=m.groups()
+    if not any(key in title.lower() for key in wanted): continue
+    try:
+     dt=datetime.strptime(month+" "+day+" "+year+" "+clock+" "+ampm,"%B %d %Y %I:%M %p")
+     t=dt.replace(tzinfo=eastern).astimezone(timezone.utc);hours=(t-now).total_seconds()/3600
+     if -1<=hours<=24*75:
+      out.append({"name":title.strip(),"time_utc":t.isoformat(),"date_utc":t.strftime("%Y-%m-%d"),"time_exact":True,"in_hours":round(hours,1),"source":"US BLS official year schedule","url":year_url})
+    except Exception: continue
+  except Exception: pass
  try:
   resp=S.get("https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm",timeout=(5,12));resp.raise_for_status()
   html=re.sub(r"<[^>]+>"," ",resp.text);html=re.sub(r"\s+"," ",html)
