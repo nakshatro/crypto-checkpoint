@@ -372,6 +372,50 @@ def automatic_macro_events():
     # Diagnostics are kept for status visibility; don't abort the market-data run.
     pass
  except Exception: pass
+ # Additional fallback: parse the official BLS annual schedule table. This is more stable
+ # than relying on individual schedule pages' changing markup.
+ if not any(e.get("source","").startswith("US BLS official") for e in out):
+  try:
+   from html.parser import HTMLParser
+   from html import unescape
+   class ScheduleParser(HTMLParser):
+    def __init__(self):
+     super().__init__(convert_charrefs=True); self.rows=[]; self.row=None; self.cell=None
+    def handle_starttag(self,tag,attrs):
+     if tag=="tr": self.row=[]
+     elif tag in ("td","th") and self.row is not None: self.cell=[]
+    def handle_data(self,data):
+     if self.cell is not None:self.cell.append(data)
+    def handle_endtag(self,tag):
+     if tag in ("td","th") and self.cell is not None:
+      self.row.append(" ".join("".join(self.cell).split())); self.cell=None
+     elif tag=="tr" and self.row is not None:
+      if self.row:self.rows.append(self.row)
+      self.row=None;self.cell=None
+   for year in (now.year,now.year+1):
+    try:
+     rr=S.get(f"https://www.bls.gov/schedule/{year}/",timeout=(5,12));rr.raise_for_status()
+     parser=ScheduleParser();parser.feed(rr.text)
+     for row in parser.rows:
+      joined=" | ".join(row)
+      m=re.search(r"(?:(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday),?\\s+)?(January|February|March|April|May|June|July|August|September|October|November|December)\\s+(\\d{1,2}),?\\s+(20\\d{2})",joined,re.I)
+      tm=re.search(r"(\\d{1,2}:\\d{2}\\s+[AP]M)",joined,re.I)
+      if not m or not tm:continue
+      # Identify the release text while excluding date/time columns.
+      release=" ".join(x for x in row if x and not re.search(r"^(?:Date|Time|Release)$",x,re.I))
+      release=re.sub(r"(?:(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday),?\\s+)?(?:January|February|March|April|May|June|July|August|September|October|November|December)\\s+\\d{1,2},?\\s+20\\d{2}"," ",release,flags=re.I)
+      release=re.sub(r"\\b\\d{1,2}:\\d{2}\\s+[AP]M\\b"," ",release,flags=re.I)
+      release=" ".join(release.split())
+      if not any(k in release.lower() for k in ("consumer price index","producer price index","employment situation","job openings and labor turnover","productivity and costs","employment cost index","import and export price")):continue
+      try:
+       date=datetime.strptime(m.group(1)+" "+m.group(2)+" "+m.group(3)+" "+tm.group(1),"%B %d %Y %I:%M %p")
+       t=date.replace(tzinfo=ZoneInfo("America/New_York")).astimezone(timezone.utc)
+       hours=(t-now).total_seconds()/3600
+       if -1<=hours<=24*60:
+        out.append({"name":release[:150],"time_utc":t.isoformat(),"date_utc":t.strftime("%Y-%m-%d"),"time_exact":True,"in_hours":round(hours,1),"source":"US BLS official annual schedule"})
+      except Exception:continue
+    except Exception:continue
+  except Exception:pass
  # If the official ICS feed is empty, also retain official FOMC meeting dates parsed above.
  unique={}
  for e in out:
