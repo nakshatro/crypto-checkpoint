@@ -99,7 +99,7 @@ def main():
             elif parse_time(paper.get("updated_at")) and abs((parse_time(paper.get("updated_at")) - handoff_time).total_seconds()) > 60:
                 errors.append("Paper-trade signal_handoff timestamp does not match the latest ledger refresh")
             handoff_items = handoff.get("items") or []
-            accepted_ids = {x.get("trade_id") for x in handoff_items if x.get("status") == "accepted_into_open_ledger"}
+            accepted_ids = {x.get("trade_id") for x in handoff_items if x.get("status") in ("accepted_into_open_ledger", "existing_open_ledger_trade")}
             open_ids = {x.get("trade_id") for x in opened}
             if handoff and accepted_ids != open_ids:
                 errors.append("Signal handoff accepted trades do not match open paper-trade ledger entries")
