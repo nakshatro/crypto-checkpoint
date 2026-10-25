@@ -290,7 +290,7 @@ def automatic_macro_events():
  eastern=__import__("zoneinfo").ZoneInfo("America/New_York")
  weekday=r"(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)"
  month=r"(?:January|February|March|April|May|June|July|August|September|October|November|December)"
- date_time_re=re.compile(r"(?:"+weekday+r"),?\s+("+month+r")\s+(\d{1,2}),\s+(20\d{2})\s+(\d{1,2}:\d{2}\s+[AP]M)",re.I)
+ date_time_re=re.compile(r"(?:"+weekday+r"),?\s+("+month+r")\s+(\d{1,2})(?:,?\s+(20\d{2}))?\s+(\d{1,2}:\d{2}\s+[AP]M)",re.I)
  for offset in range(3):
   year=now.year;month_num=now.month+offset
   while month_num>12:year+=1;month_num-=12
@@ -304,7 +304,7 @@ def automatic_macro_events():
     title=raw[m.end():end].strip(" |:-\t")
     if not any(key in title.lower() for key in wanted):continue
     try:
-     dt=datetime.strptime("%s %s %s %s"%(m.group(1),m.group(2),m.group(3),m.group(4)),"%B %d %Y %I:%M %p")
+     release_year=m.group(3) or str(year);dt=datetime.strptime("%s %s %s %s"%(m.group(1),m.group(2),release_year,m.group(4)),"%B %d %Y %I:%M %p")
      t=dt.replace(tzinfo=eastern).astimezone(timezone.utc);hours=(t-now).total_seconds()/3600
      if -1<=hours<=24*75:out.append({"name":title[:180],"time_utc":t.isoformat(),"date_utc":t.strftime("%Y-%m-%d"),"time_exact":True,"in_hours":round(hours,1),"source":"US BLS official monthly release schedule","url":url})
     except Exception:continue
