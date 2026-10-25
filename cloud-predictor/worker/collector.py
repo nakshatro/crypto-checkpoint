@@ -261,7 +261,7 @@ def automatic_etf_flows():
     if not d:continue
     total_value=numval(row[total_idx])
     if total_value is not None:rows.append((d,total_value))
-   bydate={d:v for d,v in rows}; cutoff=datetime.now(timezone.utc).date()-timedelta(days=3); recent=sorted((d,v) for d,v in bydate.items() if d<=cutoff)[-5:]
+   bydate={d:v for d,v in rows}; cutoff=datetime.now(timezone.utc).date(); recent=sorted((d,v) for d,v in bydate.items() if (cutoff-timedelta(days=3))<=d<=cutoff)[-5:]
    if len(recent)<3:raise RuntimeError("Fewer than 3 dated rows with a reported Total parsed")
    total=sum(v for _,v in recent)*1_000_000
    result["flows_usd"][coin]=round(total,2)
@@ -277,7 +277,7 @@ def automatic_etf_flows():
    usd=numval(row.get("flow_usd") or "")
    if d and status=="computed" and usd is not None and row_status in ("settled","provisional"):
     daily.setdefault(d,0.0);daily[d]+=usd
-  cutoff=datetime.now(timezone.utc).date()-timedelta(days=3);recent=sorted((d,v) for d,v in daily.items() if d<=cutoff)[-5:]
+  cutoff=datetime.now(timezone.utc).date();recent=sorted((d,v) for d,v in daily.items() if (cutoff-timedelta(days=3))<=d<=cutoff)[-5:]
   if len(recent)<3:raise RuntimeError("Fewer than 3 valid XRP ETF flow dates parsed")
   total=sum(v for _,v in recent)
   result["flows_usd"]["XRP"]=round(total,2)
