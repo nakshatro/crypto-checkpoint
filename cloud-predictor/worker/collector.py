@@ -540,10 +540,15 @@ def advanced_model(coin,symbol,rows,derivs,ctx,price):
   if tvl is not None: oc.append(("chain_tvl_30d",bounded(tvl/.15),.3,f"{chain} TVL {tvl*100:+.1f}% over 30d"))
   else: missing.append("chain_tvl_"+coin.lower())
  etf=(ctx.get("manual",{}).get("etf_flow_5d_usd",{}) or {}).get(coin)
- if etf is not None:
-  oc.append(("spot_etf_flow_5d",bounded(float(etf)/({"BTC":1.5e9,"ETH":5e8,"SOL":1e8,"XRP":1e8}[coin])),.4,f"automatically sourced 5-session spot ETF flow ${float(etf)/1e6:+.0f}M"))
+ etf_meta=(ctx.get("etf_flow_metadata",{}) or {}).get(coin,{}) or {}
+ etf_end=etf_meta.get("period_end")
+ etf_cutoff=(datetime.now(timezone.utc).date()-timedelta(days=3)).isoformat()
+ etf_fresh=bool(etf_end and etf_end>=etf_cutoff and not etf_meta.get("error"))
+ if etf is not None and etf_fresh:
+  oc.append(("spot_etf_flow_5d",bounded(float(etf)/({"BTC":1.5e9,"ETH":5e8,"SOL":1e8,"XRP":1e8}[coin])),.4,f"5-session ETF flow ${float(etf)/1e6:+.0f}M; window ends {etf_end}"))
  else:
-  oc.append(("spot_etf_flow_5d",None,.4,"spot ETF flow unavailable from configured public source"))
+  reason=("ETF flow stale: latest session "+str(etf_end)+" is older than cutoff "+etf_cutoff) if etf_end and etf_end<etf_cutoff else "ETF flow unavailable or source parse failed"
+  oc.append(("spot_etf_flow_5d",None,.4,reason))
   missing.append("spot_etf_flow_5d")
  s,comps=layer_mean(oc); scores["onchain"]=s; details["onchain"]={"score":s,"components":comps}
  if s is None: missing.append("onchain_layer")
