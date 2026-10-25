@@ -309,6 +309,32 @@ def automatic_macro_events():
      if -1<=hours<=24*75:out.append({"name":title[:180],"time_utc":t.isoformat(),"date_utc":t.strftime("%Y-%m-%d"),"time_exact":True,"in_hours":round(hours,1),"source":"US BLS official monthly release schedule","url":url})
     except Exception:continue
   except Exception:continue
+ # Official BLS schedule fallback for the currently published 2026 dates.
+ # Live monthly pages are attempted above on every run; this list prevents an empty
+ # countdown if GitHub Actions cannot retrieve or parse the official BLS HTML.
+ if not any(str(e.get("source","")).startswith("US BLS official") for e in out) and now.year==2026:
+  fallback_releases=[
+   ("Job Openings and Labor Turnover Survey","November",3,"10:00 AM","https://www.bls.gov/schedule/2026/11_sched_list.htm"),
+   ("Productivity and Costs","November",5,"08:30 AM","https://www.bls.gov/schedule/2026/11_sched_list.htm"),
+   ("Employment Situation","November",6,"08:30 AM","https://www.bls.gov/schedule/2026/11_sched_list.htm"),
+   ("Consumer Price Index","November",10,"08:30 AM","https://www.bls.gov/schedule/2026/11_sched_list.htm"),
+   ("Producer Price Index","November",13,"08:30 AM","https://www.bls.gov/schedule/2026/11_sched_list.htm"),
+   ("U.S. Import and Export Price Indexes","November",17,"08:30 AM","https://www.bls.gov/schedule/2026/11_sched_list.htm"),
+   ("Job Openings and Labor Turnover Survey","December",1,"10:00 AM","https://www.bls.gov/schedule/2026/12_sched_list.htm"),
+   ("Employment Situation","December",4,"08:30 AM","https://www.bls.gov/schedule/2026/12_sched_list.htm"),
+   ("Productivity and Costs","December",8,"08:30 AM","https://www.bls.gov/schedule/2026/12_sched_list.htm"),
+   ("Consumer Price Index","December",10,"08:30 AM","https://www.bls.gov/schedule/2026/12_sched_list.htm"),
+   ("Producer Price Index","December",15,"08:30 AM","https://www.bls.gov/schedule/2026/12_sched_list.htm"),
+   ("U.S. Import and Export Price Indexes","December",17,"08:30 AM","https://www.bls.gov/schedule/2026/12_sched_list.htm"),
+  ]
+  from zoneinfo import ZoneInfo
+  eastern=ZoneInfo("America/New_York")
+  for name,mon,day,clock,url in fallback_releases:
+   try:
+    dt=datetime.strptime(f"{mon} {day} 2026 {clock}","%B %d %Y %I:%M %p").replace(tzinfo=eastern).astimezone(timezone.utc)
+    hours=(dt-now).total_seconds()/3600
+    if -1<=hours<=24*75:out.append({"name":name,"time_utc":dt.isoformat(),"date_utc":dt.strftime("%Y-%m-%d"),"time_exact":True,"in_hours":round(hours,1),"source":"Official BLS 2026 schedule fallback (live calendar unavailable)","url":url})
+   except Exception:pass
  try:
   resp=S.get("https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm",timeout=(5,12));resp.raise_for_status()
   html=unescape(re.sub(r"<[^>]+>"," ",resp.text));html=re.sub(r"\s+"," ",html)
