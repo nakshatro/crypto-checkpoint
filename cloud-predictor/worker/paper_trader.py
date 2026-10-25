@@ -63,7 +63,7 @@ def main():
  last_entry={}
  for old in trades:
   try:
-   dt=datetime.fromisoformat(old["signal_time_utc"].replace("Z","+00:00"))
+   dt=datetime.fromisoformat((old.get("exit_time_utc") or old["signal_time_utc"]).replace("Z","+00:00"))
    if old["coin"] not in last_entry or dt>last_entry[old["coin"]]:last_entry[old["coin"]]=dt
   except Exception:pass
  open_count=sum(t.get("status")=="open" for t in trades)
