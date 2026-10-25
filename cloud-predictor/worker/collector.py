@@ -6,6 +6,7 @@ import json, math, os, statistics, time, re, bisect
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 import requests
+import xml.etree.ElementTree as ET
 ROOT=Path(__file__).resolve().parents[1]; DATA=ROOT/"docs"/"data"; DATA.mkdir(parents=True,exist_ok=True)
 SYMBOLS={"BTC":"BTCUSDT","ETH":"ETHUSDT","XRP":"XRPUSDT","SOL":"SOLUSDT"}; HORIZONS={"4h":4,"24h":24,"72h":72}
 S=requests.Session(); S.headers.update({"User-Agent":"CryptoCheckpointForecast/1.0"})
@@ -214,7 +215,7 @@ def ret_std(vals,n):
  rr=[math.log(vals[i]/vals[i-1]) for i in range(max(1,len(vals)-n),len(vals)) if vals[i]>0 and vals[i-1]>0]
  return statistics.pstdev(rr) if len(rr)>1 else None
 def automatic_etf_flows():
- """Fetch daily net flows for BTC/ETH/SOL ETF tables and XRP holdings-derived ETF flows."""
+ """Fetch rolling five-session ETF flows, with the window ending no later than three calendar days before UTC today."""
  from html.parser import HTMLParser
  import csv, io
  class Parser(HTMLParser):
@@ -247,14 +248,22 @@ def automatic_etf_flows():
  for coin,url in (("BTC","https://farside.co.uk/btc/"),("ETH","https://farside.co.uk/ETH/"),("SOL","https://farside.co.uk/SOL/")):
   try:
    resp=S.get(url,timeout=(5,12));resp.raise_for_status();parser=Parser();parser.feed(resp.text);rows=[]
+   # Read the explicit Total column only. Never substitute the last fund value
+   # when a pending/missing Total is shown as a dash.
+   total_idx=None
+   for header in parser.rows:
+    if header and any(cell.strip().lower()=="total" for cell in header):
+     total_idx=max(i for i,cell in enumerate(header) if cell.strip().lower()=="total")
+     break
+   if total_idx is None:raise RuntimeError("Farside Total column header not found")
    for row in parser.rows:
-    if len(row)<3:continue
+    if len(row)<=total_idx:continue
     d=dateval(row[0])
     if not d:continue
-    vals=[numval(x) for x in row[1:]];vals=[x for x in vals if x is not None]
-    if vals:rows.append((d,vals[-1]))
-   bydate={d:v for d,v in rows};recent=sorted(bydate.items())[-5:]
-   if len(recent)<3:raise RuntimeError("Fewer than 3 dated flow rows parsed")
+    total_value=numval(row[total_idx])
+    if total_value is not None:rows.append((d,total_value))
+   bydate={d:v for d,v in rows}; cutoff=datetime.now(timezone.utc).date(); recent=sorted((d,v) for d,v in bydate.items() if (cutoff-timedelta(days=3))<=d<=cutoff)[-5:]
+   if not recent:raise RuntimeError("No reported Total rows found in the current 4-day ETF window")
    total=sum(v for _,v in recent)*1_000_000
    result["flows_usd"][coin]=round(total,2)
    result["metadata"][coin]={"source":"Farside Investors public daily ETF flow table","url":url,"period_start":recent[0][0].isoformat(),"period_end":recent[-1][0].isoformat(),"sessions":len(recent),"five_session_net_flow_usd":round(total,2),"unit_conversion":"US$ millions converted to USD","updated_at":datetime.now(timezone.utc).isoformat()}
@@ -269,8 +278,8 @@ def automatic_etf_flows():
    usd=numval(row.get("flow_usd") or "")
    if d and status=="computed" and usd is not None and row_status in ("settled","provisional"):
     daily.setdefault(d,0.0);daily[d]+=usd
-  recent=sorted(daily.items())[-5:]
-  if len(recent)<3:raise RuntimeError("Fewer than 3 valid XRP ETF flow dates parsed")
+  cutoff=datetime.now(timezone.utc).date();recent=sorted((d,v) for d,v in daily.items() if (cutoff-timedelta(days=3))<=d<=cutoff)[-5:]
+  if not recent:raise RuntimeError("No valid XRP flow dates found in the current 4-day window")
   total=sum(v for _,v in recent)
   result["flows_usd"]["XRP"]=round(total,2)
   result["metadata"]["XRP"]={"source":"XRP Insights issuer-holdings-derived ETF flows","url":xrp_url,"period_start":recent[0][0].isoformat(),"period_end":recent[-1][0].isoformat(),"sessions":len(recent),"five_session_net_flow_usd":round(total,2),"unit_conversion":"USD; daily flows aggregated across funds","updated_at":datetime.now(timezone.utc).isoformat(),"caveat":"Derived from reported holdings changes; latest provisional session may be revised."}
@@ -356,11 +365,80 @@ def automatic_macro_events():
   if key not in unique:unique[key]=event
  return sorted(unique.values(),key=lambda e:(e["date_utc"],0 if e.get("time_exact") else 1,e["name"]))[:20]
 
+def fetch_prediction_market_outlooks(events):
+ """Fetch public Polymarket event probabilities relevant to macro releases."""
+ now=datetime.now(timezone.utc); found=[]
+ try:
+  resp=S.get("https://gamma-api.polymarket.com/events",params={"active":"true","closed":"false","limit":250,"order":"volume24hr","ascending":"false"},timeout=(5,12))
+  resp.raise_for_status(); payload=resp.json()
+  if not isinstance(payload,list): raise RuntimeError("Unexpected Polymarket Gamma response")
+  macro_terms=("federal reserve","fed rate","interest rate","fomc","consumer price index","cpi","inflation","producer price index","ppi","nonfarm payroll","unemployment","jobs report","treasury yield")
+  for event in payload:
+   title=str(event.get("title") or event.get("question") or "")
+   outcomes=[]
+   for market in (event.get("markets") or [])[:12]:
+    question=str(market.get("question") or market.get("groupItemTitle") or title)
+    if not any(term in (title+" "+question).lower() for term in macro_terms): continue
+    try:
+     import json as _json
+     names=market.get("outcomes",[]); prices=market.get("outcomePrices",[])
+     if isinstance(names,str): names=_json.loads(names)
+     if isinstance(prices,str): prices=_json.loads(prices)
+     odds=[]
+     if isinstance(names,list) and isinstance(prices,list):
+      for name,p in zip(names,prices):
+       try: odds.append({"outcome":str(name),"probability_pct":round(float(p)*100,1)})
+       except Exception: pass
+      if odds: outcomes.append({"question":question,"outcomes":odds})
+    except Exception: pass
+   if outcomes:
+    found.append({"source":"Polymarket public event market","title":title,"url":"https://polymarket.com/event/"+str(event.get("slug") or ""),"volume_24h_usd":event.get("volume24hr"),"outcomes":outcomes[:4],"updated_at":now.isoformat(),"note":"Market-implied odds, not guaranteed probabilities or price targets."})
+   if len(found)>=6: break
+ except Exception as e:
+  return {"status":"unavailable","source":"Polymarket Gamma public API","checked_at":now.isoformat(),"error":str(e)[:160],"markets":[]}
+ return {"status":"ok" if found else "no_matching_markets","source":"Polymarket Gamma public API","checked_at":now.isoformat(),"markets":found}
+
 def upcoming_manual_events(manual):
  # Retained for compatibility; all active events come from automatic feeds.
  return []
+def fetch_macro_news(limit=3):
+ """Fetch recent macro/geopolitical headlines; label likely transmission channel, not causal certainty."""
+ queries=[
+  '"Iran" OR "United States" OR "Strait of Hormuz" OR oil OR "Middle East" markets',
+  'Ukraine Russia ceasefire peace talks sanctions energy markets',
+  '"Federal Reserve" OR FOMC OR inflation OR "Treasury yields" OR dollar markets'
+ ]
+ found=[]; seen=set()
+ impact_rules=[
+  (("ceasefire","peace talks","truce","de-escalation","deal reached"),"RISK-ON POTENTIAL","Could ease oil/risk-premium pressure if credible; verify scope and implementation."),
+  (("attack","strike","escalation","missile","strait of hormuz","shipping disruption"),"RISK-OFF / OIL RISK","Could lift oil and inflation expectations, pressure risk assets if sustained."),
+  (("fed","fomc","rate cut","rate hike","inflation","cpi","pce","treasury yield","dollar"),"RATES / USD","Direction depends on surprise versus expectations; watch US 2Y yield and DXY."),
+  (("sanction","tariff","trade war","export ban"),"POLICY / SUPPLY","Potential energy, trade and inflation channel; impact depends on details.")
+ ]
+ for query in queries:
+  try:
+   r=S.get("https://news.google.com/rss/search",params={"q":query+" when:3d","hl":"en-US","gl":"US","ceid":"US:en"},timeout=(4,8));r.raise_for_status()
+   root=ET.fromstring(r.content)
+   for item in root.iter():
+    if item.tag.split("}")[-1]!="item":continue
+    title=(item.findtext("title") or "").strip()
+    link=(item.findtext("link") or "").strip()
+    pub=(item.findtext("pubDate") or "").strip()
+    source_node=next((n for n in item if n.tag.split("}")[-1]=="source"),None)
+    source=(source_node.text or "").strip() if source_node is not None else ""
+    if not title or title.lower() in seen:continue
+    low=title.lower()
+    if not any(k in low for k in ("iran","ukraine","russia","ceasefire","peace talk","oil","hormuz","fed","fomc","inflation","cpi","pce","treasury","yield","dollar","sanction","tariff","shipping","missile","strike","energy")):continue
+    seen.add(title.lower()); tag="MONITOR"; note="Headline only; market impact not yet confirmed."
+    for keys,label,desc in impact_rules:
+     if any(k in low for k in keys):tag=label;note=desc;break
+    found.append({"title":title,"source":source,"published":pub,"url":link,"impact_tag":tag,"impact_note":note})
+  except Exception:pass
+ found.sort(key=lambda x:x.get("published",""),reverse=True)
+ return found[:limit]
+
 def global_model_context():
- manual=load_manual_inputs(); etf_auto=automatic_etf_flows(); merged_flows=dict(manual.get("etf_flow_5d_usd") or {}); merged_flows.update(etf_auto.get("flows_usd") or {}); manual["etf_flow_5d_usd"]=merged_flows; manual["etf_flow_metadata"]=etf_auto.get("metadata",{}); out={"stablecoin_30d":None,"fear_greed":None,"headlines":[],"events":automatic_macro_events(),"manual":manual,"etf_flow_metadata":manual["etf_flow_metadata"]}
+ manual=load_manual_inputs(); etf_auto=automatic_etf_flows(); merged_flows=dict(manual.get("etf_flow_5d_usd") or {}); merged_flows.update(etf_auto.get("flows_usd") or {}); manual["etf_flow_5d_usd"]=merged_flows; manual["etf_flow_metadata"]=etf_auto.get("metadata",{}); events=automatic_macro_events(); prediction_markets=fetch_prediction_market_outlooks(events); macro_news=fetch_macro_news(); live_bls=sum(1 for e in events if e.get("source")=="US BLS official monthly release schedule"); fallback_bls=sum(1 for e in events if "fallback" in str(e.get("source","")).lower()); fomc=sum(1 for e in events if e.get("source")=="Federal Reserve official calendar"); macro_status={"status":"ok" if live_bls>0 else ("degraded" if events else "unavailable"),"live_bls_events":live_bls,"fallback_bls_events":fallback_bls,"fomc_events":fomc,"checked_at":datetime.now(timezone.utc).isoformat(),"note":"Fallback events are estimates from a stored calendar and must not be treated as live-verified." if fallback_bls else ("Official BLS schedule parsed." if live_bls else "No verified official BLS events parsed.")}; out={"stablecoin_30d":None,"fear_greed":None,"headlines":[],"events":events,"macro_status":macro_status,"prediction_markets":prediction_markets,"macro_news":macro_news,"manual":manual,"etf_flow_metadata":manual["etf_flow_metadata"]}
  try:
   j=get_json("https://stablecoins.llama.fi/stablecoincharts/all")
   if len(j)>=31:
@@ -499,10 +577,15 @@ def advanced_model(coin,symbol,rows,derivs,ctx,price):
   if tvl is not None: oc.append(("chain_tvl_30d",bounded(tvl/.15),.3,f"{chain} TVL {tvl*100:+.1f}% over 30d"))
   else: missing.append("chain_tvl_"+coin.lower())
  etf=(ctx.get("manual",{}).get("etf_flow_5d_usd",{}) or {}).get(coin)
- if etf is not None:
-  oc.append(("spot_etf_flow_5d",bounded(float(etf)/({"BTC":1.5e9,"ETH":5e8,"SOL":1e8,"XRP":1e8}[coin])),.4,f"automatically sourced 5-session spot ETF flow ${float(etf)/1e6:+.0f}M"))
+ etf_meta=(ctx.get("etf_flow_metadata",{}) or {}).get(coin,{}) or {}
+ etf_end=etf_meta.get("period_end")
+ etf_cutoff=(datetime.now(timezone.utc).date()-timedelta(days=3)).isoformat()
+ etf_fresh=bool(etf_end and etf_end>=etf_cutoff and not etf_meta.get("error"))
+ if etf is not None and etf_fresh:
+  oc.append(("spot_etf_flow_5d",bounded(float(etf)/({"BTC":1.5e9,"ETH":5e8,"SOL":1e8,"XRP":1e8}[coin])),.4,f"5-session ETF flow ${float(etf)/1e6:+.0f}M; window ends {etf_end}"))
  else:
-  oc.append(("spot_etf_flow_5d",None,.4,"spot ETF flow unavailable from configured public source"))
+  reason=("ETF flow stale: latest session "+str(etf_end)+" is older than cutoff "+etf_cutoff) if etf_end and etf_end<etf_cutoff else "ETF flow unavailable or source parse failed"
+  oc.append(("spot_etf_flow_5d",None,.4,reason))
   missing.append("spot_etf_flow_5d")
  s,comps=layer_mean(oc); scores["onchain"]=s; details["onchain"]={"score":s,"components":comps}
  if s is None: missing.append("onchain_layer")
@@ -678,7 +761,7 @@ def update_event_tracker(events,snap,hist,now_dt):
  return store
 
 def main():
- now=datetime.now(timezone.utc).isoformat(); model_context=global_model_context(); model_context["btc_daily"]=daily_candles("BTCUSDT"); snap={"updated_at":now,"source":"OKX public hourly candles plus five-layer model; missing components disclosed","model_context":{"fear_greed":model_context.get("fear_greed",[])[-1] if model_context.get("fear_greed") else None,"stablecoin_30d":model_context.get("stablecoin_30d"),"headline_count":len(model_context.get("headlines",[])),"events":model_context.get("events",[]),"etf_flows":model_context.get("etf_flow_metadata",{})},"coins":{}}; issues=[]
+ now=datetime.now(timezone.utc).isoformat(); model_context=global_model_context(); model_context["btc_daily"]=daily_candles("BTCUSDT"); snap={"updated_at":now,"source":"OKX public hourly candles plus five-layer model; missing components disclosed","model_context":{"fear_greed":model_context.get("fear_greed",[])[-1] if model_context.get("fear_greed") else None,"stablecoin_30d":model_context.get("stablecoin_30d"),"headline_count":len(model_context.get("headlines",[])),"events":model_context.get("events",[]),"macro_status":model_context.get("macro_status",{}),"prediction_markets":model_context.get("prediction_markets",{}),"macro_news":model_context.get("macro_news",[]),"etf_flows":model_context.get("etf_flow_metadata",{})},"coins":{}}; issues=[]
  for coin,symbol in SYMBOLS.items():
   try:
    rows=fetch_rows(symbol); f,forecasts=make_forecasts(rows); last=rows[-1]
@@ -777,60 +860,98 @@ def main():
    add_event("auto-setup:"+c+":"+side,f"PROVISIONAL SETUP — {c} {side.upper()} | reference ${price:,.6g} | SL ${stop:,.6g} | TP1 ${target:,.6g} | model P(up) {p*100:.1f}% | confidence {conf:.2f}. Experimental and uncalibrated; confirm structure before trading.")
  nstate["last_setup"]=generated_setups
  if nstate.get("last_hourly_utc_hour")!=hour_key or os.getenv("TELEGRAM_FORCE_SEND","").lower() in ("1","true","yes"):
-  lines=["📊 CRYPTO CHECKPOINT | HOURLY","🕒 "+now_dt.strftime("%d %b %Y · %H:%M UTC"),"⚠️ Model probabilities are experimental, not calibrated.",""]
+  lines=["📊 CRYPTO CHECKPOINT","🕒 "+now_dt.strftime("%d %b %Y · %H:%M UTC"),"━━━━━━━━━━━━━━━━━━","⚠️ Experimental model; probabilities are not calibrated.",""]
   for c in ("BTC","ETH","XRP","SOL"):
    v=snap["coins"].get(c,{})
-   if "error" in v: lines.extend([f"🔴 {c} — DATA UNAVAILABLE",str(v.get("error",""))[:100],""]); continue
-   m=v.get("model",{}) or {}; h=(m.get("horizons",{}) or {}).get("24h",{}) or {}; p=h.get("p_up"); conf=(m.get("confidence",{}) or {}).get("label","unknown")
-   f24=next((x for x in v.get("forecasts",[]) if x.get("horizon")=="24h"),{}); med=f24.get("median_return_pct")
-   ch=float(v.get("change_1h_pct") or 0); arrow="🟢" if ch>0 else "🔴" if ch<0 else "⚪"
-   lines.append(f"{'🟠' if c=='BTC' else '🔵' if c=='ETH' else '🟣' if c=='XRP' else '🟢'} {c}  |  ${v.get('price',0):,.6g}")
-   lines.append(f"   1h: {arrow} {ch:+.2f}%  ·  Confidence: {conf}")
-   mh=(m.get("horizons",{}) or {})
+   if "error" in v:
+    lines.extend([f"🔴 {c}  |  DATA UNAVAILABLE",f"   {str(v.get('error',''))[:90]}",""])
+    continue
+   m=v.get("model",{}) or {}; conf=(m.get("confidence",{}) or {}).get("label","unknown")
+   ch=float(v.get("change_1h_pct") or 0)
+   arrow="🟢" if ch>0 else "🔴" if ch<0 else "⚪"
    price=float(v.get("price") or 0)
+   icon={"BTC":"🟠","ETH":"🔵","XRP":"🟣","SOL":"🟢"}.get(c,"⚪")
+   lines.append(f"{icon} {c}  ${price:,.6g}  |  1h {arrow}{ch:+.2f}%")
+   lines.append(f"   Confidence: {conf}")
+   mh=(m.get("horizons",{}) or {})
    for horizon,label in (("4h","4H"),("24h","24H"),("72h","72H")):
-    hh=mh.get(horizon,{}) or {}
-    pp=hh.get("p_up"); bias=hh.get("bias","Unavailable")
+    hh=mh.get(horizon,{}) or {}; bias=hh.get("bias","Unavailable")
     analogue=next((x for x in v.get("forecasts",[]) if x.get("horizon")==horizon),{})
-    medh=analogue.get("median_return_pct"); freq=analogue.get("up_frequency_pct")
-    band=analogue.get("range_10_90_pct") or []
+    medh=analogue.get("median_return_pct"); band=analogue.get("range_10_90_pct") or []
+    pp=hh.get("p_up"); freq=analogue.get("up_frequency_pct")
     if isinstance(medh,(int,float)) and price>0:
      target=price*(1+medh/100)
-     line=f"   {label} {bias}: target ${target:,.6g} ({medh:+.2f}%)"
+     row=f"   {label} {bias} · target ${target:,.6g} ({medh:+.2f}%)"
     elif isinstance(pp,(int,float)):
-     line=f"   {label} {bias}: model P(up) {pp*100:.0f}%"
+     row=f"   {label} {bias} · P(up) {pp*100:.0f}%"
     else:
-     line=f"   {label}: outlook unavailable"
+     row=f"   {label} outlook unavailable"
     if price>0 and len(band)>=2:
      low=price*(1+float(band[0])/100); high=price*(1+float(band[1])/100)
-     line+=f" | range ${low:,.6g}–${high:,.6g}"
-    if isinstance(freq,(int,float)): line+=f" | up {freq:.0f}%"
-    elif isinstance(pp,(int,float)): line+=f" | P(up) {pp*100:.0f}%"
-    lines.append(line)
+     row+=f" · range ${low:,.6g}–${high:,.6g}"
+    if isinstance(freq,(int,float)): row+=f" · analogue up {freq:.0f}%"
+    lines.append(row)
    lines.append("")
+  # Compact recent ETF and macro summary.
+  etfs=(snap.get("model_context",{}).get("etf_flows",{}) or {})
+  lines.extend(["━━━━━━━━━━━━━━━━━━","💸 ETF FLOWS · RECENT WINDOW"])
+  for coin in ("BTC","ETH","SOL","XRP"):
+   meta=etfs.get(coin,{}) or {}; value=meta.get("five_session_net_flow_usd")
+   if value is None:
+    lines.append(f"• {coin}: N/A")
+    continue
+   sign="🟢" if value>0 else "🔴" if value<0 else "⚪"
+   start_date=meta.get("period_start","?"); end_date=meta.get("period_end","?")
+   lines.append(f"{sign} {coin} {value/1_000_000:+,.1f}M · {start_date[5:]}–{end_date[5:]} ({meta.get('sessions','?')} sessions)")
+  lines.append("XRP is holdings-derived; BTC/ETH/SOL use reported ETF totals.")
+  news=snap.get("model_context",{}).get("macro_news",[]) or []
+  lines.extend(["","━━━━━━━━━━━━━━━━━━","🌍 MACRO & GEOPOLITICAL NEWS"])
+  if news:
+   for item in news[:2]:
+    title=str(item.get("title") or "Macro headline")
+    source=str(item.get("source") or "News source")
+    tag=str(item.get("impact_tag") or "MONITOR")
+    lines.append(f"• [{tag}] {title[:145]}")
+    lines.append(f"  {source} · {str(item.get('published') or '')[:25]}")
+    lines.append(f"  {str(item.get('impact_note') or 'Headline only; impact not confirmed.')[:150]}")
+  else: lines.append("No fresh relevant macro/geopolitical headlines parsed.")
   evs=snap.get("model_context",{}).get("events",[]) or []
+  lines.extend(["","━━━━━━━━━━━━━━━━━━","🗓 MACRO WATCH"])
   if evs:
-   lines.append("🗓 UPCOMING MACRO EVENTS")
-   for e in evs[:3]:
-    event_name=str(e.get("name") or "Macro event")
-    when=e.get("time_utc") or e.get("date_utc") or "time not confirmed"
-    countdown=(f" · in {e.get('in_hours'):.1f}h" if isinstance(e.get('in_hours'),(int,float)) else f" · in {e.get('days_away')}d" if isinstance(e.get('days_away'),(int,float)) else "")
-    key="|".join((str(e.get("name","Event")),str(e.get("date_utc","")),str(e.get("source",""))))
-    tracked=next((x for x in event_tracker.get("events",[]) if x.get("key")==key),{})
-    tracking=str(tracked.get("status","tracking pending")).replace("_"," ")
-    lines.append(f"• {event_name} — {when}{countdown} | tracker: {tracking}")
-   lines.append("Event tracker saves pre-event 4h/24h/72h outlooks and checks observed post-event returns when the calendar has an exact release time.")
-  else:
-   lines.append("🗓 MACRO EVENTS")
-   lines.append("Calendar feeds unavailable this run; retrying automatically.")
-  lines.extend(["","🎯 TRADE PLAN","Setups appear only when model direction, confidence and data coverage pass thresholds."])
+   e=evs[0]; name=str(e.get("name") or "Next event")
+   exact=bool(e.get("time_exact") and e.get("time_utc"))
+   when=e.get("time_utc") if exact else e.get("date_utc","date unconfirmed")
+   if exact:
+    try: when=datetime.fromisoformat(str(when).replace("Z","+00:00")).strftime("%d %b %H:%M UTC")
+    except Exception: pass
+   else: when=str(when)[:10]+" (time unconfirmed)"
+   countdown=(f" · T−{e.get('in_hours'):.0f}h" if isinstance(e.get("in_hours"),(int,float)) else f" · T−{e.get('days_away'):.1f}d" if isinstance(e.get("days_away"),(int,float)) else "")
+   lines.append(f"Next: {name} · {when}{countdown}")
+   for coin in ("BTC","ETH"):
+    cv=snap.get("coins",{}).get(coin,{})
+    if "error" in cv: continue
+    hh=((cv.get("model",{}) or {}).get("horizons",{}) or {}).get("24h",{}) or {}
+    pp=hh.get("p_up"); bias=hh.get("bias","N/A")
+    if isinstance(pp,(int,float)): lines.append(f"{coin}: {bias}, P(up) {pp*100:.0f}%")
+  else: lines.append("Next macro event unavailable.")
+  pm=(snap.get("model_context",{}).get("prediction_markets",{}) or {})
+  markets=pm.get("markets",[]) or []
+  if markets:
+   m=markets[0]; outs=(m.get("outcomes",[]) or [])
+   odds=[]
+   for group in outs[:1]: odds.extend(f"{x.get('outcome')} {x.get('probability_pct')}%" for x in (group.get("outcomes",[]) or [])[:2])
+   if odds: lines.append("Market odds: "+str(m.get("title","Macro"))[:65]+" · "+", ".join(odds))
+  
+  lines.extend(["","━━━━━━━━━━━━━━━━━━","🎯 TRADE PLAN"])
   if generated_setups:
    for c,su in generated_setups.items():
-    lines.append(f"• {c} {su['side'].upper()} | Ref ${su['reference_price']:,.6g} | SL ${su['stop_loss']:,.6g} | TP1 ${su['take_profit_1']:,.6g}")
-   lines.append("⚠️ Experimental levels; verify the chart and risk before trading.")
+    lines.append(f"• {c} {su['side'].upper()}  |  Ref ${su['reference_price']:,.6g}")
+    lines.append(f"   SL ${su['stop_loss']:,.6g}  ·  TP1 ${su['take_profit_1']:,.6g}  ·  R:R 1:{su['reward_risk']:.1f}")
+   lines.append("⚠️ Verify chart structure and position risk before entry.")
   else:
-   lines.append("⏸ NO TRADE — no setup passed all thresholds.")
-  lines.extend(["","📌 KEY NOTES","• OI, funding and liquidation alerts are sent separately when thresholds trigger.","• Missing inputs and conflicting forecasts are reported as alerts.","• Model probabilities are not guaranteed outcomes."])
+   lines.append("⏸ NO TRADE")
+   lines.append("No setup passed direction, confidence and coverage filters.")
+  lines.extend(["","━━━━━━━━━━━━━━━━━━","ℹ️ Alerts for OI, funding, liquidations and data issues are sent separately."])
   notify_lines.insert(0,"\n".join(lines)); nstate["last_hourly_utc_hour"]=hour_key
  if notify_lines:
   message="\n\n".join(notify_lines)

@@ -80,11 +80,18 @@ def main():
   candidates.append(t)
  candidates.sort(key=lambda t:(t["selection_score"],t["confidence"],t["coverage"]),reverse=True)
  slots=max(0,MAX_OPEN_TRADES-open_count)
+ selected_ids=set()
  for t in candidates[:slots]:
-  t["selection_rule"]="Top-ranked eligible signal; one open trade per coin; 72h re-entry cooldown; max two simultaneous portfolio trades."
-  trades.append(t);active.add(t["coin"])
+  t["selection_rule"]="Top-ranked eligible signal; one open trade per coin; 72h re-entry cooldown; max one simultaneous portfolio trade."
+  trades.append(t);active.add(t["coin"]);selected_ids.add(t["trade_id"])
+ # Explicit handoff audit: every eligible candidate is recorded as accepted or rejected
+ # by portfolio capacity, so a Telegram/model setup cannot silently disappear here.
+ handoff=[{"trade_id":t["trade_id"],"coin":t["coin"],"side":t["side"],"signal_time_utc":t["signal_time_utc"],"reference_price":t["entry_price"],"status":"accepted_into_open_ledger" if t["trade_id"] in selected_ids else "eligible_but_blocked_by_portfolio_capacity","selection_score":t.get("selection_score")} for t in candidates]
+ for t in trades:
+  if t.get("status")=="open" and not any(x.get("trade_id")==t.get("trade_id") for x in handoff):
+   handoff.append({"trade_id":t["trade_id"],"coin":t["coin"],"side":t["side"],"signal_time_utc":t["signal_time_utc"],"reference_price":t["entry_price"],"status":"existing_open_ledger_trade"})
  closed=[t for t in trades if t.get("status")=="closed"]; wins=sum((t.get("net_return_pct") or 0)>0 for t in closed)
  summary={"closed_trades":len(closed),"open_trades":sum(t.get("status")=="open" for t in trades),"wins_net":wins,"losses_or_flat_net":len(closed)-wins,"win_rate_net_pct":round(100*wins/len(closed),2) if closed else None,"mean_net_return_pct":round(sum(t.get("net_return_pct",0) or 0 for t in closed)/len(closed),4) if closed else None,"compounded_net_return_pct":round((math.prod(1+(t.get("net_return_pct",0) or 0)/100 for t in closed)-1)*100,4) if closed else None}
- store.update(updated_at=now,trades=trades[-2000:],summary=summary,errors=errors[-20:]);path.write_text(json.dumps(store,indent=2,allow_nan=False),encoding="utf-8")
+ store.update(updated_at=now,trades=trades[-2000:],summary=summary,errors=errors[-20:],signal_handoff={"updated_at":now,"eligible_candidates":len(handoff),"items":handoff});path.write_text(json.dumps(store,indent=2,allow_nan=False),encoding="utf-8")
  print(json.dumps({"updated_at":now,"summary":summary,"errors":errors},indent=2))
 if __name__=="__main__":main()
