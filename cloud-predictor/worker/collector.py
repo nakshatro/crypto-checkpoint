@@ -242,7 +242,7 @@ def automatic_etf_flows():
    v=float(x);return -abs(v) if neg else v
   except ValueError:return None
  result={"flows_usd":{},"metadata":{}}
- for coin,url in (("BTC","https://farside.co.uk/btc/"),("ETH","https://farside.co.uk/ETH/")):
+ for coin,url in (("BTC","https://farside.co.uk/btc/"),("ETH","https://farside.co.uk/ETH/"),("SOL","https://farside.co.uk/SOL/")):
   try:
    resp=S.get(url,timeout=(5,12));resp.raise_for_status();parser=Parser();parser.feed(resp.text);rows=[]
    for row in parser.rows:
@@ -292,7 +292,7 @@ def automatic_macro_events():
  # Official Fed calendar can be updated; meeting days are date-only, not release times.
  try:
   r=S.get("https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm",timeout=(5,12)); r.raise_for_status()
-  html=r.text
+  html=unescape(re.sub(r"<[^>]+>"," ",r.text)); html=re.sub(r"\s+"," ",html)
   year_sections=list(re.finditer(r"(20\d{2})\s+FOMC Meetings",html,re.I))
   for yi,ym in enumerate(year_sections):
    year=int(ym.group(1))
