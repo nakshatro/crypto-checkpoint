@@ -669,7 +669,7 @@ def update_event_tracker(events,snap,hist,now_dt):
  return store
 
 def main():
- now=datetime.now(timezone.utc).isoformat(); model_context=global_model_context(); model_context["btc_daily"]=daily_candles("BTCUSDT"); snap={"updated_at":now,"source":"OKX public hourly candles plus five-layer model; missing components disclosed","model_context":{"fear_greed":model_context.get("fear_greed",[])[-1] if model_context.get("fear_greed") else None,"stablecoin_30d":model_context.get("stablecoin_30d"),"headline_count":len(model_context.get("headlines",[])),"events":model_context.get("events",[])},"coins":{}}; issues=[]
+ now=datetime.now(timezone.utc).isoformat(); model_context=global_model_context(); model_context["btc_daily"]=daily_candles("BTCUSDT"); snap={"updated_at":now,"source":"OKX public hourly candles plus five-layer model; missing components disclosed","model_context":{"fear_greed":model_context.get("fear_greed",[])[-1] if model_context.get("fear_greed") else None,"stablecoin_30d":model_context.get("stablecoin_30d"),"headline_count":len(model_context.get("headlines",[])),"events":model_context.get("events",[]),"etf_flows":model_context.get("etf_flow_metadata",{})},"coins":{}}; issues=[]
  for coin,symbol in SYMBOLS.items():
   try:
    rows=fetch_rows(symbol); f,forecasts=make_forecasts(rows); last=rows[-1]
