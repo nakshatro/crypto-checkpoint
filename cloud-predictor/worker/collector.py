@@ -213,14 +213,15 @@ def ret_std(vals,n):
  rr=[math.log(vals[i]/vals[i-1]) for i in range(max(1,len(vals)-n),len(vals)) if vals[i]>0 and vals[i-1]>0]
  return statistics.pstdev(rr) if len(rr)>1 else None
 def automatic_etf_flows():
- """Best-effort daily BTC/ETH spot ETF flow totals from Farside's public tables."""
+ """Fetch daily net flows for BTC/ETH/SOL ETF tables and XRP holdings-derived ETF flows."""
  from html.parser import HTMLParser
+ import csv, io
  class Parser(HTMLParser):
   def __init__(self):
    super().__init__(convert_charrefs=True); self.rows=[]; self.row=None; self.cell=None
   def handle_starttag(self,tag,attrs):
    if tag=="tr": self.row=[]
-   elif tag in ("td","th") and self.row is not None: self.cell=[]
+   elif tag in ("td","th") and self.row is not None:self.cell=[]
   def handle_data(self,data):
    if self.cell is not None:self.cell.append(data)
   def handle_endtag(self,tag):
@@ -252,196 +253,91 @@ def automatic_etf_flows():
     vals=[numval(x) for x in row[1:]];vals=[x for x in vals if x is not None]
     if vals:rows.append((d,vals[-1]))
    bydate={d:v for d,v in rows};recent=sorted(bydate.items())[-5:]
-   if len(recent)<3:raise RuntimeError("Fewer than three dated ETF flow rows parsed")
+   if len(recent)<3:raise RuntimeError("Fewer than 3 dated flow rows parsed")
    total=sum(v for _,v in recent)*1_000_000
    result["flows_usd"][coin]=round(total,2)
    result["metadata"][coin]={"source":"Farside Investors public daily ETF flow table","url":url,"period_start":recent[0][0].isoformat(),"period_end":recent[-1][0].isoformat(),"sessions":len(recent),"five_session_net_flow_usd":round(total,2),"unit_conversion":"US$ millions converted to USD","updated_at":datetime.now(timezone.utc).isoformat()}
   except Exception as e:result["metadata"][coin]={"source":"Farside Investors public daily ETF flow table","url":url,"error":str(e)[:160]}
- # XRP ETF totals are derived from issuer-reported holdings. Ignore provisional rows.
- coin="XRP";url="https://xrp-insights.com/data/xrp-etf-totals.csv"
+ # XRP source aggregates issuer-reported holdings changes by trading date.
+ xrp_url="https://xrp-insights.com/data/xrp-etf-flows.csv"
  try:
-  import csv,io
-  resp=S.get(url,timeout=(5,12));resp.raise_for_status()
-  rows=list(csv.DictReader(io.StringIO(resp.text)));parsed=[]
-  for row in rows:
-   d=dateval(row.get("date",""))
-   if not d:continue
-   status=(row.get("row_status") or row.get("status") or "settled").strip().lower()
-   if status=="provisional":continue
-   raw=row.get("net_flow_usd") or row.get("flow_usd") or row.get("net_flow")
-   val=numval(raw or "")
-   if val is not None:parsed.append((d,val))
-  bydate={d:v for d,v in parsed};recent=sorted(bydate.items())[-5:]
-  if len(recent)<3:raise RuntimeError("Fewer than three settled XRP ETF flow rows parsed")
+  resp=S.get(xrp_url,timeout=(5,12));resp.raise_for_status()
+  daily={}
+  for row in csv.DictReader(io.StringIO(resp.text)):
+   d=dateval(row.get("date",""));status=(row.get("flow_status") or "").strip().lower();row_status=(row.get("row_status") or "").strip().lower()
+   usd=numval(row.get("flow_usd") or "")
+   if d and status=="computed" and usd is not None and row_status in ("settled","provisional"):
+    daily.setdefault(d,0.0);daily[d]+=usd
+  recent=sorted(daily.items())[-5:]
+  if len(recent)<3:raise RuntimeError("Fewer than 3 valid XRP ETF flow dates parsed")
   total=sum(v for _,v in recent)
-  result["flows_usd"][coin]=round(total,2)
-  result["metadata"][coin]={"source":"XRP Insights daily spot ETF totals (issuer-holdings-derived flows)","url":url,"period_start":recent[0][0].isoformat(),"period_end":recent[-1][0].isoformat(),"sessions":len(recent),"five_session_net_flow_usd":round(total,2),"unit_conversion":"USD as published","updated_at":datetime.now(timezone.utc).isoformat(),"method_note":"Flow estimates are calculated from issuer-reported holdings; provisional rows excluded."}
- except Exception as e:result["metadata"][coin]={"source":"XRP Insights daily spot ETF totals","url":url,"error":str(e)[:160]}
+  result["flows_usd"]["XRP"]=round(total,2)
+  result["metadata"]["XRP"]={"source":"XRP Insights issuer-holdings-derived ETF flows","url":xrp_url,"period_start":recent[0][0].isoformat(),"period_end":recent[-1][0].isoformat(),"sessions":len(recent),"five_session_net_flow_usd":round(total,2),"unit_conversion":"USD; daily flows aggregated across funds","updated_at":datetime.now(timezone.utc).isoformat(),"caveat":"Derived from reported holdings changes; latest provisional session may be revised."}
+ except Exception as e:result["metadata"]["XRP"]={"source":"XRP Insights issuer-holdings-derived ETF flows","url":xrp_url,"error":str(e)[:160]}
  return result
+
 def load_manual_inputs():
  try:
   p=ROOT/"manual_inputs.json"
   return json.loads(p.read_text(encoding="utf-8")) if p.exists() else {}
  except Exception: return {}
 def automatic_macro_events():
- """Fetch maintained BLS release dates; preserve UTC uncertainty when calendar lacks timezone."""
- now=datetime.now(timezone.utc); out=[]
- try:
-  r=S.get("https://www.bls.gov/schedule/news_release/bls.ics",timeout=(5,12)); r.raise_for_status()
-  text=re.sub(r"\r?\n[ \t]","",r.text)
-  wanted=("consumer price index","producer price index","employment situation","job openings and labor turnover","productivity and costs","employment cost index","import and export price")
-  for block in re.findall(r"BEGIN:VEVENT(.*?)END:VEVENT",text,re.S):
-   sm=re.search(r"SUMMARY(?:;[^:]*)?:(.*)",block); dt=re.search(r"DTSTART(?:;TZID=([^:;]+))?(?:;[^:]*)?:(\d{8}T\d{6}Z?|\d{8})",block)
-   if not sm or not dt: continue
-   name=sm.group(1).replace("\\, ",", ").replace("\\;",";").strip()
-   if not any(x in name.lower() for x in wanted): continue
-   stamp=dt.group(2); tzname=dt.group(1)
-   try:
-    if len(stamp)==8: t=datetime.strptime(stamp,"%Y%m%d").replace(tzinfo=timezone.utc); time_exact=False
-    elif stamp.endswith("Z"): t=datetime.strptime(stamp,"%Y%m%dT%H%M%SZ").replace(tzinfo=timezone.utc); time_exact=True
-    elif tzname:
-     from zoneinfo import ZoneInfo
-     t=datetime.strptime(stamp,"%Y%m%dT%H%M%S").replace(tzinfo=ZoneInfo(tzname)).astimezone(timezone.utc); time_exact=True
-    else:
-     # Date/time has no TZ metadata: retain the date but do not invent a UTC release hour.
-     t=datetime.strptime(stamp[:8],"%Y%m%d").replace(tzinfo=timezone.utc); time_exact=False
-    hours=(t-now).total_seconds()/3600
-    if -1<=hours<=24*21: out.append({"name":name,"time_utc":t.isoformat() if time_exact else None,"date_utc":t.strftime("%Y-%m-%d"),"time_exact":time_exact,"in_hours":round(hours,1) if time_exact else None,"source":"US BLS official calendar"})
-   except Exception: continue
- except Exception: pass
- # Official Fed calendar can be updated; meeting days are date-only, not release times.
- try:
-  r=S.get("https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm",timeout=(5,12)); r.raise_for_status()
-  html=re.sub(r"<[^>]+>"," ",r.text); html=re.sub(r"\s+"," ",html)
-  year_sections=list(re.finditer(r"(20\d{2})\s+FOMC Meetings",html,re.I))
-  for yi,ym in enumerate(year_sections):
-   year=int(ym.group(1))
-   if year<now.year or year>now.year+1: continue
-   stop=year_sections[yi+1].start() if yi+1<len(year_sections) else len(html)
-   section=html[ym.end():stop]
-   # Parse named month plus meeting date range; only dates inside this year's section are accepted.
-   for match in re.finditer(r"(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{1,2})\s*[–-]\s*(\d{1,2})",section,re.I):
-    month,day,_=match.groups()
-    try:
-     t=datetime.strptime(month+" "+day+" "+str(year),"%B %d %Y").replace(tzinfo=timezone.utc)
-     hours=(t-now).total_seconds()/3600
-     if -24<=hours<=24*45: out.append({"name":"FOMC meeting (date only; announcement time not inferred)","time_utc":None,"date_utc":t.strftime("%Y-%m-%d"),"time_exact":False,"in_hours":None,"days_away":round(hours/24,1),"source":"Federal Reserve official calendar"})
-    except Exception: pass
- except Exception: pass
- # Independently supplement the BLS ICS feed with official HTML schedules.
- # FOMC events must not suppress this fallback: both calendars are required.
- try:
-  from html import unescape
-  from html.parser import HTMLParser
-  from zoneinfo import ZoneInfo
-  eastern=ZoneInfo("America/New_York")
-  class ScheduleRows(HTMLParser):
-   def __init__(self):
-    super().__init__(convert_charrefs=True); self.rows=[]; self.row=None; self.cell=None
-   def handle_starttag(self,tag,attrs):
-    if tag=="tr": self.row=[]
-    elif tag in ("td","th") and self.row is not None: self.cell=[]
-   def handle_data(self,data):
-    if self.cell is not None:self.cell.append(data)
-   def handle_endtag(self,tag):
-    if tag in ("td","th") and self.cell is not None:
-     self.row.append(" ".join("".join(self.cell).split())); self.cell=None
-    elif tag=="tr" and self.row is not None:
-     if self.row:self.rows.append(self.row)
-     self.row=None;self.cell=None
-  pages=[
-   ("Consumer Price Index","https://www.bls.gov/schedule/news_release/cpi.htm"),
-   ("Producer Price Index","https://www.bls.gov/schedule/news_release/ppi.htm"),
-   ("Employment Situation","https://www.bls.gov/schedule/news_release/empsit.htm"),
-   ("Job Openings and Labor Turnover Survey","https://www.bls.gov/schedule/news_release/jolts.htm"),
-   ("Employment Cost Index","https://www.bls.gov/schedule/news_release/eci.htm"),
-   ("Productivity and Costs","https://www.bls.gov/schedule/news_release/prod2.htm"),
-   ("Import and Export Price Indexes","https://www.bls.gov/schedule/news_release/ximpim.htm"),
-  ]
-  date_re=re.compile(r"\b([A-Za-z]{3,9})\.?\s+(\d{1,2}),?\s+(20\d{2})\b")
-  time_re=re.compile(r"\b(\d{1,2}:\d{2})\s*([AP]\.?M\.?)\b",re.I)
-  for label,url in pages:
-   try:
-    rr=S.get(url,timeout=(5,12)); rr.raise_for_status()
-    parser=ScheduleRows(); parser.feed(rr.text)
-    found=[]
-    for row in parser.rows:
-     cells=[unescape(x).strip() for x in row]
-     joined=" | ".join(cells)
-     dm=date_re.search(joined); tm=time_re.search(joined)
-     if not dm or not tm: continue
-     month,day,year=dm.groups()
-     date_text=month+" "+day+" "+year
-     try: release_date=datetime.strptime(date_text,"%b %d %Y")
-     except ValueError:
-      try: release_date=datetime.strptime(date_text,"%B %d %Y")
-      except ValueError: continue
-     time_text=tm.group(1)+" "+tm.group(2).replace(".","").upper()
-     try: release_time=datetime.strptime(time_text,"%I:%M %p").time()
-     except ValueError: continue
-     t=datetime.combine(release_date.date(),release_time,tzinfo=eastern).astimezone(timezone.utc)
-     hours=(t-now).total_seconds()/3600
-     if -1<=hours<=24*60:
-      found.append({"name":label,"time_utc":t.isoformat(),"date_utc":t.strftime("%Y-%m-%d"),"time_exact":True,"in_hours":round(hours,1),"source":"US BLS official HTML schedule","source_url":url})
-    # Keep only one entry per release date from each official schedule.
-    seen_dates=set()
-    for event in sorted(found,key=lambda x:x["date_utc"]):
-     if event["date_utc"] in seen_dates: continue
-     seen_dates.add(event["date_utc"]); out.append(event)
-   except Exception as exc:
-    # Diagnostics are kept for status visibility; don't abort the market-data run.
-    pass
- except Exception: pass
- # Additional fallback: parse the official BLS annual schedule table. This is more stable
- # than relying on individual schedule pages' changing markup.
- if not any(e.get("source","").startswith("US BLS official") for e in out):
+ """Fetch upcoming major US macro releases and FOMC dates from official calendars."""
+ from html.parser import HTMLParser
+ now=datetime.now(timezone.utc);out=[]
+ wanted=("consumer price index","producer price index","employment situation","job openings and labor turnover","productivity and costs","employment cost index","import and export price","retail sales","personal income and outlays","gross domestic product")
+ class TableParser(HTMLParser):
+  def __init__(self):
+   super().__init__(convert_charrefs=True);self.rows=[];self.row=None;self.cell=None
+  def handle_starttag(self,tag,attrs):
+   if tag=="tr":self.row=[]
+   elif tag in ("td","th") and self.row is not None:self.cell=[]
+  def handle_data(self,data):
+   if self.cell is not None:self.cell.append(data)
+  def handle_endtag(self,tag):
+   if tag in ("td","th") and self.cell is not None:self.row.append(" ".join("".join(self.cell).split()));self.cell=None
+   elif tag=="tr" and self.row is not None:
+    if self.row:self.rows.append(self.row)
+    self.row=None;self.cell=None
+ eastern=__import__("zoneinfo").ZoneInfo("America/New_York")
+ for offset in range(3):
+  year=now.year;month=now.month+offset
+  while month>12:year+=1;month-=12
+  url=f"https://www.bls.gov/schedule/{year}/{month:02d}_sched_list.htm"
   try:
-   from html.parser import HTMLParser
-   from html import unescape
-   class ScheduleParser(HTMLParser):
-    def __init__(self):
-     super().__init__(convert_charrefs=True); self.rows=[]; self.row=None; self.cell=None
-    def handle_starttag(self,tag,attrs):
-     if tag=="tr": self.row=[]
-     elif tag in ("td","th") and self.row is not None: self.cell=[]
-    def handle_data(self,data):
-     if self.cell is not None:self.cell.append(data)
-    def handle_endtag(self,tag):
-     if tag in ("td","th") and self.cell is not None:
-      self.row.append(" ".join("".join(self.cell).split())); self.cell=None
-     elif tag=="tr" and self.row is not None:
-      if self.row:self.rows.append(self.row)
-      self.row=None;self.cell=None
-   for year in (now.year,now.year+1):
+   resp=S.get(url,timeout=(5,12));resp.raise_for_status();parser=TableParser();parser.feed(resp.text)
+   for row in parser.rows:
+    if len(row)<3:continue
+    date_text=row[0].strip();time_text=row[1].strip();title=" ".join(row[2].split())
+    if not any(key in title.lower() for key in wanted):continue
     try:
-     rr=S.get(f"https://www.bls.gov/schedule/{year}/",timeout=(5,12));rr.raise_for_status()
-     parser=ScheduleParser();parser.feed(rr.text)
-     for row in parser.rows:
-      joined=" | ".join(row)
-      m=re.search(r"(?:(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday),?\s+)?(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{1,2}),?\s+(20\d{2})",joined,re.I)
-      tm=re.search(r"(\d{1,2}:\d{2}\s+[AP]M)",joined,re.I)
-      if not m or not tm:continue
-      # Identify the release text while excluding date/time columns.
-      release=" ".join(x for x in row if x and not re.search(r"^(?:Date|Time|Release)$",x,re.I))
-      release=re.sub(r"(?:(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday),?\s+)?(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s+20\d{2}"," ",release,flags=re.I)
-      release=re.sub(r"\b\d{1,2}:\d{2}\s+[AP]M\b"," ",release,flags=re.I)
-      release=" ".join(release.split())
-      if not any(k in release.lower() for k in ("consumer price index","producer price index","employment situation","job openings and labor turnover","productivity and costs","employment cost index","import and export price")):continue
-      try:
-       date=datetime.strptime(m.group(1)+" "+m.group(2)+" "+m.group(3)+" "+tm.group(1),"%B %d %Y %I:%M %p")
-       t=date.replace(tzinfo=ZoneInfo("America/New_York")).astimezone(timezone.utc)
-       hours=(t-now).total_seconds()/3600
-       if -1<=hours<=24*60:
-        out.append({"name":release[:150],"time_utc":t.isoformat(),"date_utc":t.strftime("%Y-%m-%d"),"time_exact":True,"in_hours":round(hours,1),"source":"US BLS official annual schedule"})
-      except Exception:continue
+     cleaned=re.sub(r"^(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday),?\s+","",date_text,flags=re.I)
+     dt=datetime.strptime(cleaned+" "+time_text,"%B %d, %Y %I:%M %p")
+     t=dt.replace(tzinfo=eastern).astimezone(timezone.utc);hours=(t-now).total_seconds()/3600
+     if -1<=hours<=24*75:out.append({"name":title,"time_utc":t.isoformat(),"date_utc":t.strftime("%Y-%m-%d"),"time_exact":True,"in_hours":round(hours,1),"source":"US BLS official monthly release schedule","url":url})
     except Exception:continue
-  except Exception:pass
- # If the official ICS feed is empty, also retain official FOMC meeting dates parsed above.
+  except Exception:continue
+ try:
+  resp=S.get("https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm",timeout=(5,12));resp.raise_for_status()
+  html=re.sub(r"<[^>]+>"," ",resp.text);html=re.sub(r"\s+"," ",html)
+  sections=list(re.finditer(r"(20\d{2})\s+FOMC Meetings",html,re.I))
+  for i,m in enumerate(sections):
+   year=int(m.group(1))
+   if year<now.year or year>now.year+1:continue
+   stop=sections[i+1].start() if i+1<len(sections) else len(html);section=html[m.end():stop]
+   for item in re.finditer(r"(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{1,2})\s*[–-]\s*(\d{1,2})",section,re.I):
+    month,day,_=item.groups()
+    try:
+     t=datetime.strptime(month+" "+day+" "+str(year),"%B %d %Y").replace(tzinfo=timezone.utc);hours=(t-now).total_seconds()/3600
+     if -24<=hours<=24*90:out.append({"name":"FOMC meeting (date only; announcement time not inferred)","time_utc":None,"date_utc":t.strftime("%Y-%m-%d"),"time_exact":False,"in_hours":None,"days_away":round(hours/24,1),"source":"Federal Reserve official calendar","url":"https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm"})
+    except Exception:continue
+ except Exception:pass
  unique={}
- for e in out:
-  key=(e["name"],e["date_utc"])
-  if key not in unique: unique[key]=e
- return sorted(unique.values(),key=lambda x:(x.get("days_away",x.get("in_hours",999999)) if x.get("in_hours") is None else x["in_hours"]))[:12]
+ for event in out:
+  key=(event["name"],event["date_utc"])
+  if key not in unique:unique[key]=event
+ return sorted(unique.values(),key=lambda e:(e["date_utc"],0 if e.get("time_exact") else 1,e["name"]))[:20]
+
 def upcoming_manual_events(manual):
  # Retained for compatibility; all active events come from automatic feeds.
  return []
