@@ -264,7 +264,7 @@ def automatic_macro_events():
  except Exception: pass
  # Fallback to the official BLS HTML schedules if its ICS feed is blocked or changes format.
  # These pages provide actual release dates and Eastern release times.
- if not out:
+ if not any(e.get("source")=="US BLS official calendar" for e in out):
   try:
    from html import unescape
    pages=[
@@ -280,12 +280,12 @@ def automatic_macro_events():
     try:
      rr=S.get(url,timeout=(5,12)); rr.raise_for_status()
      raw=unescape(re.sub(r"<[^>]+>"," ",rr.text))
-     raw=re.sub(r"\\s+"," ",raw)
+     raw=re.sub(r"\s+"," ",raw)
      # Schedule rows commonly read: October 2026 Nov. 10, 2026 08:30 AM
-     pat=r"([A-Za-z]+)\\s+(20\\d{2})\\s+([A-Za-z]{3,9}\\.?\\s+\\d{1,2},?\\s+20\\d{2})\\s+(\\d{1,2}:\\d{2}\\s+[AP]M)"
+     pat=r"([A-Za-z]+)\s+(20\d{2})\s+([A-Za-z]{3,9}\.?\s+\d{1,2},?\s+20\d{2})\s+(\d{1,2}:\d{2}\s+[AP]M)"
      for m in re.finditer(pat,raw):
       try:
-       rel=re.sub(r"\\.(?=\\s)","",m.group(3))
+       rel=re.sub(r"\.(?=\s)","",m.group(3))
        try: parsed=datetime.strptime(rel+" "+m.group(4),"%b %d, %Y %I:%M %p")
        except ValueError: parsed=datetime.strptime(rel+" "+m.group(4),"%B %d, %Y %I:%M %p")
        t=parsed.replace(tzinfo=eastern).astimezone(timezone.utc)
