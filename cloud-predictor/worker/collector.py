@@ -312,8 +312,15 @@ def automatic_macro_events():
     date_text=row[0].strip();time_text=row[1].strip();title=" ".join(row[2].split())
     if not any(key in title.lower() for key in wanted):continue
     try:
-     cleaned=re.sub(r"^(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday),?\s+","",date_text,flags=re.I)
-     dt=datetime.strptime(cleaned+" "+time_text,"%B %d, %Y %I:%M %p")
+     cleaned=re.sub(r"^(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday),?\s+","",date_text,flags=re.I).strip()
+     # Monthly list pages often omit the year from the date cell; supply the
+     # year of the calendar URL, while accepting cells that already include it.
+     if not re.search(r"20\d{2}",cleaned): cleaned=cleaned+", "+str(year)
+     dt=None
+     for fmt in ("%B %d, %Y %I:%M %p","%B %d %Y %I:%M %p","%b %d, %Y %I:%M %p","%b %d %Y %I:%M %p"):
+      try: dt=datetime.strptime(cleaned+" "+time_text,fmt);break
+      except ValueError: continue
+     if dt is None: continue
      t=dt.replace(tzinfo=eastern).astimezone(timezone.utc);hours=(t-now).total_seconds()/3600
      if -1<=hours<=24*75:out.append({"name":title,"time_utc":t.isoformat(),"date_utc":t.strftime("%Y-%m-%d"),"time_exact":True,"in_hours":round(hours,1),"source":"US BLS official monthly release schedule","url":url})
     except Exception:continue
