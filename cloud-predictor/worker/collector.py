@@ -262,7 +262,7 @@ def automatic_etf_flows():
     total_value=numval(row[total_idx])
     if total_value is not None:rows.append((d,total_value))
    bydate={d:v for d,v in rows}; cutoff=datetime.now(timezone.utc).date(); recent=sorted((d,v) for d,v in bydate.items() if (cutoff-timedelta(days=3))<=d<=cutoff)[-5:]
-   if len(recent)<3:raise RuntimeError("Fewer than 3 dated rows with a reported Total parsed")
+if not recent:raise RuntimeError("No reported Total rows found in the current 4-day ETF window")
    total=sum(v for _,v in recent)*1_000_000
    result["flows_usd"][coin]=round(total,2)
    result["metadata"][coin]={"source":"Farside Investors public daily ETF flow table","url":url,"period_start":recent[0][0].isoformat(),"period_end":recent[-1][0].isoformat(),"sessions":len(recent),"five_session_net_flow_usd":round(total,2),"unit_conversion":"US$ millions converted to USD","updated_at":datetime.now(timezone.utc).isoformat()}
@@ -278,7 +278,7 @@ def automatic_etf_flows():
    if d and status=="computed" and usd is not None and row_status in ("settled","provisional"):
     daily.setdefault(d,0.0);daily[d]+=usd
   cutoff=datetime.now(timezone.utc).date();recent=sorted((d,v) for d,v in daily.items() if (cutoff-timedelta(days=3))<=d<=cutoff)[-5:]
-  if len(recent)<3:raise RuntimeError("Fewer than 3 valid XRP ETF flow dates parsed")
+if not recent:raise RuntimeError("No valid XRP flow dates found in the current 4-day window")
   total=sum(v for _,v in recent)
   result["flows_usd"]["XRP"]=round(total,2)
   result["metadata"]["XRP"]={"source":"XRP Insights issuer-holdings-derived ETF flows","url":xrp_url,"period_start":recent[0][0].isoformat(),"period_end":recent[-1][0].isoformat(),"sessions":len(recent),"five_session_net_flow_usd":round(total,2),"unit_conversion":"USD; daily flows aggregated across funds","updated_at":datetime.now(timezone.utc).isoformat(),"caveat":"Derived from reported holdings changes; latest provisional session may be revised."}
@@ -857,53 +857,39 @@ def main():
    lines.append("")
   # ETF flows: display five reported sessions, capped at a three-calendar-day lag to avoid provisional/latest-day revisions.
   etfs=(snap.get("model_context",{}).get("etf_flows",{}) or {})
-  lines.extend(["━━━━━━━━━━━━━━━━━━","💸 ETF INFLOWS / OUTFLOWS (5 SESSIONS)"])
+lines.extend(["━━━━━━━━━━━━━━━━━━","💸 ETF FLOWS · LAST 4 CALENDAR DAYS"])
   etf_rows=[]
   for coin in ("BTC","ETH","SOL","XRP"):
    meta=etfs.get(coin,{}) or {}
    value=meta.get("five_session_net_flow_usd")
    if value is None:
-    lines.append(f"• {coin}: unavailable"+(f" — {str(meta.get('error'))[:85]}" if meta.get("error") else ""))
+    lines.append(f"• {coin}: N/A (source has no usable rows in window)")
     continue
    sign="🟢" if value>0 else "🔴" if value<0 else "⚪"
-   direction="net inflow" if value>0 else "net outflow" if value<0 else "flat"
    start=meta.get("period_start","?"); end=meta.get("period_end","?")
-   lines.append(f"{sign} {coin}: {value/1_000_000:+,.1f}M USD · {direction}")
-   lines.append(f"   Window: {start} to {end} · {meta.get('sessions','?')} sessions")
-   if meta.get("caveat"): lines.append(f"   Note: {str(meta.get('caveat'))[:130]}")
-  lines.append("Source window is shown per asset; XRP flows are holdings-derived estimates, not an identical ETF-table methodology.")
+   lines.append(f"{sign} {coin} {value/1_000_000:+,.1f}M USD · {start[5:]}–{end[5:]} · {meta.get('sessions','?')} sessions")
+  lines.append("XRP uses holdings-derived estimates; other assets use reported ETF table totals.")
+  
   evs=snap.get("model_context",{}).get("events",[]) or []
-  lines.extend(["","━━━━━━━━━━━━━━━━━━","🗓 MACRO EVENTS & PRE-EVENT OUTLOOK"])
+  lines.extend(["","━━━━━━━━━━━━━━━━━━","🗓 MACRO WATCH"])
   if evs:
-   for e in evs[:3]:
-    event_name=str(e.get("name") or "Macro event")
-    exact=bool(e.get("time_exact") and e.get("time_utc"))
-    when=e.get("time_utc") if exact else (e.get("date_utc") or "date not confirmed")
-    if exact:
-     try: when=datetime.fromisoformat(str(when).replace("Z","+00:00")).strftime("%d %b · %H:%M UTC")
-     except Exception: pass
-    else: when=str(when)[:10]+" · time unconfirmed"
-    countdown=(f" · T−{e.get('in_hours'):.0f}h" if isinstance(e.get('in_hours'),(int,float)) else f" · T−{e.get('days_away'):.1f}d" if isinstance(e.get('days_away'),(int,float)) else "")
-    key="|".join((str(e.get("name","Event")),str(e.get("date_utc","")),str(e.get("source",""))))
-    tracked=next((x for x in event_tracker.get("events",[]) if x.get("key")==key),{})
-    tracking=str(tracked.get("status","tracking pending")).replace("_"," ")
-    lines.append(f"• {event_name} — {when}{countdown}")
-    lines.append(f"   Tracker: {tracking}")
-    # Show the current model outlook as a pre-event baseline, not a claimed causal impact forecast.
-    for coin in ("BTC","ETH"):
-     cv=snap.get("coins",{}).get(coin,{})
-     if "error" in cv: continue
-     mh=(cv.get("model",{}) or {}).get("horizons",{}) or {}
-     hh=mh.get("24h",{}) or {}; pp=hh.get("p_up"); bias=hh.get("bias","unavailable")
-     fc=next((x for x in cv.get("forecasts",[]) if x.get("horizon")=="24h"),{})
-     med=fc.get("median_return_pct")
-     if isinstance(pp,(int,float)):
-      outlook=f"{coin} 24h baseline: {bias}, P(up) {pp*100:.0f}%"
-      if isinstance(med,(int,float)): outlook+=f", analogue median {med:+.2f}%"
-      lines.append("   "+outlook)
-    lines.append("   Scenario note: this is the current market baseline, not a prediction of the event result or causal price impact.")
-  else:
-   lines.append("Calendar unavailable this run; retrying next refresh.")
+   e=evs[0]; name=str(e.get("name") or "Next event")
+   exact=bool(e.get("time_exact") and e.get("time_utc"))
+   when=e.get("time_utc") if exact else e.get("date_utc","date unconfirmed")
+   if exact:
+    try: when=datetime.fromisoformat(str(when).replace("Z","+00:00")).strftime("%d %b %H:%M UTC")
+    except Exception: pass
+   else: when=str(when)[:10]+" (time unconfirmed)"
+   countdown=(f" · T−{e.get('in_hours'):.0f}h" if isinstance(e.get("in_hours"),(int,float)) else f" · T−{e.get('days_away'):.1f}d" if isinstance(e.get("days_away"),(int,float)) else "")
+   lines.append(f"Next: {name} · {when}{countdown}")
+   for coin in ("BTC","ETH"):
+    cv=snap.get("coins",{}).get(coin,{})
+    if "error" in cv: continue
+    hh=((cv.get("model",{}) or {}).get("horizons",{}) or {}).get("24h",{}) or {}
+    pp=hh.get("p_up"); bias=hh.get("bias","N/A")
+    if isinstance(pp,(int,float)): lines.append(f"{coin} 24h: {bias} ({pp*100:.0f}% up)")
+  else: lines.append("Upcoming event calendar unavailable.")
+  
   # Market-implied macro scenarios from Polymarket; separate odds from crypto price impact.
   pm=(snap.get("model_context",{}).get("prediction_markets",{}) or {})
   lines.extend(["","━━━━━━━━━━━━━━━━━━","🔮 MACRO CONSENSUS & CRYPTO SCENARIOS"])
