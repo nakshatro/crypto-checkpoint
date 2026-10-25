@@ -252,11 +252,31 @@ def automatic_etf_flows():
     vals=[numval(x) for x in row[1:]];vals=[x for x in vals if x is not None]
     if vals:rows.append((d,vals[-1]))
    bydate={d:v for d,v in rows};recent=sorted(bydate.items())[-5:]
-   if len(recent)<3:continue
+   if len(recent)<3:raise RuntimeError("Fewer than three dated ETF flow rows parsed")
    total=sum(v for _,v in recent)*1_000_000
    result["flows_usd"][coin]=round(total,2)
    result["metadata"][coin]={"source":"Farside Investors public daily ETF flow table","url":url,"period_start":recent[0][0].isoformat(),"period_end":recent[-1][0].isoformat(),"sessions":len(recent),"five_session_net_flow_usd":round(total,2),"unit_conversion":"US$ millions converted to USD","updated_at":datetime.now(timezone.utc).isoformat()}
   except Exception as e:result["metadata"][coin]={"source":"Farside Investors public daily ETF flow table","url":url,"error":str(e)[:160]}
+ # XRP ETF totals are derived from issuer-reported holdings. Ignore provisional rows.
+ coin="XRP";url="https://xrp-insights.com/data/xrp-etf-totals.csv"
+ try:
+  import csv,io
+  resp=S.get(url,timeout=(5,12));resp.raise_for_status()
+  rows=list(csv.DictReader(io.StringIO(resp.text)));parsed=[]
+  for row in rows:
+   d=dateval(row.get("date",""))
+   if not d:continue
+   status=(row.get("row_status") or row.get("status") or "settled").strip().lower()
+   if status=="provisional":continue
+   raw=row.get("net_flow_usd") or row.get("flow_usd") or row.get("net_flow")
+   val=numval(raw or "")
+   if val is not None:parsed.append((d,val))
+  bydate={d:v for d,v in parsed};recent=sorted(bydate.items())[-5:]
+  if len(recent)<3:raise RuntimeError("Fewer than three settled XRP ETF flow rows parsed")
+  total=sum(v for _,v in recent)
+  result["flows_usd"][coin]=round(total,2)
+  result["metadata"][coin]={"source":"XRP Insights daily spot ETF totals (issuer-holdings-derived flows)","url":url,"period_start":recent[0][0].isoformat(),"period_end":recent[-1][0].isoformat(),"sessions":len(recent),"five_session_net_flow_usd":round(total,2),"unit_conversion":"USD as published","updated_at":datetime.now(timezone.utc).isoformat(),"method_note":"Flow estimates are calculated from issuer-reported holdings; provisional rows excluded."}
+ except Exception as e:result["metadata"][coin]={"source":"XRP Insights daily spot ETF totals","url":url,"error":str(e)[:160]}
  return result
 def load_manual_inputs():
  try:
@@ -566,10 +586,10 @@ def advanced_model(coin,symbol,rows,derivs,ctx,price):
   else: missing.append("chain_tvl_"+coin.lower())
  etf=(ctx.get("manual",{}).get("etf_flow_5d_usd",{}) or {}).get(coin)
  if etf is not None:
-  oc.append(("manual_etf_flow",bounded(float(etf)/({"BTC":1.5e9,"ETH":5e8,"SOL":1e8,"XRP":1e8}[coin])),.4,f"5d ETF flow ${float(etf)/1e6:+.0f}M"))
+  oc.append(("spot_etf_flow_5d",bounded(float(etf)/({"BTC":1.5e9,"ETH":5e8,"SOL":1e8,"XRP":1e8}[coin])),.4,f"automatically sourced 5-session spot ETF flow ${float(etf)/1e6:+.0f}M"))
  else:
-  oc.append(("manual_etf_flow",None,.4,"ETF flow unknown; optional verified input not set"))
-  missing.append("manual_etf_flow")
+  oc.append(("spot_etf_flow_5d",None,.4,"spot ETF flow unavailable from configured public source"))
+  missing.append("spot_etf_flow_5d")
  s,comps=layer_mean(oc); scores["onchain"]=s; details["onchain"]={"score":s,"components":comps}
  if s is None: missing.append("onchain_layer")
  words=[]; terms={"BTC":("bitcoin","btc"),"ETH":("ethereum","ether","eth"),"SOL":("solana","sol"),"XRP":("xrp","ripple")}[coin]
