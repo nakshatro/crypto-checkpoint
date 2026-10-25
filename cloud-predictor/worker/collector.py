@@ -262,7 +262,7 @@ def automatic_etf_flows():
     total_value=numval(row[total_idx])
     if total_value is not None:rows.append((d,total_value))
    bydate={d:v for d,v in rows}; cutoff=datetime.now(timezone.utc).date(); recent=sorted((d,v) for d,v in bydate.items() if (cutoff-timedelta(days=3))<=d<=cutoff)[-5:]
-if not recent:raise RuntimeError("No reported Total rows found in the current 4-day ETF window")
+    if not recent:raise RuntimeError("No reported Total rows found in the current 4-day ETF window")
    total=sum(v for _,v in recent)*1_000_000
    result["flows_usd"][coin]=round(total,2)
    result["metadata"][coin]={"source":"Farside Investors public daily ETF flow table","url":url,"period_start":recent[0][0].isoformat(),"period_end":recent[-1][0].isoformat(),"sessions":len(recent),"five_session_net_flow_usd":round(total,2),"unit_conversion":"US$ millions converted to USD","updated_at":datetime.now(timezone.utc).isoformat()}
@@ -278,7 +278,7 @@ if not recent:raise RuntimeError("No reported Total rows found in the current 4-
    if d and status=="computed" and usd is not None and row_status in ("settled","provisional"):
     daily.setdefault(d,0.0);daily[d]+=usd
   cutoff=datetime.now(timezone.utc).date();recent=sorted((d,v) for d,v in daily.items() if (cutoff-timedelta(days=3))<=d<=cutoff)[-5:]
-if not recent:raise RuntimeError("No valid XRP flow dates found in the current 4-day window")
+   if not recent:raise RuntimeError("No valid XRP flow dates found in the current 4-day window")
   total=sum(v for _,v in recent)
   result["flows_usd"]["XRP"]=round(total,2)
   result["metadata"]["XRP"]={"source":"XRP Insights issuer-holdings-derived ETF flows","url":xrp_url,"period_start":recent[0][0].isoformat(),"period_end":recent[-1][0].isoformat(),"sessions":len(recent),"five_session_net_flow_usd":round(total,2),"unit_conversion":"USD; daily flows aggregated across funds","updated_at":datetime.now(timezone.utc).isoformat(),"caveat":"Derived from reported holdings changes; latest provisional session may be revised."}
