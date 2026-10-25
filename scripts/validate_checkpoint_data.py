@@ -53,6 +53,10 @@ def main():
             errors.append("Macro calendar status is missing from latest.json; feed health cannot be verified")
         elif macro_status.get("status") not in ("ok", "degraded"):
             errors.append("Macro calendar status is " + str(macro_status.get("status")))
+        if macro_status and macro_status.get("status") == "degraded":
+            warnings.append("Macro calendar is degraded: live official schedule parsing is not fully verified")
+        if macro_status and macro_status.get("live_bls_events", 0) == 0:
+            warnings.append("No live BLS events were parsed; fallback dates must be treated as unverified")
         fallback_events = [e for e in events if "fallback" in str(e.get("source", "")).lower()]
         live_bls_events = [e for e in events if "US BLS official monthly release schedule" == e.get("source")]
         if fallback_events and not live_bls_events:
@@ -64,6 +68,10 @@ def main():
                 warnings.append(f"{coin} ETF flow source failed: {meta['error']}")
             elif not meta.get("updated_at"):
                 warnings.append(f"{coin} ETF flow has no source timestamp")
+            elif not meta.get("period_start") or not meta.get("period_end") or not isinstance(meta.get("sessions"), int):
+                warnings.append(f"{coin} ETF flow metadata is missing its reporting period/session count")
+            elif meta.get("sessions", 0) < 3:
+                warnings.append(f"{coin} ETF flow uses only {meta.get('sessions')} sessions")
         try:
             paper = load_json("paper_trades.json")
             trades = paper.get("trades") or []
