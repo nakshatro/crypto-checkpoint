@@ -296,7 +296,7 @@ def automatic_macro_events():
   while month_num>12:year+=1;month_num-=12
   url="https://www.bls.gov/schedule/%d/%02d_sched_list.htm"%(year,month_num)
   try:
-   resp=S.get(url,timeout=(5,12));resp.raise_for_status()
+   resp=S.get(url,headers={"User-Agent":"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/129 Safari/537.36"},timeout=(5,12));resp.raise_for_status()
    raw=unescape(re.sub(r"<[^>]+>"," ",resp.text));raw=re.sub(r"\s+"," ",raw)
    matches=list(date_time_re.finditer(raw))
    for i,m in enumerate(matches):
