@@ -368,16 +368,16 @@ def fetch_prediction_market_outlooks(events):
  """Fetch public Polymarket event probabilities relevant to macro releases."""
  now=datetime.now(timezone.utc); found=[]
  try:
-  resp=S.get("https://gamma-api.polymarket.com/events",params={"active":"true","closed":"false","limit":100,"order":"volume24hr","ascending":"false"},timeout=(5,12))
+  resp=S.get("https://gamma-api.polymarket.com/events",params={"active":"true","closed":"false","limit":250,"order":"volume24hr","ascending":"false"},timeout=(5,12))
   resp.raise_for_status(); payload=resp.json()
   if not isinstance(payload,list): raise RuntimeError("Unexpected Polymarket Gamma response")
   macro_terms=("federal reserve","fed rate","interest rate","fomc","consumer price index","cpi","inflation","producer price index","ppi","nonfarm payroll","unemployment","jobs report","treasury yield")
   for event in payload:
    title=str(event.get("title") or event.get("question") or "")
-   if not any(term in title.lower() for term in macro_terms): continue
    outcomes=[]
-   for market in (event.get("markets") or [])[:8]:
+   for market in (event.get("markets") or [])[:12]:
     question=str(market.get("question") or market.get("groupItemTitle") or title)
+    if not any(term in (title+" "+question).lower() for term in macro_terms): continue
     try:
      import json as _json
      names=market.get("outcomes",[]); prices=market.get("outcomePrices",[])
