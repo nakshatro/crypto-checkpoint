@@ -90,6 +90,21 @@ def main():
                     warnings.append(f"Closed trade missing exit time: {t.get('trade_id', 'unknown trade')}")
                 if t.get("status") == "open" and t.get("exit_time_utc"):
                     errors.append(f"Open trade has exit time: {t.get('trade_id', 'unknown trade')}")
+            handoff = paper.get("signal_handoff") or {}
+            handoff_time = parse_time(handoff.get("updated_at"))
+            if not handoff:
+                errors.append("Paper-trade signal_handoff is missing; generated-signal reconciliation has not been recorded")
+            elif not handoff_time:
+                errors.append("Paper-trade signal_handoff has no valid timestamp")
+            elif parse_time(paper.get("updated_at")) and abs((parse_time(paper.get("updated_at")) - handoff_time).total_seconds()) > 60:
+                errors.append("Paper-trade signal_handoff timestamp does not match the latest ledger refresh")
+            handoff_items = handoff.get("items") or []
+            accepted_ids = {x.get("trade_id") for x in handoff_items if x.get("status") == "accepted_into_open_ledger"}
+            open_ids = {x.get("trade_id") for x in opened}
+            if handoff and accepted_ids != open_ids:
+                errors.append("Signal handoff accepted trades do not match open paper-trade ledger entries")
+            if len(opened) > 1:
+                errors.append(f"Paper-trade ledger exceeds the configured one-open-trade cap: {len(opened)} open")
             paper_updated = parse_time(paper.get("updated_at"))
             if not paper_updated:
                 errors.append("paper_trades.json has no valid updated_at timestamp")
