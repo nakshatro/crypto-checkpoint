@@ -336,7 +336,7 @@ def automatic_macro_events():
        except ValueError: parsed=datetime.strptime(date_text,"%B %d %Y %I:%M %p")
        t=parsed.replace(tzinfo=eastern).astimezone(timezone.utc); hours=(t-now).total_seconds()/3600
        if -1<=hours<=24*60: out.append({"name":label,"time_utc":t.isoformat(),"date_utc":t.strftime("%Y-%m-%d"),"time_exact":True,"in_hours":round(hours,1),"source":"US BLS official HTML schedule"})
-    except Exception: continue
+       except Exception: continue
     except Exception: continue
   except Exception: pass
  # If the official ICS feed is empty, also retain official FOMC meeting dates parsed above.
