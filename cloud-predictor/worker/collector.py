@@ -349,6 +349,30 @@ def automatic_macro_events():
       if -1<=hours<=24*75:out.append({"name":label+" (reference month "+m.group(1)+" "+m.group(2)+")","time_utc":t.isoformat(),"date_utc":t.strftime("%Y-%m-%d"),"time_exact":True,"in_hours":round(hours,1),"source":"US BLS official release-specific schedule","url":url})
      except Exception:continue
    except Exception:continue
+ # Last-resort text parser for BLS monthly schedules whose HTML tables change markup.
+ if not any(str(e.get("source","")).startswith("US BLS official") for e in out):
+  from html import unescape
+  weekdays="Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday"
+  months="January|February|March|April|May|June|July|August|September|October|November|December"
+  row_re=re.compile(rf"({weekdays}),?\s+({months})\s+(\d{{1,2}}),?\s+(20\d{{2}})\s+(\d{{1,2}}:\d{{2}}\s+[AP]M)",re.I)
+  for offset in range(3):
+   year=now.year;month=now.month+offset
+   while month>12:year+=1;month-=12
+   url=f"https://www.bls.gov/schedule/{year}/{month:02d}_sched_list.htm"
+   try:
+    resp=S.get(url,timeout=(5,12));resp.raise_for_status()
+    raw=unescape(re.sub(r"<[^>]+>"," ",resp.text));raw=re.sub(r"\s+"," ",raw)
+    matches=list(row_re.finditer(raw))
+    for i,m in enumerate(matches):
+     stop=matches[i+1].start() if i+1<len(matches) else len(raw)
+     title=raw[m.end():stop].strip(" :-|")
+     if not any(key in title.lower() for key in wanted):continue
+     try:
+      dt=datetime.strptime(m.group(2)+" "+m.group(3)+" "+m.group(4)+" "+m.group(5),"%B %d %Y %I:%M %p")
+      t=dt.replace(tzinfo=eastern).astimezone(timezone.utc);hours=(t-now).total_seconds()/3600
+      if -1<=hours<=24*75:out.append({"name":title[:180],"time_utc":t.isoformat(),"date_utc":t.strftime("%Y-%m-%d"),"time_exact":True,"in_hours":round(hours,1),"source":"US BLS official monthly release schedule (text fallback)","url":url})
+     except Exception:continue
+   except Exception:continue
  try:
   resp=S.get("https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm",timeout=(5,12));resp.raise_for_status()
   html=re.sub(r"<[^>]+>"," ",resp.text);html=re.sub(r"\s+"," ",html)
