@@ -212,6 +212,52 @@ def ema_values(vals,n):
 def ret_std(vals,n):
  rr=[math.log(vals[i]/vals[i-1]) for i in range(max(1,len(vals)-n),len(vals)) if vals[i]>0 and vals[i-1]>0]
  return statistics.pstdev(rr) if len(rr)>1 else None
+def automatic_etf_flows():
+ """Best-effort daily BTC/ETH spot ETF flow totals from Farside's public tables."""
+ from html.parser import HTMLParser
+ class Parser(HTMLParser):
+  def __init__(self):
+   super().__init__(convert_charrefs=True); self.rows=[]; self.row=None; self.cell=None
+  def handle_starttag(self,tag,attrs):
+   if tag=="tr": self.row=[]
+   elif tag in ("td","th") and self.row is not None: self.cell=[]
+  def handle_data(self,data):
+   if self.cell is not None:self.cell.append(data)
+  def handle_endtag(self,tag):
+   if tag in ("td","th") and self.cell is not None:self.row.append(" ".join("".join(self.cell).split()));self.cell=None
+   elif tag=="tr" and self.row is not None:
+    if self.row:self.rows.append(self.row)
+    self.row=None;self.cell=None
+ def dateval(s):
+  for fmt in ("%d %b %Y","%d %B %Y","%b %d %Y","%B %d %Y","%Y-%m-%d","%d/%m/%Y"):
+   try:return datetime.strptime(s.strip().replace(",",""),fmt).date()
+   except ValueError:pass
+  return None
+ def numval(s):
+  x=s.strip().replace("$","").replace(",","").replace("−","-")
+  if x in ("","-","—","N/A"):return None
+  neg=x.startswith("(") and x.endswith(")")
+  if neg:x=x[1:-1]
+  try:
+   v=float(x);return -abs(v) if neg else v
+  except ValueError:return None
+ result={"flows_usd":{},"metadata":{}}
+ for coin,url in (("BTC","https://farside.co.uk/btc/"),("ETH","https://farside.co.uk/ETH/")):
+  try:
+   resp=S.get(url,timeout=(5,12));resp.raise_for_status();parser=Parser();parser.feed(resp.text);rows=[]
+   for row in parser.rows:
+    if len(row)<3:continue
+    d=dateval(row[0])
+    if not d:continue
+    vals=[numval(x) for x in row[1:]];vals=[x for x in vals if x is not None]
+    if vals:rows.append((d,vals[-1]))
+   bydate={d:v for d,v in rows};recent=sorted(bydate.items())[-5:]
+   if len(recent)<3:continue
+   total=sum(v for _,v in recent)*1_000_000
+   result["flows_usd"][coin]=round(total,2)
+   result["metadata"][coin]={"source":"Farside Investors public daily ETF flow table","url":url,"period_start":recent[0][0].isoformat(),"period_end":recent[-1][0].isoformat(),"sessions":len(recent),"five_session_net_flow_usd":round(total,2),"unit_conversion":"US$ millions converted to USD","updated_at":datetime.now(timezone.utc).isoformat()}
+  except Exception as e:result["metadata"][coin]={"source":"Farside Investors public daily ETF flow table","url":url,"error":str(e)[:160]}
+ return result
 def load_manual_inputs():
  try:
   p=ROOT/"manual_inputs.json"
@@ -305,7 +351,7 @@ def upcoming_manual_events(manual):
  # Retained for compatibility; all active events come from automatic feeds.
  return []
 def global_model_context():
- manual=load_manual_inputs(); out={"stablecoin_30d":None,"fear_greed":None,"headlines":[],"events":automatic_macro_events(),"manual":manual}
+ manual=load_manual_inputs(); etf_auto=automatic_etf_flows(); merged_flows=dict(manual.get("etf_flow_5d_usd") or {}); merged_flows.update(etf_auto.get("flows_usd") or {}); manual["etf_flow_5d_usd"]=merged_flows; manual["etf_flow_metadata"]=etf_auto.get("metadata",{}); out={"stablecoin_30d":None,"fear_greed":None,"headlines":[],"events":automatic_macro_events(),"manual":manual,"etf_flow_metadata":manual["etf_flow_metadata"]}
  try:
   j=get_json("https://stablecoins.llama.fi/stablecoincharts/all")
   if len(j)>=31:
@@ -445,7 +491,7 @@ def advanced_model(coin,symbol,rows,derivs,ctx,price):
   else: missing.append("chain_tvl_"+coin.lower())
  etf=(ctx.get("manual",{}).get("etf_flow_5d_usd",{}) or {}).get(coin)
  if etf is not None:
-  oc.append(("manual_etf_flow",bounded(float(etf)/({"BTC":1.5e9,"ETH":5e8,"SOL":1e8,"XRP":1e8}[coin])),.4,f"verified manual 5d ETF flow ${float(etf)/1e6:+.0f}M"))
+  oc.append(("manual_etf_flow",bounded(float(etf)/({"BTC":1.5e9,"ETH":5e8,"SOL":1e8,"XRP":1e8}[coin])),.4,f"5d ETF flow ${float(etf)/1e6:+.0f}M"))
  else:
   oc.append(("manual_etf_flow",None,.4,"ETF flow unknown; optional verified input not set"))
   missing.append("manual_etf_flow")
