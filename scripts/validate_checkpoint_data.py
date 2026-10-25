@@ -53,8 +53,10 @@ def main():
             errors.append("Macro calendar status is missing from latest.json; feed health cannot be verified")
         elif macro_status.get("status") not in ("ok", "degraded"):
             errors.append("Macro calendar status is " + str(macro_status.get("status")))
-        if events and all("fallback" in str(e.get("source", "")).lower() for e in events):
-            errors.append("All macro events come from fallback data; live calendar retrieval/parsing is unverified")
+        fallback_events = [e for e in events if "fallback" in str(e.get("source", "")).lower()]
+        live_bls_events = [e for e in events if "US BLS official monthly release schedule" == e.get("source")]
+        if fallback_events and not live_bls_events:
+            errors.append(f"Macro calendar relies on {len(fallback_events)} fallback events; live BLS schedule retrieval/parsing is unverified")
         etf = context.get("etf_flows") or {}
         for coin in ("BTC", "ETH", "SOL", "XRP"):
             meta = etf.get(coin) or {}
