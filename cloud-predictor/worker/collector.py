@@ -283,7 +283,7 @@ def load_manual_inputs():
   return json.loads(p.read_text(encoding="utf-8")) if p.exists() else {}
  except Exception: return {}
 def automatic_macro_events():
- """Fetch upcoming major US macro releases and FOMC dates from official calendars."""
+ """Fetch upcoming BLS macro releases and FOMC meeting dates from official calendars."""
  from html.parser import HTMLParser
  now=datetime.now(timezone.utc);out=[]
  wanted=("consumer price index","producer price index","employment situation","job openings and labor turnover","productivity and costs","employment cost index","import and export price","retail sales","personal income and outlays","gross domestic product")
@@ -301,6 +301,7 @@ def automatic_macro_events():
     if self.row:self.rows.append(self.row)
     self.row=None;self.cell=None
  eastern=__import__("zoneinfo").ZoneInfo("America/New_York")
+ row_pattern=re.compile(r"(?:(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday),?\\s+)?(January|February|March|April|May|June|July|August|September|October|November|December)\\s+(\\d{1,2}),?\\s+(20\\d{2})\\s+(\\d{1,2}:\\d{2}\\s+[AP]M)\\s+(.+)",re.I)
  for offset in range(3):
   year=now.year;month=now.month+offset
   while month>12:year+=1;month-=12
@@ -308,104 +309,29 @@ def automatic_macro_events():
   try:
    resp=S.get(url,timeout=(5,12));resp.raise_for_status();parser=TableParser();parser.feed(resp.text)
    for row in parser.rows:
-    if len(row)<3:continue
-    date_text=row[0].strip();time_text=row[1].strip();title=" ".join(row[2].split())
+    joined=" ".join(part for part in row if part).strip()
+    match=row_pattern.search(joined)
+    if not match:continue
+    month_name,day,year_text,time_text,title=match.groups();title=" ".join(title.split())
     if not any(key in title.lower() for key in wanted):continue
     try:
-     cleaned=re.sub(r"^(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday),?\s+","",date_text,flags=re.I).strip()
-     # Monthly list pages often omit the year from the date cell; supply the
-     # year of the calendar URL, while accepting cells that already include it.
-     if not re.search(r"20\d{2}",cleaned): cleaned=cleaned+", "+str(year)
-     dt=None
-     for fmt in ("%B %d, %Y %I:%M %p","%B %d %Y %I:%M %p","%b %d, %Y %I:%M %p","%b %d %Y %I:%M %p"):
-      try: dt=datetime.strptime(cleaned+" "+time_text,fmt);break
-      except ValueError: continue
-     if dt is None: continue
+     dt=datetime.strptime(f"{month_name} {day} {year_text} {time_text}","%B %d %Y %I:%M %p")
      t=dt.replace(tzinfo=eastern).astimezone(timezone.utc);hours=(t-now).total_seconds()/3600
      if -1<=hours<=24*75:out.append({"name":title,"time_utc":t.isoformat(),"date_utc":t.strftime("%Y-%m-%d"),"time_exact":True,"in_hours":round(hours,1),"source":"US BLS official monthly release schedule","url":url})
     except Exception:continue
   except Exception:continue
- # Fallback: scrape release-specific BLS schedules if monthly-list markup changes.
- if not any(e.get("source")=="US BLS official monthly release schedule" for e in out):
-  from html import unescape
-  pages=[
-   ("CPI","https://www.bls.gov/schedule/news_release/cpi.htm","Consumer Price Index"),
-   ("PPI","https://www.bls.gov/schedule/news_release/ppi.htm","Producer Price Index"),
-   ("Employment Situation","https://www.bls.gov/schedule/news_release/empsit.htm","Employment Situation"),
-   ("JOLTS","https://www.bls.gov/schedule/news_release/jolts.htm","Job Openings and Labor Turnover Survey"),
-   ("Employment Cost Index","https://www.bls.gov/schedule/news_release/eci.htm","Employment Cost Index"),
-  ]
-  for short,url,label in pages:
-   try:
-    resp=S.get(url,timeout=(5,12));resp.raise_for_status()
-    raw=unescape(re.sub(r"<[^>]+>"," ",resp.text));raw=re.sub(r"\s+"," ",raw)
-    pattern=r"([A-Za-z]+)\s+(20\d{2})\s+([A-Za-z]{3,9})\.?\s+(\d{1,2}),?\s+(20\d{2})\s+(\d{1,2}:\d{2}\s+[AP]M)"
-    for m in re.finditer(pattern,raw):
-     try:
-      date_text=m.group(3)+" "+m.group(4)+" "+m.group(5)+" "+m.group(6)
-      try:dt=datetime.strptime(date_text,"%b %d %Y %I:%M %p")
-      except ValueError:dt=datetime.strptime(date_text,"%B %d %Y %I:%M %p")
-      t=dt.replace(tzinfo=eastern).astimezone(timezone.utc);hours=(t-now).total_seconds()/3600
-      if -1<=hours<=24*75:out.append({"name":label+" (reference month "+m.group(1)+" "+m.group(2)+")","time_utc":t.isoformat(),"date_utc":t.strftime("%Y-%m-%d"),"time_exact":True,"in_hours":round(hours,1),"source":"US BLS official release-specific schedule","url":url})
-     except Exception:continue
-   except Exception:continue
- # Last-resort text parser for BLS monthly schedules whose HTML tables change markup.
- if not any(str(e.get("source","")).startswith("US BLS official") for e in out):
-  from html import unescape
-  weekdays="Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday"
-  months="January|February|March|April|May|June|July|August|September|October|November|December"
-  row_re=re.compile(rf"({weekdays}),?\s+({months})\s+(\d{{1,2}}),?\s+(20\d{{2}})\s+(\d{{1,2}}:\d{{2}}\s+[AP]M)",re.I)
-  for offset in range(3):
-   year=now.year;month=now.month+offset
-   while month>12:year+=1;month-=12
-   url=f"https://www.bls.gov/schedule/{year}/{month:02d}_sched_list.htm"
-   try:
-    resp=S.get(url,timeout=(5,12));resp.raise_for_status()
-    raw=unescape(re.sub(r"<[^>]+>"," ",resp.text));raw=re.sub(r"\s+"," ",raw)
-    matches=list(row_re.finditer(raw))
-    for i,m in enumerate(matches):
-     stop=matches[i+1].start() if i+1<len(matches) else len(raw)
-     title=raw[m.end():stop].strip(" :-|")
-     if not any(key in title.lower() for key in wanted):continue
-     try:
-      dt=datetime.strptime(m.group(2)+" "+m.group(3)+" "+m.group(4)+" "+m.group(5),"%B %d %Y %I:%M %p")
-      t=dt.replace(tzinfo=eastern).astimezone(timezone.utc);hours=(t-now).total_seconds()/3600
-      if -1<=hours<=24*75:out.append({"name":title[:180],"time_utc":t.isoformat(),"date_utc":t.strftime("%Y-%m-%d"),"time_exact":True,"in_hours":round(hours,1),"source":"US BLS official monthly release schedule (text fallback)","url":url})
-     except Exception:continue
-   except Exception:continue
- # Last-resort official BLS year calendar parser. Parse visible release rows even if
- # individual schedule endpoints change their table markup.
- if not any(str(e.get("source","")).startswith("US BLS") for e in out):
-  try:
-   from html import unescape
-   year_url=f"https://www.bls.gov/schedule/{now.year}/"
-   resp=S.get(year_url,timeout=(5,12));resp.raise_for_status()
-   visible=unescape(re.sub(r"</(?:tr|p|div|li|h[1-6])\s*>", "\n", resp.text, flags=re.I))
-   visible=re.sub(r"<[^>]+>", " ", visible)
-   visible=re.sub(r"[ \t\xa0]+"," ",visible)
-   row_pattern=re.compile(r"(?im)^\s*(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday),?\s+([A-Za-z]+)\s+(\d{1,2}),\s*(20\d{2})\s+(\d{1,2}:\d{2})\s*([AP]M)\s+(.+?)\s*$")
-   for m in row_pattern.finditer(visible):
-    month,day,year,clock,ampm,title=m.groups()
-    if not any(key in title.lower() for key in wanted): continue
-    try:
-     dt=datetime.strptime(month+" "+day+" "+year+" "+clock+" "+ampm,"%B %d %Y %I:%M %p")
-     t=dt.replace(tzinfo=eastern).astimezone(timezone.utc);hours=(t-now).total_seconds()/3600
-     if -1<=hours<=24*75:
-      out.append({"name":title.strip(),"time_utc":t.isoformat(),"date_utc":t.strftime("%Y-%m-%d"),"time_exact":True,"in_hours":round(hours,1),"source":"US BLS official year schedule","url":year_url})
-    except Exception: continue
-  except Exception: pass
  try:
   resp=S.get("https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm",timeout=(5,12));resp.raise_for_status()
-  html=re.sub(r"<[^>]+>"," ",resp.text);html=re.sub(r"\s+"," ",html)
-  sections=list(re.finditer(r"(20\d{2})\s+FOMC Meetings",html,re.I))
+  html=re.sub(r"<[^>]+>"," ",resp.text);html=re.sub(r"\\s+"," ",html)
+  sections=list(re.finditer(r"(20\\d{2})\\s+FOMC Meetings",html,re.I))
   for i,m in enumerate(sections):
    year=int(m.group(1))
    if year<now.year or year>now.year+1:continue
    stop=sections[i+1].start() if i+1<len(sections) else len(html);section=html[m.end():stop]
-   for item in re.finditer(r"(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{1,2})\s*[–-]\s*(\d{1,2})",section,re.I):
-    month,day,_=item.groups()
+   for item in re.finditer(r"(January|February|March|April|May|June|July|August|September|October|November|December)\\s+(\\d{1,2})\\s*[–-]\\s*(\\d{1,2})",section,re.I):
+    month_name,day,_=item.groups()
     try:
-     t=datetime.strptime(month+" "+day+" "+str(year),"%B %d %Y").replace(tzinfo=timezone.utc);hours=(t-now).total_seconds()/3600
+     t=datetime.strptime(month_name+" "+day+" "+str(year),"%B %d %Y").replace(tzinfo=timezone.utc);hours=(t-now).total_seconds()/3600
      if -24<=hours<=24*90:out.append({"name":"FOMC meeting (date only; announcement time not inferred)","time_utc":None,"date_utc":t.strftime("%Y-%m-%d"),"time_exact":False,"in_hours":None,"days_away":round(hours/24,1),"source":"Federal Reserve official calendar","url":"https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm"})
     except Exception:continue
  except Exception:pass
