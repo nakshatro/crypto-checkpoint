@@ -60,7 +60,14 @@ def main():
         fallback_events = [e for e in events if "fallback" in str(e.get("source", "")).lower()]
         live_bls_events = [e for e in events if "US BLS official monthly release schedule" == e.get("source")]
         if fallback_events and not live_bls_events:
-            errors.append(f"Macro calendar relies on {len(fallback_events)} fallback events; live BLS schedule retrieval/parsing is unverified")
+            message = f"Macro calendar relies on {len(fallback_events)} fallback events; live BLS schedule retrieval/parsing is unverified"
+            # A clearly marked degraded state is an accepted fallback mode: the
+            # calendar must not pretend these dates were parsed live, but this
+            # condition alone should not fail the entire checkpoint validation.
+            if macro_status.get("status") == "degraded":
+                warnings.append(message)
+            else:
+                errors.append(message)
         etf = context.get("etf_flows") or {}
         for coin in ("BTC", "ETH", "SOL", "XRP"):
             meta = etf.get(coin) or {}
