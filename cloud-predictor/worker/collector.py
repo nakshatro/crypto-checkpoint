@@ -247,14 +247,22 @@ def automatic_etf_flows():
  for coin,url in (("BTC","https://farside.co.uk/btc/"),("ETH","https://farside.co.uk/ETH/"),("SOL","https://farside.co.uk/SOL/")):
   try:
    resp=S.get(url,timeout=(5,12));resp.raise_for_status();parser=Parser();parser.feed(resp.text);rows=[]
+   # Read the explicit Total column only. Never substitute the last fund value
+   # when a pending/missing Total is shown as a dash.
+   total_idx=None
+   for header in parser.rows:
+    if header and any(cell.strip().lower()=="total" for cell in header):
+     total_idx=max(i for i,cell in enumerate(header) if cell.strip().lower()=="total")
+     break
+   if total_idx is None:raise RuntimeError("Farside Total column header not found")
    for row in parser.rows:
-    if len(row)<3:continue
+    if len(row)<=total_idx:continue
     d=dateval(row[0])
     if not d:continue
-    vals=[numval(x) for x in row[1:]];vals=[x for x in vals if x is not None]
-    if vals:rows.append((d,vals[-1]))
+    total_value=numval(row[total_idx])
+    if total_value is not None:rows.append((d,total_value))
    bydate={d:v for d,v in rows};recent=sorted(bydate.items())[-5:]
-   if len(recent)<3:raise RuntimeError("Fewer than 3 dated flow rows parsed")
+   if len(recent)<3:raise RuntimeError("Fewer than 3 dated rows with a reported Total parsed")
    total=sum(v for _,v in recent)*1_000_000
    result["flows_usd"][coin]=round(total,2)
    result["metadata"][coin]={"source":"Farside Investors public daily ETF flow table","url":url,"period_start":recent[0][0].isoformat(),"period_end":recent[-1][0].isoformat(),"sessions":len(recent),"five_session_net_flow_usd":round(total,2),"unit_conversion":"US$ millions converted to USD","updated_at":datetime.now(timezone.utc).isoformat()}
