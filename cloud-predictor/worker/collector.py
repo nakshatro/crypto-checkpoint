@@ -301,7 +301,7 @@ def automatic_macro_events():
     if self.row:self.rows.append(self.row)
     self.row=None;self.cell=None
  eastern=__import__("zoneinfo").ZoneInfo("America/New_York")
- row_pattern=re.compile(r"(?:(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday),?\\s+)?(January|February|March|April|May|June|July|August|September|October|November|December)\\s+(\\d{1,2}),?\\s+(20\\d{2})\\s+(\\d{1,2}:\\d{2}\\s+[AP]M)\\s+(.+)",re.I)
+ row_pattern=re.compile(r"(?:(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday),?\s+)?(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{1,2}),?\s+(20\d{2})\s+(\d{1,2}:\d{2}\s+[AP]M)\s+(.+)",re.I)
  for offset in range(3):
   year=now.year;month=now.month+offset
   while month>12:year+=1;month-=12
@@ -322,13 +322,13 @@ def automatic_macro_events():
   except Exception:continue
  try:
   resp=S.get("https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm",timeout=(5,12));resp.raise_for_status()
-  html=re.sub(r"<[^>]+>"," ",resp.text);html=re.sub(r"\\s+"," ",html)
-  sections=list(re.finditer(r"(20\\d{2})\\s+FOMC Meetings",html,re.I))
+  html=re.sub(r"<[^>]+>"," ",resp.text);html=re.sub(r"\s+"," ",html)
+  sections=list(re.finditer(r"(20\d{2})\s+FOMC Meetings",html,re.I))
   for i,m in enumerate(sections):
    year=int(m.group(1))
    if year<now.year or year>now.year+1:continue
    stop=sections[i+1].start() if i+1<len(sections) else len(html);section=html[m.end():stop]
-   for item in re.finditer(r"(January|February|March|April|May|June|July|August|September|October|November|December)\\s+(\\d{1,2})\\s*[–-]\\s*(\\d{1,2})",section,re.I):
+   for item in re.finditer(r"(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{1,2})\s*[–-]\s*(\d{1,2})",section,re.I):
     month_name,day,_=item.groups()
     try:
      t=datetime.strptime(month_name+" "+day+" "+str(year),"%B %d %Y").replace(tzinfo=timezone.utc);hours=(t-now).total_seconds()/3600
