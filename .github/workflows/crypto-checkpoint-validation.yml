@@ -1,0 +1,43 @@
+name: Crypto Checkpoint data validation
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 */6 * * *"
+  push:
+    paths:
+      - "cloud-predictor/worker/collector.py"
+      - "cloud-predictor/worker/paper_trader.py"
+      - "scripts/validate_checkpoint_data.py"
+      - ".github/workflows/crypto-checkpoint-validation.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install runtime dependency
+        run: python -m pip install --disable-pip-version-check requests
+      - name: Check Python syntax
+        run: |
+          python -m py_compile cloud-predictor/worker/collector.py
+          python -m py_compile cloud-predictor/worker/paper_trader.py
+          python -m py_compile scripts/validate_checkpoint_data.py
+      - name: Refresh market and macro snapshot
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python cloud-predictor/worker/collector.py
+      - name: Update paper-trade ledger
+        run: python cloud-predictor/worker/paper_trader.py
+      - name: Validate refreshed checkpoint
+        run: python scripts/validate_checkpoint_data.py
