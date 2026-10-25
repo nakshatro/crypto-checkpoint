@@ -327,18 +327,16 @@ def automatic_macro_events():
      rr=S.get(url,timeout=(5,12)); rr.raise_for_status()
      raw=unescape(re.sub(r"<[^>]+>"," ",rr.text))
      raw=re.sub(r"\s+"," ",raw)
-     # Schedule rows commonly read: October 2026 Nov. 10, 2026 08:30 AM
-     pat=r"([A-Za-z]+)\s+(20\d{2})\s+([A-Za-z]{3,9}\.?\s+\d{1,2},?\s+20\d{2})\s+(\d{1,2}:\d{2}\s+[AP]M)"
+     # Match the release date/time itself; reference-month column is not needed.
+     pat=r"([A-Za-z]{3,9})\.?\s+(\d{1,2}),?\s+(20\d{2})\s+(\d{1,2}:\d{2}\s+[AP]M)"
      for m in re.finditer(pat,raw):
       try:
-       rel=re.sub(r"\.(?=\s)","",m.group(3))
-       try: parsed=datetime.strptime(rel+" "+m.group(4),"%b %d, %Y %I:%M %p")
-       except ValueError: parsed=datetime.strptime(rel+" "+m.group(4),"%B %d, %Y %I:%M %p")
-       t=parsed.replace(tzinfo=eastern).astimezone(timezone.utc)
-       hours=(t-now).total_seconds()/3600
-       if -1<=hours<=24*45:
-        out.append({"name":label+" ("+m.group(1)+" "+m.group(2)+")","time_utc":t.isoformat(),"date_utc":t.strftime("%Y-%m-%d"),"time_exact":True,"in_hours":round(hours,1),"source":"US BLS official HTML schedule"})
-      except Exception: continue
+       date_text=m.group(1)+" "+m.group(2)+" "+m.group(3)+" "+m.group(4)
+       try: parsed=datetime.strptime(date_text,"%b %d %Y %I:%M %p")
+       except ValueError: parsed=datetime.strptime(date_text,"%B %d %Y %I:%M %p")
+       t=parsed.replace(tzinfo=eastern).astimezone(timezone.utc); hours=(t-now).total_seconds()/3600
+       if -1<=hours<=24*60: out.append({"name":label,"time_utc":t.isoformat(),"date_utc":t.strftime("%Y-%m-%d"),"time_exact":True,"in_hours":round(hours,1),"source":"US BLS official HTML schedule"})
+    except Exception: continue
     except Exception: continue
   except Exception: pass
  # If the official ICS feed is empty, also retain official FOMC meeting dates parsed above.
