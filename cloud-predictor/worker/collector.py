@@ -338,8 +338,8 @@ def automatic_macro_events():
    ("Productivity and Costs","https://www.bls.gov/schedule/news_release/prod2.htm"),
    ("Import and Export Price Indexes","https://www.bls.gov/schedule/news_release/ximpim.htm"),
   ]
-  date_re=re.compile(r"\\b([A-Za-z]{3,9})\\.?\\s+(\\d{1,2}),?\\s+(20\\d{2})\\b")
-  time_re=re.compile(r"\\b(\\d{1,2}:\\d{2})\\s*([AP]\\.?M\\.?)\\b",re.I)
+  date_re=re.compile(r"\b([A-Za-z]{3,9})\.?\s+(\d{1,2}),?\s+(20\d{2})\\b")
+  time_re=re.compile(r"\b(\d{1,2}:\d{2})\\s*([AP]\\.?M\\.?)\\b",re.I)
   for label,url in pages:
    try:
     rr=S.get(url,timeout=(5,12)); rr.raise_for_status()
