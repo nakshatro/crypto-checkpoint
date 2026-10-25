@@ -308,37 +308,70 @@ def automatic_macro_events():
      if -24<=hours<=24*45: out.append({"name":"FOMC meeting (date only; announcement time not inferred)","time_utc":None,"date_utc":t.strftime("%Y-%m-%d"),"time_exact":False,"in_hours":None,"days_away":round(hours/24,1),"source":"Federal Reserve official calendar"})
     except Exception: pass
  except Exception: pass
- # Fallback to the official BLS HTML schedules if its ICS feed is blocked or changes format.
- # These pages provide actual release dates and Eastern release times.
- if not any(e.get("source")=="US BLS official calendar" for e in out):
-  try:
-   from html import unescape
-   pages=[
-    ("CPI","https://www.bls.gov/schedule/news_release/cpi.htm","Consumer Price Index"),
-    ("PPI","https://www.bls.gov/schedule/news_release/ppi.htm","Producer Price Index"),
-    ("Employment Situation","https://www.bls.gov/schedule/news_release/empsit.htm","Employment Situation"),
-    ("JOLTS","https://www.bls.gov/schedule/news_release/jolts.htm","Job Openings and Labor Turnover Survey"),
-    ("Employment Cost Index","https://www.bls.gov/schedule/news_release/eci.htm","Employment Cost Index"),
-   ]
-   from zoneinfo import ZoneInfo
-   eastern=ZoneInfo("America/New_York")
-   for short,url,label in pages:
-    try:
-     rr=S.get(url,timeout=(5,12)); rr.raise_for_status()
-     raw=unescape(re.sub(r"<[^>]+>"," ",rr.text))
-     raw=re.sub(r"\s+"," ",raw)
-     # Match the release date/time itself; reference-month column is not needed.
-     pat=r"([A-Za-z]{3,9})\.?\s+(\d{1,2}),?\s+(20\d{2})\s+(\d{1,2}:\d{2}\s+[AP]M)"
-     for m in re.finditer(pat,raw):
-      try:
-       date_text=m.group(1)+" "+m.group(2)+" "+m.group(3)+" "+m.group(4)
-       try: parsed=datetime.strptime(date_text,"%b %d %Y %I:%M %p")
-       except ValueError: parsed=datetime.strptime(date_text,"%B %d %Y %I:%M %p")
-       t=parsed.replace(tzinfo=eastern).astimezone(timezone.utc); hours=(t-now).total_seconds()/3600
-       if -1<=hours<=24*60: out.append({"name":label,"time_utc":t.isoformat(),"date_utc":t.strftime("%Y-%m-%d"),"time_exact":True,"in_hours":round(hours,1),"source":"US BLS official HTML schedule"})
-      except Exception: continue
-    except Exception: continue
-  except Exception: pass
+ # Independently supplement the BLS ICS feed with official HTML schedules.
+ # FOMC events must not suppress this fallback: both calendars are required.
+ try:
+  from html import unescape
+  from html.parser import HTMLParser
+  from zoneinfo import ZoneInfo
+  eastern=ZoneInfo("America/New_York")
+  class ScheduleRows(HTMLParser):
+   def __init__(self):
+    super().__init__(convert_charrefs=True); self.rows=[]; self.row=None; self.cell=None
+   def handle_starttag(self,tag,attrs):
+    if tag=="tr": self.row=[]
+    elif tag in ("td","th") and self.row is not None: self.cell=[]
+   def handle_data(self,data):
+    if self.cell is not None:self.cell.append(data)
+   def handle_endtag(self,tag):
+    if tag in ("td","th") and self.cell is not None:
+     self.row.append(" ".join("".join(self.cell).split())); self.cell=None
+    elif tag=="tr" and self.row is not None:
+     if self.row:self.rows.append(self.row)
+     self.row=None;self.cell=None
+  pages=[
+   ("Consumer Price Index","https://www.bls.gov/schedule/news_release/cpi.htm"),
+   ("Producer Price Index","https://www.bls.gov/schedule/news_release/ppi.htm"),
+   ("Employment Situation","https://www.bls.gov/schedule/news_release/empsit.htm"),
+   ("Job Openings and Labor Turnover Survey","https://www.bls.gov/schedule/news_release/jolts.htm"),
+   ("Employment Cost Index","https://www.bls.gov/schedule/news_release/eci.htm"),
+   ("Productivity and Costs","https://www.bls.gov/schedule/news_release/prod2.htm"),
+   ("Import and Export Price Indexes","https://www.bls.gov/schedule/news_release/ximpim.htm"),
+  ]
+  date_re=re.compile(r"\\b([A-Za-z]{3,9})\\.?\\s+(\\d{1,2}),?\\s+(20\\d{2})\\b")
+  time_re=re.compile(r"\\b(\\d{1,2}:\\d{2})\\s*([AP]\\.?M\\.?)\\b",re.I)
+  for label,url in pages:
+   try:
+    rr=S.get(url,timeout=(5,12)); rr.raise_for_status()
+    parser=ScheduleRows(); parser.feed(rr.text)
+    found=[]
+    for row in parser.rows:
+     cells=[unescape(x).strip() for x in row]
+     joined=" | ".join(cells)
+     dm=date_re.search(joined); tm=time_re.search(joined)
+     if not dm or not tm: continue
+     month,day,year=dm.groups()
+     date_text=month+" "+day+" "+year
+     try: release_date=datetime.strptime(date_text,"%b %d %Y")
+     except ValueError:
+      try: release_date=datetime.strptime(date_text,"%B %d %Y")
+      except ValueError: continue
+     time_text=tm.group(1)+" "+tm.group(2).replace(".","").upper()
+     try: release_time=datetime.strptime(time_text,"%I:%M %p").time()
+     except ValueError: continue
+     t=datetime.combine(release_date.date(),release_time,tzinfo=eastern).astimezone(timezone.utc)
+     hours=(t-now).total_seconds()/3600
+     if -1<=hours<=24*60:
+      found.append({"name":label,"time_utc":t.isoformat(),"date_utc":t.strftime("%Y-%m-%d"),"time_exact":True,"in_hours":round(hours,1),"source":"US BLS official HTML schedule","source_url":url})
+    # Keep only one entry per release date from each official schedule.
+    seen_dates=set()
+    for event in sorted(found,key=lambda x:x["date_utc"]):
+     if event["date_utc"] in seen_dates: continue
+     seen_dates.add(event["date_utc"]); out.append(event)
+   except Exception as exc:
+    # Diagnostics are kept for status visibility; don't abort the market-data run.
+    pass
+ except Exception: pass
  # If the official ICS feed is empty, also retain official FOMC meeting dates parsed above.
  unique={}
  for e in out:
