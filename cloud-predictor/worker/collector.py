@@ -283,95 +283,47 @@ def load_manual_inputs():
   return json.loads(p.read_text(encoding="utf-8")) if p.exists() else {}
  except Exception: return {}
 def automatic_macro_events():
- """Automate macro event countdowns from official BLS and Federal Reserve calendars."""
- from html.parser import HTMLParser
+ """Fetch upcoming BLS release dates/times from official monthly pages plus FOMC meeting dates."""
  from html import unescape
  now=datetime.now(timezone.utc);out=[]
  wanted=("consumer price index","producer price index","employment situation","job openings and labor turnover","productivity and costs","employment cost index","import and export price","retail sales","personal income and outlays","gross domestic product")
  eastern=__import__("zoneinfo").ZoneInfo("America/New_York")
- # Primary: official BLS monthly release-list pages, current month plus next two.
- class TableParser(HTMLParser):
-  def __init__(self):
-   super().__init__(convert_charrefs=True);self.rows=[];self.row=None;self.cell=None
-  def handle_starttag(self,tag,attrs):
-   if tag=="tr":self.row=[]
-   elif tag in ("td","th") and self.row is not None:self.cell=[]
-  def handle_data(self,data):
-   if self.cell is not None:self.cell.append(data)
-  def handle_endtag(self,tag):
-   if tag in ("td","th") and self.cell is not None:self.row.append(" ".join("".join(self.cell).split()));self.cell=None
-   elif tag=="tr" and self.row is not None:
-    if self.row:self.rows.append(self.row)
-    self.row=None;self.cell=None
- weekday="Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday"
- month_names="January|February|March|April|May|June|July|August|September|October|November|December"
- row_re=re.compile(rf"(?:{weekday}),?\s+({month_names})\s+(\d{{1,2}}),?\s+(20\d{{2}})\s+(\d{{1,2}}:\d{{2}}\s+[AP]M)",re.I)
+ weekday=r"(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)"
+ month=r"(?:January|February|March|April|May|June|July|August|September|October|November|December)"
+ date_time_re=re.compile(r"(?:"+weekday+r"),?\s+("+month+r")\s+(\d{1,2}),\s+(20\d{2})\s+(\d{1,2}:\d{2}\s+[AP]M)",re.I)
  for offset in range(3):
-  year=now.year;month=now.month+offset
-  while month>12:year+=1;month-=12
-  url=f"https://www.bls.gov/schedule/{year}/{month:02d}_sched_list.htm"
+  year=now.year;month_num=now.month+offset
+  while month_num>12:year+=1;month_num-=12
+  url="https://www.bls.gov/schedule/%d/%02d_sched_list.htm"%(year,month_num)
   try:
    resp=S.get(url,timeout=(5,12));resp.raise_for_status()
-   parser=TableParser();parser.feed(resp.text)
-   for row in parser.rows:
-    joined=" ".join(part for part in row if part).strip()
-    match=row_re.search(joined)
-    title=" ".join(joined[match.end():].split()) if match else ""
-    if not match:
-     continue
+   raw=unescape(re.sub(r"<[^>]+>"," ",resp.text));raw=re.sub(r"\s+"," ",raw)
+   matches=list(date_time_re.finditer(raw))
+   for i,m in enumerate(matches):
+    end=matches[i+1].start() if i+1<len(matches) else len(raw)
+    title=raw[m.end():end].strip(" |:-\t")
     if not any(key in title.lower() for key in wanted):continue
     try:
-     dt=datetime.strptime(match.group(1)+" "+match.group(2)+" "+match.group(3)+" "+match.group(4),"%B %d %Y %I:%M %p")
+     dt=datetime.strptime("%s %s %s %s"%(m.group(1),m.group(2),m.group(3),m.group(4)),"%B %d %Y %I:%M %p")
      t=dt.replace(tzinfo=eastern).astimezone(timezone.utc);hours=(t-now).total_seconds()/3600
      if -1<=hours<=24*75:out.append({"name":title[:180],"time_utc":t.isoformat(),"date_utc":t.strftime("%Y-%m-%d"),"time_exact":True,"in_hours":round(hours,1),"source":"US BLS official monthly release schedule","url":url})
     except Exception:continue
-  except Exception:pass
- # Text-only fallback works even if BLS changes table markup.
- if not any(str(e.get("source","")).startswith("US BLS official") for e in out):
-  for offset in range(3):
-   year=now.year;month=now.month+offset
-   while month>12:year+=1;month-=12
-   url=f"https://www.bls.gov/schedule/{year}/{month:02d}_sched_list.htm"
-   try:
-    resp=S.get(url,timeout=(5,12));resp.raise_for_status()
-    raw=unescape(re.sub(r"<[^>]+>"," ",resp.text));raw=re.sub(r"\s+"," ",raw)
-    matches=list(row_re.finditer(raw))
-    for i,m in enumerate(matches):
-     stop=matches[i+1].start() if i+1<len(matches) else len(raw)
-     title=raw[m.end():stop].strip(" :-|")
-     if not any(key in title.lower() for key in wanted):continue
-     try:
-      dt=datetime.strptime(m.group(1)+" "+m.group(2)+" "+m.group(3)+" "+m.group(4),"%B %d %Y %I:%M %p")
-      t=dt.replace(tzinfo=eastern).astimezone(timezone.utc);hours=(t-now).total_seconds()/3600
-      if -1<=hours<=24*75:out.append({"name":title[:180],"time_utc":t.isoformat(),"date_utc":t.strftime("%Y-%m-%d"),"time_exact":True,"in_hours":round(hours,1),"source":"US BLS official monthly release schedule (text fallback)","url":url})
-     except Exception:continue
-   except Exception:pass
- # Federal Reserve FOMC meetings: official page supplies dates, not the decision time.
- fed_url="https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm"
- fed_count=0
+  except Exception:continue
  try:
-  resp=S.get(fed_url,timeout=(5,12));resp.raise_for_status()
+  resp=S.get("https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm",timeout=(5,12));resp.raise_for_status()
   html=unescape(re.sub(r"<[^>]+>"," ",resp.text));html=re.sub(r"\s+"," ",html)
   sections=list(re.finditer(r"(20\d{2})\s+FOMC Meetings",html,re.I))
   for i,m in enumerate(sections):
    year=int(m.group(1))
    if year<now.year or year>now.year+1:continue
    stop=sections[i+1].start() if i+1<len(sections) else len(html);section=html[m.end():stop]
-   for item in re.finditer(r"(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{1,2})\s*[–-]\s*(\d{1,2})",section,re.I):
-    mon,day,_=item.groups()
+   for item in re.finditer(r"("+month+r")\s+(\d{1,2})\s*[–-]\s*(\d{1,2})",section,re.I):
+    month_name,day,_=item.groups()
     try:
-     dt=datetime.strptime(mon+" "+day+" "+str(year),"%B %d %Y").replace(tzinfo=timezone.utc);hours=(dt-now).total_seconds()/3600
-     if -24<=hours<=24*90:
-      out.append({"name":"FOMC meeting (date only; announcement time not inferred)","time_utc":None,"date_utc":dt.strftime("%Y-%m-%d"),"time_exact":False,"in_hours":None,"days_away":round(hours/24,1),"source":"Federal Reserve official calendar","url":fed_url});fed_count+=1
+     t=datetime.strptime(month_name+" "+day+" "+str(year),"%B %d %Y").replace(tzinfo=timezone.utc);hours=(t-now).total_seconds()/3600
+     if -24<=hours<=24*90:out.append({"name":"FOMC meeting (date only; announcement time not inferred)","time_utc":None,"date_utc":t.strftime("%Y-%m-%d"),"time_exact":False,"in_hours":None,"days_away":round(hours/24,1),"source":"Federal Reserve official calendar","url":"https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm"})
     except Exception:continue
  except Exception:pass
- # Calendar fallback for the currently published 2026 dates if the Fed page is temporarily blocked.
- if fed_count==0 and now.year<=2026 and now.year+1>=2026:
-  for mon,day in (("October",27),("December",8)):
-   try:
-    dt=datetime.strptime(f"{mon} {day} 2026","%B %d %Y").replace(tzinfo=timezone.utc);hours=(dt-now).total_seconds()/3600
-    if -24<=hours<=24*90:out.append({"name":"FOMC meeting (fallback date; verify official calendar)","time_utc":None,"date_utc":dt.strftime("%Y-%m-%d"),"time_exact":False,"in_hours":None,"days_away":round(hours/24,1),"source":"Fallback dates from Federal Reserve 2026 meeting calendar","url":fed_url})
-   except Exception:pass
  unique={}
  for event in out:
   key=(event["name"],event["date_utc"])
