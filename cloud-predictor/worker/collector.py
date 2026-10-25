@@ -855,21 +855,18 @@ def main():
     if isinstance(freq,(int,float)): row+=f" · analogue up {freq:.0f}%"
     lines.append(row)
    lines.append("")
-  # ETF flows: display five reported sessions, capped at a three-calendar-day lag to avoid provisional/latest-day revisions.
+  # Compact recent ETF and macro summary.
   etfs=(snap.get("model_context",{}).get("etf_flows",{}) or {})
-lines.extend(["━━━━━━━━━━━━━━━━━━","💸 ETF FLOWS · LAST 4 CALENDAR DAYS"])
-  etf_rows=[]
+  lines.extend(["━━━━━━━━━━━━━━━━━━","💸 ETF FLOWS · RECENT WINDOW"])
   for coin in ("BTC","ETH","SOL","XRP"):
-   meta=etfs.get(coin,{}) or {}
-   value=meta.get("five_session_net_flow_usd")
+   meta=etfs.get(coin,{}) or {}; value=meta.get("five_session_net_flow_usd")
    if value is None:
-    lines.append(f"• {coin}: N/A (source has no usable rows in window)")
+    lines.append(f"• {coin}: N/A")
     continue
    sign="🟢" if value>0 else "🔴" if value<0 else "⚪"
-   start=meta.get("period_start","?"); end=meta.get("period_end","?")
-   lines.append(f"{sign} {coin} {value/1_000_000:+,.1f}M USD · {start[5:]}–{end[5:]} · {meta.get('sessions','?')} sessions")
-  lines.append("XRP uses holdings-derived estimates; other assets use reported ETF table totals.")
-  
+   start_date=meta.get("period_start","?"); end_date=meta.get("period_end","?")
+   lines.append(f"{sign} {coin} {value/1_000_000:+,.1f}M · {start_date[5:]}–{end_date[5:]} ({meta.get('sessions','?')} sessions)")
+  lines.append("XRP is holdings-derived; BTC/ETH/SOL use reported ETF totals.")
   evs=snap.get("model_context",{}).get("events",[]) or []
   lines.extend(["","━━━━━━━━━━━━━━━━━━","🗓 MACRO WATCH"])
   if evs:
@@ -887,29 +884,16 @@ lines.extend(["━━━━━━━━━━━━━━━━━━","💸 ETF
     if "error" in cv: continue
     hh=((cv.get("model",{}) or {}).get("horizons",{}) or {}).get("24h",{}) or {}
     pp=hh.get("p_up"); bias=hh.get("bias","N/A")
-    if isinstance(pp,(int,float)): lines.append(f"{coin} 24h: {bias} ({pp*100:.0f}% up)")
-  else: lines.append("Upcoming event calendar unavailable.")
-  
-  # Market-implied macro scenarios from Polymarket; separate odds from crypto price impact.
+    if isinstance(pp,(int,float)): lines.append(f"{coin}: {bias}, P(up) {pp*100:.0f}%")
+  else: lines.append("Next macro event unavailable.")
   pm=(snap.get("model_context",{}).get("prediction_markets",{}) or {})
-  lines.extend(["","━━━━━━━━━━━━━━━━━━","🔮 MACRO CONSENSUS & CRYPTO SCENARIOS"])
-  if pm.get("markets"):
-   for market in pm.get("markets",[])[:3]:
-    lines.append(f"• {str(market.get('title','Macro market'))[:115]}")
-    lines.append(f"   Source: Polymarket · 24h volume {float(market.get('volume_24h_usd') or 0):,.0f} USD")
-    for outcome in market.get("outcomes",[])[:2]:
-     odds=", ".join(f"{x.get('outcome')}: {x.get('probability_pct')}%" for x in outcome.get("outcomes",[])[:4])
-     lines.append(f"   {str(outcome.get('question',''))[:75]} — {odds}")
-   lines.append("Scenario guide (directional, not a guaranteed price target):")
-   lines.append("• Softer inflation / less-hawkish Fed: usually supportive if yields and USD fall.")
-   lines.append("• Hotter inflation / more-hawkish Fed: usually a headwind if yields and USD rise.")
-   lines.append("• Mixed result or already-priced news: whipsaw risk; watch US 2Y yield, DXY and BTC reaction.")
-   lines.append("Polymarket outcome odds are not coin-price targets.")
-  else:
-   lines.append("No relevant live Polymarket macro market was parsed this run.")
-   lines.append("Softer inflation / less-hawkish Fed may support crypto if yields and USD fall; hotter inflation / hawkish guidance may pressure crypto if yields and USD rise.")
-   if pm.get("error"): lines.append("Feed status: "+str(pm.get("error"))[:130])
-  lines.append("Odds are market-implied estimates, may be thinly traded, and are not guarantees.")
+  markets=pm.get("markets",[]) or []
+  if markets:
+   m=markets[0]; outs=(m.get("outcomes",[]) or [])
+   odds=[]
+   for group in outs[:1]: odds.extend(f"{x.get('outcome')} {x.get('probability_pct')}%" for x in (group.get("outcomes",[]) or [])[:2])
+   if odds: lines.append("Market odds: "+str(m.get("title","Macro"))[:65]+" · "+", ".join(odds))
+  
   lines.extend(["","━━━━━━━━━━━━━━━━━━","🎯 TRADE PLAN"])
   if generated_setups:
    for c,su in generated_setups.items():
