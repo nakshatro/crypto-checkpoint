@@ -62,6 +62,31 @@ def main():
                 warnings.append(f"{coin} ETF flow source failed: {meta['error']}")
             elif not meta.get("updated_at"):
                 warnings.append(f"{coin} ETF flow has no source timestamp")
+        try:
+            paper = load_json("paper_trades.json")
+            trades = paper.get("trades") or []
+            closed = [t for t in trades if t.get("status") == "closed"]
+            opened = [t for t in trades if t.get("status") == "open"]
+            summary = paper.get("summary") or {}
+            if summary.get("closed_trades") != len(closed):
+                errors.append(f"Paper-trade closed count mismatch: summary={summary.get('closed_trades')} ledger={len(closed)}")
+            if summary.get("open_trades") != len(opened):
+                errors.append(f"Paper-trade open count mismatch: summary={summary.get('open_trades')} ledger={len(opened)}")
+            wins = sum(1 for t in closed if isinstance(t.get("net_return_pct"), (int, float)) and t["net_return_pct"] > 0)
+            if summary.get("wins_net") != wins:
+                errors.append(f"Paper-trade win count mismatch: summary={summary.get('wins_net')} ledger={wins}")
+            for t in trades:
+                if t.get("status") == "closed" and not t.get("exit_time_utc"):
+                    warnings.append(f"Closed trade missing exit time: {t.get('trade_id', 'unknown trade')}")
+                if t.get("status") == "open" and t.get("exit_time_utc"):
+                    errors.append(f"Open trade has exit time: {t.get('trade_id', 'unknown trade')}")
+            paper_updated = parse_time(paper.get("updated_at"))
+            if not paper_updated:
+                errors.append("paper_trades.json has no valid updated_at timestamp")
+            elif (now - paper_updated).total_seconds() > MAX_AGE_HOURS * 3600:
+                errors.append(f"paper_trades.json is stale: {(now-paper_updated).total_seconds()/3600:.1f} hours old")
+        except ValueError as exc:
+            errors.append(str(exc))
     except ValueError as exc:
         errors.append(str(exc))
 
