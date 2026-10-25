@@ -785,60 +785,67 @@ def main():
    add_event("auto-setup:"+c+":"+side,f"PROVISIONAL SETUP — {c} {side.upper()} | reference ${price:,.6g} | SL ${stop:,.6g} | TP1 ${target:,.6g} | model P(up) {p*100:.1f}% | confidence {conf:.2f}. Experimental and uncalibrated; confirm structure before trading.")
  nstate["last_setup"]=generated_setups
  if nstate.get("last_hourly_utc_hour")!=hour_key or os.getenv("TELEGRAM_FORCE_SEND","").lower() in ("1","true","yes"):
-  lines=["📊 CRYPTO CHECKPOINT | HOURLY","🕒 "+now_dt.strftime("%d %b %Y · %H:%M UTC"),"⚠️ Model probabilities are experimental, not calibrated.",""]
+  lines=["📊 CRYPTO CHECKPOINT","🕒 "+now_dt.strftime("%d %b %Y · %H:%M UTC"),"━━━━━━━━━━━━━━━━━━","⚠️ Experimental model; probabilities are not calibrated.",""]
   for c in ("BTC","ETH","XRP","SOL"):
    v=snap["coins"].get(c,{})
-   if "error" in v: lines.extend([f"🔴 {c} — DATA UNAVAILABLE",str(v.get("error",""))[:100],""]); continue
-   m=v.get("model",{}) or {}; h=(m.get("horizons",{}) or {}).get("24h",{}) or {}; p=h.get("p_up"); conf=(m.get("confidence",{}) or {}).get("label","unknown")
-   f24=next((x for x in v.get("forecasts",[]) if x.get("horizon")=="24h"),{}); med=f24.get("median_return_pct")
-   ch=float(v.get("change_1h_pct") or 0); arrow="🟢" if ch>0 else "🔴" if ch<0 else "⚪"
-   lines.append(f"{'🟠' if c=='BTC' else '🔵' if c=='ETH' else '🟣' if c=='XRP' else '🟢'} {c}  |  ${v.get('price',0):,.6g}")
-   lines.append(f"   1h: {arrow} {ch:+.2f}%  ·  Confidence: {conf}")
-   mh=(m.get("horizons",{}) or {})
+   if "error" in v:
+    lines.extend([f"🔴 {c}  |  DATA UNAVAILABLE",f"   {str(v.get('error',''))[:90]}",""])
+    continue
+   m=v.get("model",{}) or {}; conf=(m.get("confidence",{}) or {}).get("label","unknown")
+   ch=float(v.get("change_1h_pct") or 0)
+   arrow="🟢" if ch>0 else "🔴" if ch<0 else "⚪"
    price=float(v.get("price") or 0)
+   icon={"BTC":"🟠","ETH":"🔵","XRP":"🟣","SOL":"🟢"}.get(c,"⚪")
+   lines.append(f"{icon} {c}  ${price:,.6g}  |  1h {arrow}{ch:+.2f}%")
+   lines.append(f"   Confidence: {conf}")
+   mh=(m.get("horizons",{}) or {})
    for horizon,label in (("4h","4H"),("24h","24H"),("72h","72H")):
-    hh=mh.get(horizon,{}) or {}
-    pp=hh.get("p_up"); bias=hh.get("bias","Unavailable")
+    hh=mh.get(horizon,{}) or {}; bias=hh.get("bias","Unavailable")
     analogue=next((x for x in v.get("forecasts",[]) if x.get("horizon")==horizon),{})
-    medh=analogue.get("median_return_pct"); freq=analogue.get("up_frequency_pct")
-    band=analogue.get("range_10_90_pct") or []
+    medh=analogue.get("median_return_pct"); band=analogue.get("range_10_90_pct") or []
+    pp=hh.get("p_up"); freq=analogue.get("up_frequency_pct")
     if isinstance(medh,(int,float)) and price>0:
      target=price*(1+medh/100)
-     line=f"   {label} {bias}: target ${target:,.6g} ({medh:+.2f}%)"
+     row=f"   {label} {bias} · target ${target:,.6g} ({medh:+.2f}%)"
     elif isinstance(pp,(int,float)):
-     line=f"   {label} {bias}: model P(up) {pp*100:.0f}%"
+     row=f"   {label} {bias} · P(up) {pp*100:.0f}%"
     else:
-     line=f"   {label}: outlook unavailable"
+     row=f"   {label} outlook unavailable"
     if price>0 and len(band)>=2:
      low=price*(1+float(band[0])/100); high=price*(1+float(band[1])/100)
-     line+=f" | range ${low:,.6g}–${high:,.6g}"
-    if isinstance(freq,(int,float)): line+=f" | up {freq:.0f}%"
-    elif isinstance(pp,(int,float)): line+=f" | P(up) {pp*100:.0f}%"
-    lines.append(line)
+     row+=f" · range ${low:,.6g}–${high:,.6g}"
+    if isinstance(freq,(int,float)): row+=f" · analogue up {freq:.0f}%"
+    lines.append(row)
    lines.append("")
   evs=snap.get("model_context",{}).get("events",[]) or []
+  lines.extend(["━━━━━━━━━━━━━━━━━━","🗓 UPCOMING MACRO EVENTS"])
   if evs:
-   lines.append("🗓 UPCOMING MACRO EVENTS")
    for e in evs[:3]:
     event_name=str(e.get("name") or "Macro event")
-    when=e.get("time_utc") or e.get("date_utc") or "time not confirmed"
-    countdown=(f" · in {e.get('in_hours'):.1f}h" if isinstance(e.get('in_hours'),(int,float)) else f" · in {e.get('days_away')}d" if isinstance(e.get('days_away'),(int,float)) else "")
+    exact=bool(e.get("time_exact") and e.get("time_utc"))
+    when=e.get("time_utc") if exact else (e.get("date_utc") or "date not confirmed")
+    if exact:
+     try: when=datetime.fromisoformat(str(when).replace("Z","+00:00")).strftime("%d %b · %H:%M UTC")
+     except Exception: pass
+    else: when=str(when)[:10]+" · time unconfirmed"
+    countdown=(f" · T−{e.get('in_hours'):.0f}h" if isinstance(e.get('in_hours'),(int,float)) else f" · T−{e.get('days_away'):.1f}d" if isinstance(e.get('days_away'),(int,float)) else "")
     key="|".join((str(e.get("name","Event")),str(e.get("date_utc","")),str(e.get("source",""))))
     tracked=next((x for x in event_tracker.get("events",[]) if x.get("key")==key),{})
     tracking=str(tracked.get("status","tracking pending")).replace("_"," ")
-    lines.append(f"• {event_name} — {when}{countdown} | tracker: {tracking}")
-   lines.append("Event tracker saves pre-event 4h/24h/72h outlooks and checks observed post-event returns when the calendar has an exact release time.")
+    lines.append(f"• {event_name} — {when}{countdown}")
+    lines.append(f"   Tracker: {tracking}")
   else:
-   lines.append("🗓 MACRO EVENTS")
-   lines.append("Calendar feeds unavailable this run; retrying automatically.")
-  lines.extend(["","🎯 TRADE PLAN","Setups appear only when model direction, confidence and data coverage pass thresholds."])
+   lines.append("Calendar unavailable this run; retrying next refresh.")
+  lines.extend(["","━━━━━━━━━━━━━━━━━━","🎯 TRADE PLAN"])
   if generated_setups:
    for c,su in generated_setups.items():
-    lines.append(f"• {c} {su['side'].upper()} | Ref ${su['reference_price']:,.6g} | SL ${su['stop_loss']:,.6g} | TP1 ${su['take_profit_1']:,.6g}")
-   lines.append("⚠️ Experimental levels; verify the chart and risk before trading.")
+    lines.append(f"• {c} {su['side'].upper()}  |  Ref ${su['reference_price']:,.6g}")
+    lines.append(f"   SL ${su['stop_loss']:,.6g}  ·  TP1 ${su['take_profit_1']:,.6g}  ·  R:R 1:{su['reward_risk']:.1f}")
+   lines.append("⚠️ Verify chart structure and position risk before entry.")
   else:
-   lines.append("⏸ NO TRADE — no setup passed all thresholds.")
-  lines.extend(["","📌 KEY NOTES","• OI, funding and liquidation alerts are sent separately when thresholds trigger.","• Missing inputs and conflicting forecasts are reported as alerts.","• Model probabilities are not guaranteed outcomes."])
+   lines.append("⏸ NO TRADE")
+   lines.append("No setup passed direction, confidence and coverage filters.")
+  lines.extend(["","━━━━━━━━━━━━━━━━━━","ℹ️ Alerts for OI, funding, liquidations and data issues are sent separately."])
   notify_lines.insert(0,"\n".join(lines)); nstate["last_hourly_utc_hour"]=hour_key
  if notify_lines:
   message="\n\n".join(notify_lines)
