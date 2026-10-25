@@ -214,7 +214,7 @@ def ret_std(vals,n):
  rr=[math.log(vals[i]/vals[i-1]) for i in range(max(1,len(vals)-n),len(vals)) if vals[i]>0 and vals[i-1]>0]
  return statistics.pstdev(rr) if len(rr)>1 else None
 def automatic_etf_flows():
- """Fetch daily net flows for BTC/ETH/SOL ETF tables and XRP holdings-derived ETF flows."""
+ """Fetch rolling five-session ETF flows, with the window ending no later than three calendar days before UTC today."""
  from html.parser import HTMLParser
  import csv, io
  class Parser(HTMLParser):
@@ -261,7 +261,7 @@ def automatic_etf_flows():
     if not d:continue
     total_value=numval(row[total_idx])
     if total_value is not None:rows.append((d,total_value))
-   bydate={d:v for d,v in rows};recent=sorted(bydate.items())[-5:]
+   bydate={d:v for d,v in rows}; cutoff=datetime.now(timezone.utc).date()-timedelta(days=3); recent=sorted((d,v) for d,v in bydate.items() if d<=cutoff)[-5:]
    if len(recent)<3:raise RuntimeError("Fewer than 3 dated rows with a reported Total parsed")
    total=sum(v for _,v in recent)*1_000_000
    result["flows_usd"][coin]=round(total,2)
@@ -277,7 +277,7 @@ def automatic_etf_flows():
    usd=numval(row.get("flow_usd") or "")
    if d and status=="computed" and usd is not None and row_status in ("settled","provisional"):
     daily.setdefault(d,0.0);daily[d]+=usd
-  recent=sorted(daily.items())[-5:]
+  cutoff=datetime.now(timezone.utc).date()-timedelta(days=3);recent=sorted((d,v) for d,v in daily.items() if d<=cutoff)[-5:]
   if len(recent)<3:raise RuntimeError("Fewer than 3 valid XRP ETF flow dates parsed")
   total=sum(v for _,v in recent)
   result["flows_usd"]["XRP"]=round(total,2)
@@ -850,7 +850,7 @@ def main():
     if isinstance(freq,(int,float)): row+=f" · analogue up {freq:.0f}%"
     lines.append(row)
    lines.append("")
-  # ETF flows: display the reported rolling five-session net total and source window.
+  # ETF flows: display five reported sessions, capped at a three-calendar-day lag to avoid provisional/latest-day revisions.
   etfs=(snap.get("model_context",{}).get("etf_flows",{}) or {})
   lines.extend(["━━━━━━━━━━━━━━━━━━","💸 ETF INFLOWS / OUTFLOWS (5 SESSIONS)"])
   etf_rows=[]
