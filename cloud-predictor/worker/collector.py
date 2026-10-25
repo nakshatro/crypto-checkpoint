@@ -817,8 +817,25 @@ def main():
     if isinstance(freq,(int,float)): row+=f" · analogue up {freq:.0f}%"
     lines.append(row)
    lines.append("")
+  # ETF flows: display the reported rolling five-session net total and source window.
+  etfs=(snap.get("model_context",{}).get("etf_flows",{}) or {})
+  lines.extend(["━━━━━━━━━━━━━━━━━━","💸 ETF INFLOWS / OUTFLOWS (5 SESSIONS)"])
+  etf_rows=[]
+  for coin in ("BTC","ETH","SOL","XRP"):
+   meta=etfs.get(coin,{}) or {}
+   value=meta.get("five_session_net_flow_usd")
+   if value is None:
+    lines.append(f"• {coin}: unavailable"+(f" — {str(meta.get('error'))[:85]}" if meta.get("error") else ""))
+    continue
+   sign="🟢" if value>0 else "🔴" if value<0 else "⚪"
+   direction="net inflow" if value>0 else "net outflow" if value<0 else "flat"
+   start=meta.get("period_start","?"); end=meta.get("period_end","?")
+   lines.append(f"{sign} {coin}: {value/1_000_000:+,.1f}M USD · {direction}")
+   lines.append(f"   Window: {start} to {end} · {meta.get('sessions','?')} sessions")
+   if meta.get("caveat"): lines.append(f"   Note: {str(meta.get('caveat'))[:130]}")
+  lines.append("Source window is shown per asset; XRP flows are holdings-derived estimates, not an identical ETF-table methodology.")
   evs=snap.get("model_context",{}).get("events",[]) or []
-  lines.extend(["━━━━━━━━━━━━━━━━━━","🗓 UPCOMING MACRO EVENTS"])
+  lines.extend(["","━━━━━━━━━━━━━━━━━━","🗓 MACRO EVENTS & PRE-EVENT OUTLOOK"])
   if evs:
    for e in evs[:3]:
     event_name=str(e.get("name") or "Macro event")
@@ -834,6 +851,19 @@ def main():
     tracking=str(tracked.get("status","tracking pending")).replace("_"," ")
     lines.append(f"• {event_name} — {when}{countdown}")
     lines.append(f"   Tracker: {tracking}")
+    # Show the current model outlook as a pre-event baseline, not a claimed causal impact forecast.
+    for coin in ("BTC","ETH"):
+     cv=snap.get("coins",{}).get(coin,{})
+     if "error" in cv: continue
+     mh=(cv.get("model",{}) or {}).get("horizons",{}) or {}
+     hh=mh.get("24h",{}) or {}; pp=hh.get("p_up"); bias=hh.get("bias","unavailable")
+     fc=next((x for x in cv.get("forecasts",[]) if x.get("horizon")=="24h"),{})
+     med=fc.get("median_return_pct")
+     if isinstance(pp,(int,float)):
+      outlook=f"{coin} 24h baseline: {bias}, P(up) {pp*100:.0f}%"
+      if isinstance(med,(int,float)): outlook+=f", analogue median {med:+.2f}%"
+      lines.append("   "+outlook)
+    lines.append("   Scenario note: this is the current market baseline, not a prediction of the event result or causal price impact.")
   else:
    lines.append("Calendar unavailable this run; retrying next refresh.")
   lines.extend(["","━━━━━━━━━━━━━━━━━━","🎯 TRADE PLAN"])
