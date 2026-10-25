@@ -364,11 +364,44 @@ def automatic_macro_events():
   if key not in unique:unique[key]=event
  return sorted(unique.values(),key=lambda e:(e["date_utc"],0 if e.get("time_exact") else 1,e["name"]))[:20]
 
+def fetch_prediction_market_outlooks(events):
+ """Fetch public Polymarket event probabilities relevant to macro releases."""
+ now=datetime.now(timezone.utc); found=[]
+ try:
+  resp=S.get("https://gamma-api.polymarket.com/events",params={"active":"true","closed":"false","limit":100,"order":"volume24hr","ascending":"false"},timeout=(5,12))
+  resp.raise_for_status(); payload=resp.json()
+  if not isinstance(payload,list): raise RuntimeError("Unexpected Polymarket Gamma response")
+  macro_terms=("federal reserve","fed rate","interest rate","fomc","consumer price index","cpi","inflation","producer price index","ppi","nonfarm payroll","unemployment","jobs report","treasury yield")
+  for event in payload:
+   title=str(event.get("title") or event.get("question") or "")
+   if not any(term in title.lower() for term in macro_terms): continue
+   outcomes=[]
+   for market in (event.get("markets") or [])[:8]:
+    question=str(market.get("question") or market.get("groupItemTitle") or title)
+    try:
+     import json as _json
+     names=market.get("outcomes",[]); prices=market.get("outcomePrices",[])
+     if isinstance(names,str): names=_json.loads(names)
+     if isinstance(prices,str): prices=_json.loads(prices)
+     odds=[]
+     if isinstance(names,list) and isinstance(prices,list):
+      for name,p in zip(names,prices):
+       try: odds.append({"outcome":str(name),"probability_pct":round(float(p)*100,1)})
+       except Exception: pass
+      if odds: outcomes.append({"question":question,"outcomes":odds})
+    except Exception: pass
+   if outcomes:
+    found.append({"source":"Polymarket public event market","title":title,"url":"https://polymarket.com/event/"+str(event.get("slug") or ""),"volume_24h_usd":event.get("volume24hr"),"outcomes":outcomes[:4],"updated_at":now.isoformat(),"note":"Market-implied odds, not guaranteed probabilities or price targets."})
+   if len(found)>=6: break
+ except Exception as e:
+  return {"status":"unavailable","source":"Polymarket Gamma public API","checked_at":now.isoformat(),"error":str(e)[:160],"markets":[]}
+ return {"status":"ok" if found else "no_matching_markets","source":"Polymarket Gamma public API","checked_at":now.isoformat(),"markets":found}
+
 def upcoming_manual_events(manual):
  # Retained for compatibility; all active events come from automatic feeds.
  return []
 def global_model_context():
- manual=load_manual_inputs(); etf_auto=automatic_etf_flows(); merged_flows=dict(manual.get("etf_flow_5d_usd") or {}); merged_flows.update(etf_auto.get("flows_usd") or {}); manual["etf_flow_5d_usd"]=merged_flows; manual["etf_flow_metadata"]=etf_auto.get("metadata",{}); events=automatic_macro_events(); live_bls=sum(1 for e in events if e.get("source")=="US BLS official monthly release schedule"); fallback_bls=sum(1 for e in events if "fallback" in str(e.get("source","")).lower()); fomc=sum(1 for e in events if e.get("source")=="Federal Reserve official calendar"); macro_status={"status":"ok" if live_bls>0 else ("degraded" if events else "unavailable"),"live_bls_events":live_bls,"fallback_bls_events":fallback_bls,"fomc_events":fomc,"checked_at":datetime.now(timezone.utc).isoformat(),"note":"Fallback events are estimates from a stored calendar and must not be treated as live-verified." if fallback_bls else ("Official BLS schedule parsed." if live_bls else "No verified official BLS events parsed.")}; out={"stablecoin_30d":None,"fear_greed":None,"headlines":[],"events":events,"macro_status":macro_status,"manual":manual,"etf_flow_metadata":manual["etf_flow_metadata"]}
+ manual=load_manual_inputs(); etf_auto=automatic_etf_flows(); merged_flows=dict(manual.get("etf_flow_5d_usd") or {}); merged_flows.update(etf_auto.get("flows_usd") or {}); manual["etf_flow_5d_usd"]=merged_flows; manual["etf_flow_metadata"]=etf_auto.get("metadata",{}); events=automatic_macro_events(); prediction_markets=fetch_prediction_market_outlooks(events); live_bls=sum(1 for e in events if e.get("source")=="US BLS official monthly release schedule"); fallback_bls=sum(1 for e in events if "fallback" in str(e.get("source","")).lower()); fomc=sum(1 for e in events if e.get("source")=="Federal Reserve official calendar"); macro_status={"status":"ok" if live_bls>0 else ("degraded" if events else "unavailable"),"live_bls_events":live_bls,"fallback_bls_events":fallback_bls,"fomc_events":fomc,"checked_at":datetime.now(timezone.utc).isoformat(),"note":"Fallback events are estimates from a stored calendar and must not be treated as live-verified." if fallback_bls else ("Official BLS schedule parsed." if live_bls else "No verified official BLS events parsed.")}; out={"stablecoin_30d":None,"fear_greed":None,"headlines":[],"events":events,"macro_status":macro_status,"prediction_markets":prediction_markets,"manual":manual,"etf_flow_metadata":manual["etf_flow_metadata"]}
  try:
   j=get_json("https://stablecoins.llama.fi/stablecoincharts/all")
   if len(j)>=31:
@@ -686,7 +719,7 @@ def update_event_tracker(events,snap,hist,now_dt):
  return store
 
 def main():
- now=datetime.now(timezone.utc).isoformat(); model_context=global_model_context(); model_context["btc_daily"]=daily_candles("BTCUSDT"); snap={"updated_at":now,"source":"OKX public hourly candles plus five-layer model; missing components disclosed","model_context":{"fear_greed":model_context.get("fear_greed",[])[-1] if model_context.get("fear_greed") else None,"stablecoin_30d":model_context.get("stablecoin_30d"),"headline_count":len(model_context.get("headlines",[])),"events":model_context.get("events",[]),"macro_status":model_context.get("macro_status",{}),"etf_flows":model_context.get("etf_flow_metadata",{})},"coins":{}}; issues=[]
+ now=datetime.now(timezone.utc).isoformat(); model_context=global_model_context(); model_context["btc_daily"]=daily_candles("BTCUSDT"); snap={"updated_at":now,"source":"OKX public hourly candles plus five-layer model; missing components disclosed","model_context":{"fear_greed":model_context.get("fear_greed",[])[-1] if model_context.get("fear_greed") else None,"stablecoin_30d":model_context.get("stablecoin_30d"),"headline_count":len(model_context.get("headlines",[])),"events":model_context.get("events",[]),"macro_status":model_context.get("macro_status",{}),"prediction_markets":model_context.get("prediction_markets",{}),"etf_flows":model_context.get("etf_flow_metadata",{})},"coins":{}}; issues=[]
  for coin,symbol in SYMBOLS.items():
   try:
    rows=fetch_rows(symbol); f,forecasts=make_forecasts(rows); last=rows[-1]
@@ -866,6 +899,26 @@ def main():
     lines.append("   Scenario note: this is the current market baseline, not a prediction of the event result or causal price impact.")
   else:
    lines.append("Calendar unavailable this run; retrying next refresh.")
+  # Market-implied macro scenarios from Polymarket; separate odds from crypto price impact.
+  pm=(snap.get("model_context",{}).get("prediction_markets",{}) or {})
+  lines.extend(["","━━━━━━━━━━━━━━━━━━","🔮 MACRO CONSENSUS & CRYPTO SCENARIOS"])
+  if pm.get("markets"):
+   for market in pm.get("markets",[])[:3]:
+    lines.append(f"• {str(market.get('title','Macro market'))[:115]}")
+    lines.append(f"   Source: Polymarket · 24h volume {float(market.get('volume_24h_usd') or 0):,.0f} USD")
+    for outcome in market.get("outcomes",[])[:2]:
+     odds=", ".join(f"{x.get('outcome')}: {x.get('probability_pct')}%" for x in outcome.get("outcomes",[])[:4])
+     lines.append(f"   {str(outcome.get('question',''))[:75]} — {odds}")
+   lines.append("Scenario guide (directional, not a guaranteed price target):")
+   lines.append("• Softer inflation / less-hawkish Fed: usually supportive if yields and USD fall.")
+   lines.append("• Hotter inflation / more-hawkish Fed: usually a headwind if yields and USD rise.")
+   lines.append("• Mixed result or already-priced news: whipsaw risk; watch US 2Y yield, DXY and BTC reaction.")
+   lines.append("Polymarket outcome odds are not coin-price targets.")
+  else:
+   lines.append("No relevant live Polymarket macro market was parsed this run.")
+   lines.append("Softer inflation / less-hawkish Fed may support crypto if yields and USD fall; hotter inflation / hawkish guidance may pressure crypto if yields and USD rise.")
+   if pm.get("error"): lines.append("Feed status: "+str(pm.get("error"))[:130])
+  lines.append("Odds are market-implied estimates, may be thinly traded, and are not guarantees.")
   lines.extend(["","━━━━━━━━━━━━━━━━━━","🎯 TRADE PLAN"])
   if generated_setups:
    for c,su in generated_setups.items():
