@@ -49,8 +49,12 @@ def main():
         macro_status = context.get("macro_status") or {}
         if not events:
             errors.append("No macro events in latest snapshot; this is not proof that no events are scheduled")
-        if macro_status and macro_status.get("status") not in ("ok", "degraded"):
+        if not macro_status:
+            errors.append("Macro calendar status is missing from latest.json; feed health cannot be verified")
+        elif macro_status.get("status") not in ("ok", "degraded"):
             errors.append("Macro calendar status is " + str(macro_status.get("status")))
+        if events and all("fallback" in str(e.get("source", "")).lower() for e in events):
+            errors.append("All macro events come from fallback data; live calendar retrieval/parsing is unverified")
         etf = context.get("etf_flows") or {}
         for coin in ("BTC", "ETH", "SOL", "XRP"):
             meta = etf.get(coin) or {}
