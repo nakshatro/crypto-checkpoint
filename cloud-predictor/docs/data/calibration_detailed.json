@@ -1,16 +1,16 @@
 {
-  "updated_at": "2026-10-25T01:27:23.797331+00:00",
+  "updated_at": "2026-10-25T06:30:39.268399+00:00",
   "method": "Nearest archived snapshot within 90m of target. Historical base-rate baseline is expanding and uses only earlier matured outcomes for that coin/horizon (starts at 50% until prior outcomes exist), avoiding look-ahead. Separate coin/horizon samples; overlapping forecast windows are not independent.",
   "horizons": {
     "4h": {
       "BTC": {
-        "n": 19,
-        "brier": 0.2753,
+        "n": 20,
+        "brier": 0.27276,
         "coinflip_brier": 0.25,
-        "skill_vs_coinflip": -0.10118,
-        "expanding_historical_base_rate_brier": 0.21917,
-        "skill_vs_expanding_historical_rate": -0.25608,
-        "directional_hit_rate": 0.3158,
+        "skill_vs_coinflip": -0.09106,
+        "expanding_historical_base_rate_brier": 0.21199,
+        "skill_vs_expanding_historical_rate": -0.28666,
+        "directional_hit_rate": 0.35,
         "rows": [
           {
             "forecast_time_utc": "2026-10-21T21:17:17.781125+00:00",
@@ -201,624 +201,664 @@
             "actual_up": true,
             "return_pct": 0.3499,
             "base_rate_p_up": 0.2368
+          },
+          {
+            "forecast_time_utc": "2026-10-25T01:27:09.640021+00:00",
+            "outcome_time_utc": "2026-10-25T06:30:27.726788+00:00",
+            "price_at_forecast": 80760.9,
+            "price_at_outcome": 80600.0,
+            "p_up": 0.474,
+            "actual_up": false,
+            "return_pct": -0.1992,
+            "base_rate_p_up": 0.275
           }
         ]
       },
       "ETH": {
-        "n": 19,
-        "brier": 0.26741,
+        "n": 20,
+        "brier": 0.26333,
         "coinflip_brier": 0.25,
-        "skill_vs_coinflip": -0.06963,
-        "expanding_historical_base_rate_brier": 0.29854,
-        "skill_vs_expanding_historical_rate": 0.10428,
-        "directional_hit_rate": 0.4737,
-        "rows": [
-          {
-            "forecast_time_utc": "2026-10-21T21:17:17.781125+00:00",
-            "outcome_time_utc": "2026-10-22T00:44:19.919439+00:00",
-            "price_at_forecast": 2492.01,
-            "price_at_outcome": 2477.07,
-            "p_up": 0.505,
-            "actual_up": false,
-            "return_pct": -0.5995,
-            "base_rate_p_up": 0.5
-          },
-          {
-            "forecast_time_utc": "2026-10-22T00:44:19.919439+00:00",
-            "outcome_time_utc": "2026-10-22T05:17:56.179078+00:00",
-            "price_at_forecast": 2477.07,
-            "price_at_outcome": 2439.02,
-            "p_up": 0.524,
-            "actual_up": false,
-            "return_pct": -1.5361,
-            "base_rate_p_up": 0.25
-          },
-          {
-            "forecast_time_utc": "2026-10-22T05:17:56.179078+00:00",
-            "outcome_time_utc": "2026-10-22T09:21:23.115253+00:00",
-            "price_at_forecast": 2439.02,
-            "price_at_outcome": 2404.52,
-            "p_up": 0.491,
-            "actual_up": false,
-            "return_pct": -1.4145,
-            "base_rate_p_up": 0.1667
-          },
-          {
-            "forecast_time_utc": "2026-10-22T10:22:24.685872+00:00",
-            "outcome_time_utc": "2026-10-22T15:26:22.376006+00:00",
-            "price_at_forecast": 2408.89,
-            "price_at_outcome": 2399.25,
-            "p_up": 0.466,
-            "actual_up": false,
-            "return_pct": -0.4002,
-            "base_rate_p_up": 0.125
-          },
-          {
-            "forecast_time_utc": "2026-10-22T11:39:25.677473+00:00",
-            "outcome_time_utc": "2026-10-22T15:26:22.376006+00:00",
-            "price_at_forecast": 2403.34,
-            "price_at_outcome": 2399.25,
-            "p_up": 0.457,
-            "actual_up": false,
-            "return_pct": -0.1702,
-            "base_rate_p_up": 0.125
-          },
-          {
-            "forecast_time_utc": "2026-10-22T15:26:22.376006+00:00",
-            "outcome_time_utc": "2026-10-22T19:20:17.974686+00:00",
-            "price_at_forecast": 2399.25,
-            "price_at_outcome": 2385.1,
-            "p_up": 0.46,
-            "actual_up": false,
-            "return_pct": -0.5898,
-            "base_rate_p_up": 0.0833
-          },
-          {
-            "forecast_time_utc": "2026-10-22T19:20:17.974686+00:00",
-            "outcome_time_utc": "2026-10-22T22:33:22.888046+00:00",
-            "price_at_forecast": 2385.1,
-            "price_at_outcome": 2385.39,
-            "p_up": 0.414,
-            "actual_up": true,
-            "return_pct": 0.0122,
-            "base_rate_p_up": 0.0714
-          },
-          {
-            "forecast_time_utc": "2026-10-22T20:24:40.989042+00:00",
-            "outcome_time_utc": "2026-10-23T01:07:23.807921+00:00",
-            "price_at_forecast": 2382.18,
-            "price_at_outcome": 2387.31,
-            "p_up": 0.409,
-            "actual_up": true,
-            "return_pct": 0.2153,
-            "base_rate_p_up": 0.0714
-          },
-          {
-            "forecast_time_utc": "2026-10-22T22:33:22.888046+00:00",
-            "outcome_time_utc": "2026-10-23T01:07:23.807921+00:00",
-            "price_at_forecast": 2385.39,
-            "price_at_outcome": 2387.31,
-            "p_up": 0.404,
-            "actual_up": true,
-            "return_pct": 0.0805,
-            "base_rate_p_up": 0.1875
-          },
-          {
-            "forecast_time_utc": "2026-10-23T01:07:23.807921+00:00",
-            "outcome_time_utc": "2026-10-23T06:10:51.087790+00:00",
-            "price_at_forecast": 2387.31,
-            "price_at_outcome": 2405.43,
-            "p_up": 0.395,
-            "actual_up": true,
-            "return_pct": 0.759,
-            "base_rate_p_up": 0.35
-          },
-          {
-            "forecast_time_utc": "2026-10-23T11:53:47.175952+00:00",
-            "outcome_time_utc": "2026-10-23T16:09:49.913715+00:00",
-            "price_at_forecast": 2400.62,
-            "price_at_outcome": 2406.22,
-            "p_up": 0.43,
-            "actual_up": true,
-            "return_pct": 0.2333,
-            "base_rate_p_up": 0.4091
-          },
-          {
-            "forecast_time_utc": "2026-10-23T16:09:49.913715+00:00",
-            "outcome_time_utc": "2026-10-23T20:00:31.015918+00:00",
-            "price_at_forecast": 2406.22,
-            "price_at_outcome": 2392.55,
-            "p_up": 0.42,
-            "actual_up": false,
-            "return_pct": -0.5681,
-            "base_rate_p_up": 0.4583
-          },
-          {
-            "forecast_time_utc": "2026-10-23T20:00:31.015918+00:00",
-            "outcome_time_utc": "2026-10-23T23:17:23.171740+00:00",
-            "price_at_forecast": 2392.55,
-            "price_at_outcome": 2369.56,
-            "p_up": 0.438,
-            "actual_up": false,
-            "return_pct": -0.9609,
-            "base_rate_p_up": 0.4231
-          },
-          {
-            "forecast_time_utc": "2026-10-24T01:45:22.722296+00:00",
-            "outcome_time_utc": "2026-10-24T06:41:29.794120+00:00",
-            "price_at_forecast": 2377.85,
-            "price_at_outcome": 2377.96,
-            "p_up": 0.467,
-            "actual_up": true,
-            "return_pct": 0.0046,
-            "base_rate_p_up": 0.3929
-          },
-          {
-            "forecast_time_utc": "2026-10-24T06:41:29.794120+00:00",
-            "outcome_time_utc": "2026-10-24T11:44:05.311758+00:00",
-            "price_at_forecast": 2377.96,
-            "price_at_outcome": 2364.45,
-            "p_up": 0.465,
-            "actual_up": false,
-            "return_pct": -0.5681,
-            "base_rate_p_up": 0.4333
-          },
-          {
-            "forecast_time_utc": "2026-10-24T11:44:05.311758+00:00",
-            "outcome_time_utc": "2026-10-24T15:05:47.501026+00:00",
-            "price_at_forecast": 2364.45,
-            "price_at_outcome": 2322.26,
-            "p_up": 0.442,
-            "actual_up": false,
-            "return_pct": -1.7843,
-            "base_rate_p_up": 0.4062
-          },
-          {
-            "forecast_time_utc": "2026-10-24T15:05:47.501026+00:00",
-            "outcome_time_utc": "2026-10-24T18:13:56.509722+00:00",
-            "price_at_forecast": 2322.26,
-            "price_at_outcome": 2324.95,
-            "p_up": 0.441,
-            "actual_up": true,
-            "return_pct": 0.1158,
-            "base_rate_p_up": 0.3824
-          },
-          {
-            "forecast_time_utc": "2026-10-24T18:13:56.509722+00:00",
-            "outcome_time_utc": "2026-10-24T21:01:23.643597+00:00",
-            "price_at_forecast": 2324.95,
-            "price_at_outcome": 2344.76,
-            "p_up": 0.443,
-            "actual_up": true,
-            "return_pct": 0.8521,
-            "base_rate_p_up": 0.4167
-          },
-          {
-            "forecast_time_utc": "2026-10-24T21:01:23.643597+00:00",
-            "outcome_time_utc": "2026-10-25T01:27:09.640021+00:00",
-            "price_at_forecast": 2344.76,
-            "price_at_outcome": 2356.69,
-            "p_up": 0.503,
-            "actual_up": true,
-            "return_pct": 0.5088,
-            "base_rate_p_up": 0.4474
-          }
-        ]
-      },
-      "SOL": {
-        "n": 19,
-        "brier": 0.2564,
-        "coinflip_brier": 0.25,
-        "skill_vs_coinflip": -0.02561,
-        "expanding_historical_base_rate_brier": 0.27934,
-        "skill_vs_expanding_historical_rate": 0.08211,
-        "directional_hit_rate": 0.4737,
-        "rows": [
-          {
-            "forecast_time_utc": "2026-10-21T21:17:17.781125+00:00",
-            "outcome_time_utc": "2026-10-22T00:44:19.919439+00:00",
-            "price_at_forecast": 107.88,
-            "price_at_outcome": 107.32,
-            "p_up": 0.505,
-            "actual_up": false,
-            "return_pct": -0.5191,
-            "base_rate_p_up": 0.5
-          },
-          {
-            "forecast_time_utc": "2026-10-22T00:44:19.919439+00:00",
-            "outcome_time_utc": "2026-10-22T05:17:56.179078+00:00",
-            "price_at_forecast": 107.32,
-            "price_at_outcome": 105.08,
-            "p_up": 0.529,
-            "actual_up": false,
-            "return_pct": -2.0872,
-            "base_rate_p_up": 0.25
-          },
-          {
-            "forecast_time_utc": "2026-10-22T05:17:56.179078+00:00",
-            "outcome_time_utc": "2026-10-22T09:21:23.115253+00:00",
-            "price_at_forecast": 105.08,
-            "price_at_outcome": 103.89,
-            "p_up": 0.521,
-            "actual_up": false,
-            "return_pct": -1.1325,
-            "base_rate_p_up": 0.1667
-          },
-          {
-            "forecast_time_utc": "2026-10-22T10:22:24.685872+00:00",
-            "outcome_time_utc": "2026-10-22T15:26:22.376006+00:00",
-            "price_at_forecast": 104.5,
-            "price_at_outcome": 104.6,
-            "p_up": 0.507,
-            "actual_up": true,
-            "return_pct": 0.0957,
-            "base_rate_p_up": 0.125
-          },
-          {
-            "forecast_time_utc": "2026-10-22T11:39:25.677473+00:00",
-            "outcome_time_utc": "2026-10-22T15:26:22.376006+00:00",
-            "price_at_forecast": 104.62,
-            "price_at_outcome": 104.6,
-            "p_up": 0.52,
-            "actual_up": false,
-            "return_pct": -0.0191,
-            "base_rate_p_up": 0.125
-          },
-          {
-            "forecast_time_utc": "2026-10-22T15:26:22.376006+00:00",
-            "outcome_time_utc": "2026-10-22T19:20:17.974686+00:00",
-            "price_at_forecast": 104.6,
-            "price_at_outcome": 103.53,
-            "p_up": 0.475,
-            "actual_up": false,
-            "return_pct": -1.0229,
-            "base_rate_p_up": 0.25
-          },
-          {
-            "forecast_time_utc": "2026-10-22T19:20:17.974686+00:00",
-            "outcome_time_utc": "2026-10-22T22:33:22.888046+00:00",
-            "price_at_forecast": 103.53,
-            "price_at_outcome": 103.48,
-            "p_up": 0.39,
-            "actual_up": false,
-            "return_pct": -0.0483,
-            "base_rate_p_up": 0.2143
-          },
-          {
-            "forecast_time_utc": "2026-10-22T20:24:40.989042+00:00",
-            "outcome_time_utc": "2026-10-23T01:07:23.807921+00:00",
-            "price_at_forecast": 103.37,
-            "price_at_outcome": 103.68,
-            "p_up": 0.405,
-            "actual_up": true,
-            "return_pct": 0.2999,
-            "base_rate_p_up": 0.2143
-          },
-          {
-            "forecast_time_utc": "2026-10-22T22:33:22.888046+00:00",
-            "outcome_time_utc": "2026-10-23T01:07:23.807921+00:00",
-            "price_at_forecast": 103.48,
-            "price_at_outcome": 103.68,
-            "p_up": 0.422,
-            "actual_up": true,
-            "return_pct": 0.1933,
-            "base_rate_p_up": 0.1875
-          },
-          {
-            "forecast_time_utc": "2026-10-23T01:07:23.807921+00:00",
-            "outcome_time_utc": "2026-10-23T06:10:51.087790+00:00",
-            "price_at_forecast": 103.68,
-            "price_at_outcome": 104.5,
-            "p_up": 0.387,
-            "actual_up": true,
-            "return_pct": 0.7909,
-            "base_rate_p_up": 0.35
-          },
-          {
-            "forecast_time_utc": "2026-10-23T11:53:47.175952+00:00",
-            "outcome_time_utc": "2026-10-23T16:09:49.913715+00:00",
-            "price_at_forecast": 104.59,
-            "price_at_outcome": 104.68,
-            "p_up": 0.411,
-            "actual_up": true,
-            "return_pct": 0.0861,
-            "base_rate_p_up": 0.4091
-          },
-          {
-            "forecast_time_utc": "2026-10-23T16:09:49.913715+00:00",
-            "outcome_time_utc": "2026-10-23T20:00:31.015918+00:00",
-            "price_at_forecast": 104.68,
-            "price_at_outcome": 103.44,
-            "p_up": 0.406,
-            "actual_up": false,
-            "return_pct": -1.1846,
-            "base_rate_p_up": 0.4583
-          },
-          {
-            "forecast_time_utc": "2026-10-23T20:00:31.015918+00:00",
-            "outcome_time_utc": "2026-10-23T23:17:23.171740+00:00",
-            "price_at_forecast": 103.44,
-            "price_at_outcome": 102.2,
-            "p_up": 0.395,
-            "actual_up": false,
-            "return_pct": -1.1988,
-            "base_rate_p_up": 0.4231
-          },
-          {
-            "forecast_time_utc": "2026-10-24T01:45:22.722296+00:00",
-            "outcome_time_utc": "2026-10-24T06:41:29.794120+00:00",
-            "price_at_forecast": 102.42,
-            "price_at_outcome": 102.13,
-            "p_up": 0.465,
-            "actual_up": false,
-            "return_pct": -0.2831,
-            "base_rate_p_up": 0.3929
-          },
-          {
-            "forecast_time_utc": "2026-10-24T06:41:29.794120+00:00",
-            "outcome_time_utc": "2026-10-24T11:44:05.311758+00:00",
-            "price_at_forecast": 102.13,
-            "price_at_outcome": 101.28,
-            "p_up": 0.425,
-            "actual_up": false,
-            "return_pct": -0.8323,
-            "base_rate_p_up": 0.3667
-          },
-          {
-            "forecast_time_utc": "2026-10-24T11:44:05.311758+00:00",
-            "outcome_time_utc": "2026-10-24T15:05:47.501026+00:00",
-            "price_at_forecast": 101.28,
-            "price_at_outcome": 99.76,
-            "p_up": 0.426,
-            "actual_up": false,
-            "return_pct": -1.5008,
-            "base_rate_p_up": 0.3438
-          },
-          {
-            "forecast_time_utc": "2026-10-24T15:05:47.501026+00:00",
-            "outcome_time_utc": "2026-10-24T18:13:56.509722+00:00",
-            "price_at_forecast": 99.76,
-            "price_at_outcome": 100.67,
-            "p_up": 0.42,
-            "actual_up": true,
-            "return_pct": 0.9122,
-            "base_rate_p_up": 0.3235
-          },
-          {
-            "forecast_time_utc": "2026-10-24T18:13:56.509722+00:00",
-            "outcome_time_utc": "2026-10-24T21:01:23.643597+00:00",
-            "price_at_forecast": 100.67,
-            "price_at_outcome": 101.45,
-            "p_up": 0.472,
-            "actual_up": true,
-            "return_pct": 0.7748,
-            "base_rate_p_up": 0.3611
-          },
-          {
-            "forecast_time_utc": "2026-10-24T21:01:23.643597+00:00",
-            "outcome_time_utc": "2026-10-25T01:27:09.640021+00:00",
-            "price_at_forecast": 101.45,
-            "price_at_outcome": 102.25,
-            "p_up": 0.501,
-            "actual_up": true,
-            "return_pct": 0.7886,
-            "base_rate_p_up": 0.3947
-          }
-        ]
-      },
-      "XRP": {
-        "n": 19,
-        "brier": 0.22023,
-        "coinflip_brier": 0.25,
-        "skill_vs_coinflip": 0.11907,
-        "expanding_historical_base_rate_brier": 0.21828,
-        "skill_vs_expanding_historical_rate": -0.00895,
-        "directional_hit_rate": 0.7368,
-        "rows": [
-          {
-            "forecast_time_utc": "2026-10-21T21:17:17.781125+00:00",
-            "outcome_time_utc": "2026-10-22T00:44:19.919439+00:00",
-            "price_at_forecast": 1.3833,
-            "price_at_outcome": 1.3652,
-            "p_up": 0.442,
-            "actual_up": false,
-            "return_pct": -1.3085,
-            "base_rate_p_up": 0.5
-          },
-          {
-            "forecast_time_utc": "2026-10-22T00:44:19.919439+00:00",
-            "outcome_time_utc": "2026-10-22T05:17:56.179078+00:00",
-            "price_at_forecast": 1.3652,
-            "price_at_outcome": 1.3428,
-            "p_up": 0.395,
-            "actual_up": false,
-            "return_pct": -1.6408,
-            "base_rate_p_up": 0.25
-          },
-          {
-            "forecast_time_utc": "2026-10-22T05:17:56.179078+00:00",
-            "outcome_time_utc": "2026-10-22T09:21:23.115253+00:00",
-            "price_at_forecast": 1.3428,
-            "price_at_outcome": 1.3287,
-            "p_up": 0.483,
-            "actual_up": false,
-            "return_pct": -1.05,
-            "base_rate_p_up": 0.1667
-          },
-          {
-            "forecast_time_utc": "2026-10-22T10:22:24.685872+00:00",
-            "outcome_time_utc": "2026-10-22T15:26:22.376006+00:00",
-            "price_at_forecast": 1.3329,
-            "price_at_outcome": 1.3212,
-            "p_up": 0.439,
-            "actual_up": false,
-            "return_pct": -0.8778,
-            "base_rate_p_up": 0.125
-          },
-          {
-            "forecast_time_utc": "2026-10-22T11:39:25.677473+00:00",
-            "outcome_time_utc": "2026-10-22T15:26:22.376006+00:00",
-            "price_at_forecast": 1.3293,
-            "price_at_outcome": 1.3212,
-            "p_up": 0.453,
-            "actual_up": false,
-            "return_pct": -0.6093,
-            "base_rate_p_up": 0.125
-          },
-          {
-            "forecast_time_utc": "2026-10-22T15:26:22.376006+00:00",
-            "outcome_time_utc": "2026-10-22T19:20:17.974686+00:00",
-            "price_at_forecast": 1.3212,
-            "price_at_outcome": 1.3104,
-            "p_up": 0.424,
-            "actual_up": false,
-            "return_pct": -0.8174,
-            "base_rate_p_up": 0.0833
-          },
-          {
-            "forecast_time_utc": "2026-10-22T19:20:17.974686+00:00",
-            "outcome_time_utc": "2026-10-22T22:33:22.888046+00:00",
-            "price_at_forecast": 1.3104,
-            "price_at_outcome": 1.3077,
-            "p_up": 0.378,
-            "actual_up": false,
-            "return_pct": -0.206,
-            "base_rate_p_up": 0.0714
-          },
-          {
-            "forecast_time_utc": "2026-10-22T20:24:40.989042+00:00",
-            "outcome_time_utc": "2026-10-23T01:07:23.807921+00:00",
-            "price_at_forecast": 1.3012,
-            "price_at_outcome": 1.3077,
-            "p_up": 0.376,
-            "actual_up": true,
-            "return_pct": 0.4995,
-            "base_rate_p_up": 0.0714
-          },
-          {
-            "forecast_time_utc": "2026-10-22T22:33:22.888046+00:00",
-            "outcome_time_utc": "2026-10-23T01:07:23.807921+00:00",
-            "price_at_forecast": 1.3077,
-            "price_at_outcome": 1.3077,
-            "p_up": 0.396,
-            "actual_up": false,
-            "return_pct": 0.0,
-            "base_rate_p_up": 0.0625
-          },
-          {
-            "forecast_time_utc": "2026-10-23T01:07:23.807921+00:00",
-            "outcome_time_utc": "2026-10-23T06:10:51.087790+00:00",
-            "price_at_forecast": 1.3077,
-            "price_at_outcome": 1.3268,
-            "p_up": 0.389,
-            "actual_up": true,
-            "return_pct": 1.4606,
-            "base_rate_p_up": 0.15
-          },
-          {
-            "forecast_time_utc": "2026-10-23T11:53:47.175952+00:00",
-            "outcome_time_utc": "2026-10-23T16:09:49.913715+00:00",
-            "price_at_forecast": 1.3207,
-            "price_at_outcome": 1.3134,
-            "p_up": 0.372,
-            "actual_up": false,
-            "return_pct": -0.5527,
-            "base_rate_p_up": 0.2273
-          },
-          {
-            "forecast_time_utc": "2026-10-23T16:09:49.913715+00:00",
-            "outcome_time_utc": "2026-10-23T20:00:31.015918+00:00",
-            "price_at_forecast": 1.3134,
-            "price_at_outcome": 1.3019,
-            "p_up": 0.378,
-            "actual_up": false,
-            "return_pct": -0.8756,
-            "base_rate_p_up": 0.2083
-          },
-          {
-            "forecast_time_utc": "2026-10-23T20:00:31.015918+00:00",
-            "outcome_time_utc": "2026-10-23T23:17:23.171740+00:00",
-            "price_at_forecast": 1.3019,
-            "price_at_outcome": 1.2876,
-            "p_up": 0.39,
-            "actual_up": false,
-            "return_pct": -1.0984,
-            "base_rate_p_up": 0.1923
-          },
-          {
-            "forecast_time_utc": "2026-10-24T01:45:22.722296+00:00",
-            "outcome_time_utc": "2026-10-24T06:41:29.794120+00:00",
-            "price_at_forecast": 1.2903,
-            "price_at_outcome": 1.2888,
-            "p_up": 0.402,
-            "actual_up": false,
-            "return_pct": -0.1163,
-            "base_rate_p_up": 0.1786
-          },
-          {
-            "forecast_time_utc": "2026-10-24T06:41:29.794120+00:00",
-            "outcome_time_utc": "2026-10-24T11:44:05.311758+00:00",
-            "price_at_forecast": 1.2888,
-            "price_at_outcome": 1.2782,
-            "p_up": 0.42,
-            "actual_up": false,
-            "return_pct": -0.8225,
-            "base_rate_p_up": 0.1667
-          },
-          {
-            "forecast_time_utc": "2026-10-24T11:44:05.311758+00:00",
-            "outcome_time_utc": "2026-10-24T15:05:47.501026+00:00",
-            "price_at_forecast": 1.2782,
-            "price_at_outcome": 1.2661,
-            "p_up": 0.458,
-            "actual_up": false,
-            "return_pct": -0.9466,
-            "base_rate_p_up": 0.1562
-          },
-          {
-            "forecast_time_utc": "2026-10-24T15:05:47.501026+00:00",
-            "outcome_time_utc": "2026-10-24T18:13:56.509722+00:00",
-            "price_at_forecast": 1.2661,
-            "price_at_outcome": 1.2779,
-            "p_up": 0.453,
-            "actual_up": true,
-            "return_pct": 0.932,
-            "base_rate_p_up": 0.1471
-          },
-          {
-            "forecast_time_utc": "2026-10-24T18:13:56.509722+00:00",
-            "outcome_time_utc": "2026-10-24T21:01:23.643597+00:00",
-            "price_at_forecast": 1.2779,
-            "price_at_outcome": 1.2904,
-            "p_up": 0.436,
-            "actual_up": true,
-            "return_pct": 0.9782,
-            "base_rate_p_up": 0.1944
-          },
-          {
-            "forecast_time_utc": "2026-10-24T21:01:23.643597+00:00",
-            "outcome_time_utc": "2026-10-25T01:27:09.640021+00:00",
-            "price_at_forecast": 1.2904,
-            "price_at_outcome": 1.3009,
-            "p_up": 0.399,
-            "actual_up": true,
-            "return_pct": 0.8137,
-            "base_rate_p_up": 0.2368
-          }
-        ]
-      },
-      "ALL_COINS_POOLED": {
-        "n": 76,
-        "brier": 0.25483,
-        "coinflip_brier": 0.25,
-        "skill_vs_coinflip": -0.01934,
-        "expanding_historical_base_rate_brier": 0.25383,
-        "skill_vs_expanding_historical_rate": -0.00395,
+        "skill_vs_coinflip": -0.05331,
+        "expanding_historical_base_rate_brier": 0.2949,
+        "skill_vs_expanding_historical_rate": 0.10705,
         "directional_hit_rate": 0.5,
         "rows": [
           {
             "forecast_time_utc": "2026-10-21T21:17:17.781125+00:00",
             "outcome_time_utc": "2026-10-22T00:44:19.919439+00:00",
+            "price_at_forecast": 2492.01,
+            "price_at_outcome": 2477.07,
+            "p_up": 0.505,
+            "actual_up": false,
+            "return_pct": -0.5995,
+            "base_rate_p_up": 0.5
+          },
+          {
+            "forecast_time_utc": "2026-10-22T00:44:19.919439+00:00",
+            "outcome_time_utc": "2026-10-22T05:17:56.179078+00:00",
+            "price_at_forecast": 2477.07,
+            "price_at_outcome": 2439.02,
+            "p_up": 0.524,
+            "actual_up": false,
+            "return_pct": -1.5361,
+            "base_rate_p_up": 0.25
+          },
+          {
+            "forecast_time_utc": "2026-10-22T05:17:56.179078+00:00",
+            "outcome_time_utc": "2026-10-22T09:21:23.115253+00:00",
+            "price_at_forecast": 2439.02,
+            "price_at_outcome": 2404.52,
+            "p_up": 0.491,
+            "actual_up": false,
+            "return_pct": -1.4145,
+            "base_rate_p_up": 0.1667
+          },
+          {
+            "forecast_time_utc": "2026-10-22T10:22:24.685872+00:00",
+            "outcome_time_utc": "2026-10-22T15:26:22.376006+00:00",
+            "price_at_forecast": 2408.89,
+            "price_at_outcome": 2399.25,
+            "p_up": 0.466,
+            "actual_up": false,
+            "return_pct": -0.4002,
+            "base_rate_p_up": 0.125
+          },
+          {
+            "forecast_time_utc": "2026-10-22T11:39:25.677473+00:00",
+            "outcome_time_utc": "2026-10-22T15:26:22.376006+00:00",
+            "price_at_forecast": 2403.34,
+            "price_at_outcome": 2399.25,
+            "p_up": 0.457,
+            "actual_up": false,
+            "return_pct": -0.1702,
+            "base_rate_p_up": 0.125
+          },
+          {
+            "forecast_time_utc": "2026-10-22T15:26:22.376006+00:00",
+            "outcome_time_utc": "2026-10-22T19:20:17.974686+00:00",
+            "price_at_forecast": 2399.25,
+            "price_at_outcome": 2385.1,
+            "p_up": 0.46,
+            "actual_up": false,
+            "return_pct": -0.5898,
+            "base_rate_p_up": 0.0833
+          },
+          {
+            "forecast_time_utc": "2026-10-22T19:20:17.974686+00:00",
+            "outcome_time_utc": "2026-10-22T22:33:22.888046+00:00",
+            "price_at_forecast": 2385.1,
+            "price_at_outcome": 2385.39,
+            "p_up": 0.414,
+            "actual_up": true,
+            "return_pct": 0.0122,
+            "base_rate_p_up": 0.0714
+          },
+          {
+            "forecast_time_utc": "2026-10-22T20:24:40.989042+00:00",
+            "outcome_time_utc": "2026-10-23T01:07:23.807921+00:00",
+            "price_at_forecast": 2382.18,
+            "price_at_outcome": 2387.31,
+            "p_up": 0.409,
+            "actual_up": true,
+            "return_pct": 0.2153,
+            "base_rate_p_up": 0.0714
+          },
+          {
+            "forecast_time_utc": "2026-10-22T22:33:22.888046+00:00",
+            "outcome_time_utc": "2026-10-23T01:07:23.807921+00:00",
+            "price_at_forecast": 2385.39,
+            "price_at_outcome": 2387.31,
+            "p_up": 0.404,
+            "actual_up": true,
+            "return_pct": 0.0805,
+            "base_rate_p_up": 0.1875
+          },
+          {
+            "forecast_time_utc": "2026-10-23T01:07:23.807921+00:00",
+            "outcome_time_utc": "2026-10-23T06:10:51.087790+00:00",
+            "price_at_forecast": 2387.31,
+            "price_at_outcome": 2405.43,
+            "p_up": 0.395,
+            "actual_up": true,
+            "return_pct": 0.759,
+            "base_rate_p_up": 0.35
+          },
+          {
+            "forecast_time_utc": "2026-10-23T11:53:47.175952+00:00",
+            "outcome_time_utc": "2026-10-23T16:09:49.913715+00:00",
+            "price_at_forecast": 2400.62,
+            "price_at_outcome": 2406.22,
+            "p_up": 0.43,
+            "actual_up": true,
+            "return_pct": 0.2333,
+            "base_rate_p_up": 0.4091
+          },
+          {
+            "forecast_time_utc": "2026-10-23T16:09:49.913715+00:00",
+            "outcome_time_utc": "2026-10-23T20:00:31.015918+00:00",
+            "price_at_forecast": 2406.22,
+            "price_at_outcome": 2392.55,
+            "p_up": 0.42,
+            "actual_up": false,
+            "return_pct": -0.5681,
+            "base_rate_p_up": 0.4583
+          },
+          {
+            "forecast_time_utc": "2026-10-23T20:00:31.015918+00:00",
+            "outcome_time_utc": "2026-10-23T23:17:23.171740+00:00",
+            "price_at_forecast": 2392.55,
+            "price_at_outcome": 2369.56,
+            "p_up": 0.438,
+            "actual_up": false,
+            "return_pct": -0.9609,
+            "base_rate_p_up": 0.4231
+          },
+          {
+            "forecast_time_utc": "2026-10-24T01:45:22.722296+00:00",
+            "outcome_time_utc": "2026-10-24T06:41:29.794120+00:00",
+            "price_at_forecast": 2377.85,
+            "price_at_outcome": 2377.96,
+            "p_up": 0.467,
+            "actual_up": true,
+            "return_pct": 0.0046,
+            "base_rate_p_up": 0.3929
+          },
+          {
+            "forecast_time_utc": "2026-10-24T06:41:29.794120+00:00",
+            "outcome_time_utc": "2026-10-24T11:44:05.311758+00:00",
+            "price_at_forecast": 2377.96,
+            "price_at_outcome": 2364.45,
+            "p_up": 0.465,
+            "actual_up": false,
+            "return_pct": -0.5681,
+            "base_rate_p_up": 0.4333
+          },
+          {
+            "forecast_time_utc": "2026-10-24T11:44:05.311758+00:00",
+            "outcome_time_utc": "2026-10-24T15:05:47.501026+00:00",
+            "price_at_forecast": 2364.45,
+            "price_at_outcome": 2322.26,
+            "p_up": 0.442,
+            "actual_up": false,
+            "return_pct": -1.7843,
+            "base_rate_p_up": 0.4062
+          },
+          {
+            "forecast_time_utc": "2026-10-24T15:05:47.501026+00:00",
+            "outcome_time_utc": "2026-10-24T18:13:56.509722+00:00",
+            "price_at_forecast": 2322.26,
+            "price_at_outcome": 2324.95,
+            "p_up": 0.441,
+            "actual_up": true,
+            "return_pct": 0.1158,
+            "base_rate_p_up": 0.3824
+          },
+          {
+            "forecast_time_utc": "2026-10-24T18:13:56.509722+00:00",
+            "outcome_time_utc": "2026-10-24T21:01:23.643597+00:00",
+            "price_at_forecast": 2324.95,
+            "price_at_outcome": 2344.76,
+            "p_up": 0.443,
+            "actual_up": true,
+            "return_pct": 0.8521,
+            "base_rate_p_up": 0.4167
+          },
+          {
+            "forecast_time_utc": "2026-10-24T21:01:23.643597+00:00",
+            "outcome_time_utc": "2026-10-25T01:27:09.640021+00:00",
+            "price_at_forecast": 2344.76,
+            "price_at_outcome": 2356.69,
+            "p_up": 0.503,
+            "actual_up": true,
+            "return_pct": 0.5088,
+            "base_rate_p_up": 0.4474
+          },
+          {
+            "forecast_time_utc": "2026-10-25T01:27:09.640021+00:00",
+            "outcome_time_utc": "2026-10-25T06:30:27.726788+00:00",
+            "price_at_forecast": 2356.69,
+            "price_at_outcome": 2349.92,
+            "p_up": 0.431,
+            "actual_up": false,
+            "return_pct": -0.2873,
+            "base_rate_p_up": 0.475
+          }
+        ]
+      },
+      "SOL": {
+        "n": 20,
+        "brier": 0.25274,
+        "coinflip_brier": 0.25,
+        "skill_vs_coinflip": -0.01097,
+        "expanding_historical_base_rate_brier": 0.2744,
+        "skill_vs_expanding_historical_rate": 0.07894,
+        "directional_hit_rate": 0.5,
+        "rows": [
+          {
+            "forecast_time_utc": "2026-10-21T21:17:17.781125+00:00",
+            "outcome_time_utc": "2026-10-22T00:44:19.919439+00:00",
+            "price_at_forecast": 107.88,
+            "price_at_outcome": 107.32,
+            "p_up": 0.505,
+            "actual_up": false,
+            "return_pct": -0.5191,
+            "base_rate_p_up": 0.5
+          },
+          {
+            "forecast_time_utc": "2026-10-22T00:44:19.919439+00:00",
+            "outcome_time_utc": "2026-10-22T05:17:56.179078+00:00",
+            "price_at_forecast": 107.32,
+            "price_at_outcome": 105.08,
+            "p_up": 0.529,
+            "actual_up": false,
+            "return_pct": -2.0872,
+            "base_rate_p_up": 0.25
+          },
+          {
+            "forecast_time_utc": "2026-10-22T05:17:56.179078+00:00",
+            "outcome_time_utc": "2026-10-22T09:21:23.115253+00:00",
+            "price_at_forecast": 105.08,
+            "price_at_outcome": 103.89,
+            "p_up": 0.521,
+            "actual_up": false,
+            "return_pct": -1.1325,
+            "base_rate_p_up": 0.1667
+          },
+          {
+            "forecast_time_utc": "2026-10-22T10:22:24.685872+00:00",
+            "outcome_time_utc": "2026-10-22T15:26:22.376006+00:00",
+            "price_at_forecast": 104.5,
+            "price_at_outcome": 104.6,
+            "p_up": 0.507,
+            "actual_up": true,
+            "return_pct": 0.0957,
+            "base_rate_p_up": 0.125
+          },
+          {
+            "forecast_time_utc": "2026-10-22T11:39:25.677473+00:00",
+            "outcome_time_utc": "2026-10-22T15:26:22.376006+00:00",
+            "price_at_forecast": 104.62,
+            "price_at_outcome": 104.6,
+            "p_up": 0.52,
+            "actual_up": false,
+            "return_pct": -0.0191,
+            "base_rate_p_up": 0.125
+          },
+          {
+            "forecast_time_utc": "2026-10-22T15:26:22.376006+00:00",
+            "outcome_time_utc": "2026-10-22T19:20:17.974686+00:00",
+            "price_at_forecast": 104.6,
+            "price_at_outcome": 103.53,
+            "p_up": 0.475,
+            "actual_up": false,
+            "return_pct": -1.0229,
+            "base_rate_p_up": 0.25
+          },
+          {
+            "forecast_time_utc": "2026-10-22T19:20:17.974686+00:00",
+            "outcome_time_utc": "2026-10-22T22:33:22.888046+00:00",
+            "price_at_forecast": 103.53,
+            "price_at_outcome": 103.48,
+            "p_up": 0.39,
+            "actual_up": false,
+            "return_pct": -0.0483,
+            "base_rate_p_up": 0.2143
+          },
+          {
+            "forecast_time_utc": "2026-10-22T20:24:40.989042+00:00",
+            "outcome_time_utc": "2026-10-23T01:07:23.807921+00:00",
+            "price_at_forecast": 103.37,
+            "price_at_outcome": 103.68,
+            "p_up": 0.405,
+            "actual_up": true,
+            "return_pct": 0.2999,
+            "base_rate_p_up": 0.2143
+          },
+          {
+            "forecast_time_utc": "2026-10-22T22:33:22.888046+00:00",
+            "outcome_time_utc": "2026-10-23T01:07:23.807921+00:00",
+            "price_at_forecast": 103.48,
+            "price_at_outcome": 103.68,
+            "p_up": 0.422,
+            "actual_up": true,
+            "return_pct": 0.1933,
+            "base_rate_p_up": 0.1875
+          },
+          {
+            "forecast_time_utc": "2026-10-23T01:07:23.807921+00:00",
+            "outcome_time_utc": "2026-10-23T06:10:51.087790+00:00",
+            "price_at_forecast": 103.68,
+            "price_at_outcome": 104.5,
+            "p_up": 0.387,
+            "actual_up": true,
+            "return_pct": 0.7909,
+            "base_rate_p_up": 0.35
+          },
+          {
+            "forecast_time_utc": "2026-10-23T11:53:47.175952+00:00",
+            "outcome_time_utc": "2026-10-23T16:09:49.913715+00:00",
+            "price_at_forecast": 104.59,
+            "price_at_outcome": 104.68,
+            "p_up": 0.411,
+            "actual_up": true,
+            "return_pct": 0.0861,
+            "base_rate_p_up": 0.4091
+          },
+          {
+            "forecast_time_utc": "2026-10-23T16:09:49.913715+00:00",
+            "outcome_time_utc": "2026-10-23T20:00:31.015918+00:00",
+            "price_at_forecast": 104.68,
+            "price_at_outcome": 103.44,
+            "p_up": 0.406,
+            "actual_up": false,
+            "return_pct": -1.1846,
+            "base_rate_p_up": 0.4583
+          },
+          {
+            "forecast_time_utc": "2026-10-23T20:00:31.015918+00:00",
+            "outcome_time_utc": "2026-10-23T23:17:23.171740+00:00",
+            "price_at_forecast": 103.44,
+            "price_at_outcome": 102.2,
+            "p_up": 0.395,
+            "actual_up": false,
+            "return_pct": -1.1988,
+            "base_rate_p_up": 0.4231
+          },
+          {
+            "forecast_time_utc": "2026-10-24T01:45:22.722296+00:00",
+            "outcome_time_utc": "2026-10-24T06:41:29.794120+00:00",
+            "price_at_forecast": 102.42,
+            "price_at_outcome": 102.13,
+            "p_up": 0.465,
+            "actual_up": false,
+            "return_pct": -0.2831,
+            "base_rate_p_up": 0.3929
+          },
+          {
+            "forecast_time_utc": "2026-10-24T06:41:29.794120+00:00",
+            "outcome_time_utc": "2026-10-24T11:44:05.311758+00:00",
+            "price_at_forecast": 102.13,
+            "price_at_outcome": 101.28,
+            "p_up": 0.425,
+            "actual_up": false,
+            "return_pct": -0.8323,
+            "base_rate_p_up": 0.3667
+          },
+          {
+            "forecast_time_utc": "2026-10-24T11:44:05.311758+00:00",
+            "outcome_time_utc": "2026-10-24T15:05:47.501026+00:00",
+            "price_at_forecast": 101.28,
+            "price_at_outcome": 99.76,
+            "p_up": 0.426,
+            "actual_up": false,
+            "return_pct": -1.5008,
+            "base_rate_p_up": 0.3438
+          },
+          {
+            "forecast_time_utc": "2026-10-24T15:05:47.501026+00:00",
+            "outcome_time_utc": "2026-10-24T18:13:56.509722+00:00",
+            "price_at_forecast": 99.76,
+            "price_at_outcome": 100.67,
+            "p_up": 0.42,
+            "actual_up": true,
+            "return_pct": 0.9122,
+            "base_rate_p_up": 0.3235
+          },
+          {
+            "forecast_time_utc": "2026-10-24T18:13:56.509722+00:00",
+            "outcome_time_utc": "2026-10-24T21:01:23.643597+00:00",
+            "price_at_forecast": 100.67,
+            "price_at_outcome": 101.45,
+            "p_up": 0.472,
+            "actual_up": true,
+            "return_pct": 0.7748,
+            "base_rate_p_up": 0.3611
+          },
+          {
+            "forecast_time_utc": "2026-10-24T21:01:23.643597+00:00",
+            "outcome_time_utc": "2026-10-25T01:27:09.640021+00:00",
+            "price_at_forecast": 101.45,
+            "price_at_outcome": 102.25,
+            "p_up": 0.501,
+            "actual_up": true,
+            "return_pct": 0.7886,
+            "base_rate_p_up": 0.3947
+          },
+          {
+            "forecast_time_utc": "2026-10-25T01:27:09.640021+00:00",
+            "outcome_time_utc": "2026-10-25T06:30:27.726788+00:00",
+            "price_at_forecast": 102.25,
+            "price_at_outcome": 101.84,
+            "p_up": 0.428,
+            "actual_up": false,
+            "return_pct": -0.401,
+            "base_rate_p_up": 0.425
+          }
+        ]
+      },
+      "XRP": {
+        "n": 20,
+        "brier": 0.22692,
+        "coinflip_brier": 0.25,
+        "skill_vs_coinflip": 0.09231,
+        "expanding_historical_base_rate_brier": 0.23365,
+        "skill_vs_expanding_historical_rate": 0.02878,
+        "directional_hit_rate": 0.7,
+        "rows": [
+          {
+            "forecast_time_utc": "2026-10-21T21:17:17.781125+00:00",
+            "outcome_time_utc": "2026-10-22T00:44:19.919439+00:00",
+            "price_at_forecast": 1.3833,
+            "price_at_outcome": 1.3652,
+            "p_up": 0.442,
+            "actual_up": false,
+            "return_pct": -1.3085,
+            "base_rate_p_up": 0.5
+          },
+          {
+            "forecast_time_utc": "2026-10-22T00:44:19.919439+00:00",
+            "outcome_time_utc": "2026-10-22T05:17:56.179078+00:00",
+            "price_at_forecast": 1.3652,
+            "price_at_outcome": 1.3428,
+            "p_up": 0.395,
+            "actual_up": false,
+            "return_pct": -1.6408,
+            "base_rate_p_up": 0.25
+          },
+          {
+            "forecast_time_utc": "2026-10-22T05:17:56.179078+00:00",
+            "outcome_time_utc": "2026-10-22T09:21:23.115253+00:00",
+            "price_at_forecast": 1.3428,
+            "price_at_outcome": 1.3287,
+            "p_up": 0.483,
+            "actual_up": false,
+            "return_pct": -1.05,
+            "base_rate_p_up": 0.1667
+          },
+          {
+            "forecast_time_utc": "2026-10-22T10:22:24.685872+00:00",
+            "outcome_time_utc": "2026-10-22T15:26:22.376006+00:00",
+            "price_at_forecast": 1.3329,
+            "price_at_outcome": 1.3212,
+            "p_up": 0.439,
+            "actual_up": false,
+            "return_pct": -0.8778,
+            "base_rate_p_up": 0.125
+          },
+          {
+            "forecast_time_utc": "2026-10-22T11:39:25.677473+00:00",
+            "outcome_time_utc": "2026-10-22T15:26:22.376006+00:00",
+            "price_at_forecast": 1.3293,
+            "price_at_outcome": 1.3212,
+            "p_up": 0.453,
+            "actual_up": false,
+            "return_pct": -0.6093,
+            "base_rate_p_up": 0.125
+          },
+          {
+            "forecast_time_utc": "2026-10-22T15:26:22.376006+00:00",
+            "outcome_time_utc": "2026-10-22T19:20:17.974686+00:00",
+            "price_at_forecast": 1.3212,
+            "price_at_outcome": 1.3104,
+            "p_up": 0.424,
+            "actual_up": false,
+            "return_pct": -0.8174,
+            "base_rate_p_up": 0.0833
+          },
+          {
+            "forecast_time_utc": "2026-10-22T19:20:17.974686+00:00",
+            "outcome_time_utc": "2026-10-22T22:33:22.888046+00:00",
+            "price_at_forecast": 1.3104,
+            "price_at_outcome": 1.3077,
+            "p_up": 0.378,
+            "actual_up": false,
+            "return_pct": -0.206,
+            "base_rate_p_up": 0.0714
+          },
+          {
+            "forecast_time_utc": "2026-10-22T20:24:40.989042+00:00",
+            "outcome_time_utc": "2026-10-23T01:07:23.807921+00:00",
+            "price_at_forecast": 1.3012,
+            "price_at_outcome": 1.3077,
+            "p_up": 0.376,
+            "actual_up": true,
+            "return_pct": 0.4995,
+            "base_rate_p_up": 0.0714
+          },
+          {
+            "forecast_time_utc": "2026-10-22T22:33:22.888046+00:00",
+            "outcome_time_utc": "2026-10-23T01:07:23.807921+00:00",
+            "price_at_forecast": 1.3077,
+            "price_at_outcome": 1.3077,
+            "p_up": 0.396,
+            "actual_up": false,
+            "return_pct": 0.0,
+            "base_rate_p_up": 0.0625
+          },
+          {
+            "forecast_time_utc": "2026-10-23T01:07:23.807921+00:00",
+            "outcome_time_utc": "2026-10-23T06:10:51.087790+00:00",
+            "price_at_forecast": 1.3077,
+            "price_at_outcome": 1.3268,
+            "p_up": 0.389,
+            "actual_up": true,
+            "return_pct": 1.4606,
+            "base_rate_p_up": 0.15
+          },
+          {
+            "forecast_time_utc": "2026-10-23T11:53:47.175952+00:00",
+            "outcome_time_utc": "2026-10-23T16:09:49.913715+00:00",
+            "price_at_forecast": 1.3207,
+            "price_at_outcome": 1.3134,
+            "p_up": 0.372,
+            "actual_up": false,
+            "return_pct": -0.5527,
+            "base_rate_p_up": 0.2273
+          },
+          {
+            "forecast_time_utc": "2026-10-23T16:09:49.913715+00:00",
+            "outcome_time_utc": "2026-10-23T20:00:31.015918+00:00",
+            "price_at_forecast": 1.3134,
+            "price_at_outcome": 1.3019,
+            "p_up": 0.378,
+            "actual_up": false,
+            "return_pct": -0.8756,
+            "base_rate_p_up": 0.2083
+          },
+          {
+            "forecast_time_utc": "2026-10-23T20:00:31.015918+00:00",
+            "outcome_time_utc": "2026-10-23T23:17:23.171740+00:00",
+            "price_at_forecast": 1.3019,
+            "price_at_outcome": 1.2876,
+            "p_up": 0.39,
+            "actual_up": false,
+            "return_pct": -1.0984,
+            "base_rate_p_up": 0.1923
+          },
+          {
+            "forecast_time_utc": "2026-10-24T01:45:22.722296+00:00",
+            "outcome_time_utc": "2026-10-24T06:41:29.794120+00:00",
+            "price_at_forecast": 1.2903,
+            "price_at_outcome": 1.2888,
+            "p_up": 0.402,
+            "actual_up": false,
+            "return_pct": -0.1163,
+            "base_rate_p_up": 0.1786
+          },
+          {
+            "forecast_time_utc": "2026-10-24T06:41:29.794120+00:00",
+            "outcome_time_utc": "2026-10-24T11:44:05.311758+00:00",
+            "price_at_forecast": 1.2888,
+            "price_at_outcome": 1.2782,
+            "p_up": 0.42,
+            "actual_up": false,
+            "return_pct": -0.8225,
+            "base_rate_p_up": 0.1667
+          },
+          {
+            "forecast_time_utc": "2026-10-24T11:44:05.311758+00:00",
+            "outcome_time_utc": "2026-10-24T15:05:47.501026+00:00",
+            "price_at_forecast": 1.2782,
+            "price_at_outcome": 1.2661,
+            "p_up": 0.458,
+            "actual_up": false,
+            "return_pct": -0.9466,
+            "base_rate_p_up": 0.1562
+          },
+          {
+            "forecast_time_utc": "2026-10-24T15:05:47.501026+00:00",
+            "outcome_time_utc": "2026-10-24T18:13:56.509722+00:00",
+            "price_at_forecast": 1.2661,
+            "price_at_outcome": 1.2779,
+            "p_up": 0.453,
+            "actual_up": true,
+            "return_pct": 0.932,
+            "base_rate_p_up": 0.1471
+          },
+          {
+            "forecast_time_utc": "2026-10-24T18:13:56.509722+00:00",
+            "outcome_time_utc": "2026-10-24T21:01:23.643597+00:00",
+            "price_at_forecast": 1.2779,
+            "price_at_outcome": 1.2904,
+            "p_up": 0.436,
+            "actual_up": true,
+            "return_pct": 0.9782,
+            "base_rate_p_up": 0.1944
+          },
+          {
+            "forecast_time_utc": "2026-10-24T21:01:23.643597+00:00",
+            "outcome_time_utc": "2026-10-25T01:27:09.640021+00:00",
+            "price_at_forecast": 1.2904,
+            "price_at_outcome": 1.3009,
+            "p_up": 0.399,
+            "actual_up": true,
+            "return_pct": 0.8137,
+            "base_rate_p_up": 0.2368
+          },
+          {
+            "forecast_time_utc": "2026-10-25T01:27:09.640021+00:00",
+            "outcome_time_utc": "2026-10-25T06:30:27.726788+00:00",
+            "price_at_forecast": 1.3009,
+            "price_at_outcome": 1.3011,
+            "p_up": 0.405,
+            "actual_up": true,
+            "return_pct": 0.0154,
+            "base_rate_p_up": 0.275
+          }
+        ]
+      },
+      "ALL_COINS_POOLED": {
+        "n": 80,
+        "brier": 0.25394,
+        "coinflip_brier": 0.25,
+        "skill_vs_coinflip": -0.01575,
+        "expanding_historical_base_rate_brier": 0.25373,
+        "skill_vs_expanding_historical_rate": -0.0008,
+        "directional_hit_rate": 0.5125,
+        "rows": [
+          {
+            "forecast_time_utc": "2026-10-21T21:17:17.781125+00:00",
+            "outcome_time_utc": "2026-10-22T00:44:19.919439+00:00",
             "price_at_forecast": 84639.9,
             "price_at_outcome": 84290.7,
             "p_up": 0.587,
@@ -1005,6 +1045,16 @@
             "actual_up": true,
             "return_pct": 0.3499,
             "base_rate_p_up": 0.2368
+          },
+          {
+            "forecast_time_utc": "2026-10-25T01:27:09.640021+00:00",
+            "outcome_time_utc": "2026-10-25T06:30:27.726788+00:00",
+            "price_at_forecast": 80760.9,
+            "price_at_outcome": 80600.0,
+            "p_up": 0.474,
+            "actual_up": false,
+            "return_pct": -0.1992,
+            "base_rate_p_up": 0.275
           },
           {
             "forecast_time_utc": "2026-10-21T21:17:17.781125+00:00",
@@ -1197,6 +1247,16 @@
             "base_rate_p_up": 0.4474
           },
           {
+            "forecast_time_utc": "2026-10-25T01:27:09.640021+00:00",
+            "outcome_time_utc": "2026-10-25T06:30:27.726788+00:00",
+            "price_at_forecast": 2356.69,
+            "price_at_outcome": 2349.92,
+            "p_up": 0.431,
+            "actual_up": false,
+            "return_pct": -0.2873,
+            "base_rate_p_up": 0.475
+          },
+          {
             "forecast_time_utc": "2026-10-21T21:17:17.781125+00:00",
             "outcome_time_utc": "2026-10-22T00:44:19.919439+00:00",
             "price_at_forecast": 107.88,
@@ -1387,6 +1447,16 @@
             "base_rate_p_up": 0.3947
           },
           {
+            "forecast_time_utc": "2026-10-25T01:27:09.640021+00:00",
+            "outcome_time_utc": "2026-10-25T06:30:27.726788+00:00",
+            "price_at_forecast": 102.25,
+            "price_at_outcome": 101.84,
+            "p_up": 0.428,
+            "actual_up": false,
+            "return_pct": -0.401,
+            "base_rate_p_up": 0.425
+          },
+          {
             "forecast_time_utc": "2026-10-21T21:17:17.781125+00:00",
             "outcome_time_utc": "2026-10-22T00:44:19.919439+00:00",
             "price_at_forecast": 1.3833,
@@ -1575,19 +1645,29 @@
             "actual_up": true,
             "return_pct": 0.8137,
             "base_rate_p_up": 0.2368
+          },
+          {
+            "forecast_time_utc": "2026-10-25T01:27:09.640021+00:00",
+            "outcome_time_utc": "2026-10-25T06:30:27.726788+00:00",
+            "price_at_forecast": 1.3009,
+            "price_at_outcome": 1.3011,
+            "p_up": 0.405,
+            "actual_up": true,
+            "return_pct": 0.0154,
+            "base_rate_p_up": 0.275
           }
         ]
       }
     },
     "24h": {
       "BTC": {
-        "n": 17,
-        "brier": 0.27585,
+        "n": 18,
+        "brier": 0.27223,
         "coinflip_brier": 0.25,
-        "skill_vs_coinflip": -0.10339,
-        "expanding_historical_base_rate_brier": 0.1269,
-        "skill_vs_expanding_historical_rate": -1.17371,
-        "directional_hit_rate": 0.4706,
+        "skill_vs_coinflip": -0.08891,
+        "expanding_historical_base_rate_brier": 0.12059,
+        "skill_vs_expanding_historical_rate": -1.25743,
+        "directional_hit_rate": 0.5,
         "rows": [
           {
             "forecast_time_utc": "2026-10-21T20:19:20.778513+00:00",
@@ -1758,17 +1838,27 @@
             "actual_up": false,
             "return_pct": -0.069,
             "base_rate_p_up": 0.125
+          },
+          {
+            "forecast_time_utc": "2026-10-24T06:41:29.794120+00:00",
+            "outcome_time_utc": "2026-10-25T06:30:27.726788+00:00",
+            "price_at_forecast": 80744.7,
+            "price_at_outcome": 80600.0,
+            "p_up": 0.459,
+            "actual_up": false,
+            "return_pct": -0.1792,
+            "base_rate_p_up": 0.1154
           }
         ]
       },
       "ETH": {
-        "n": 17,
-        "brier": 0.22731,
+        "n": 18,
+        "brier": 0.22639,
         "coinflip_brier": 0.25,
-        "skill_vs_coinflip": 0.09074,
-        "expanding_historical_base_rate_brier": 0.18094,
-        "skill_vs_expanding_historical_rate": -0.25627,
-        "directional_hit_rate": 0.7647,
+        "skill_vs_coinflip": 0.09444,
+        "expanding_historical_base_rate_brier": 0.17492,
+        "skill_vs_expanding_historical_rate": -0.29427,
+        "directional_hit_rate": 0.7778,
         "rows": [
           {
             "forecast_time_utc": "2026-10-21T20:19:20.778513+00:00",
@@ -1939,17 +2029,27 @@
             "actual_up": false,
             "return_pct": -0.8899,
             "base_rate_p_up": 0.2917
+          },
+          {
+            "forecast_time_utc": "2026-10-24T06:41:29.794120+00:00",
+            "outcome_time_utc": "2026-10-25T06:30:27.726788+00:00",
+            "price_at_forecast": 2377.96,
+            "price_at_outcome": 2349.92,
+            "p_up": 0.459,
+            "actual_up": false,
+            "return_pct": -1.1792,
+            "base_rate_p_up": 0.2692
           }
         ]
       },
       "SOL": {
-        "n": 17,
-        "brier": 0.21948,
+        "n": 18,
+        "brier": 0.21736,
         "coinflip_brier": 0.25,
-        "skill_vs_coinflip": 0.1221,
-        "expanding_historical_base_rate_brier": 0.17204,
-        "skill_vs_expanding_historical_rate": -0.27569,
-        "directional_hit_rate": 0.6471,
+        "skill_vs_coinflip": 0.13054,
+        "expanding_historical_base_rate_brier": 0.16454,
+        "skill_vs_expanding_historical_rate": -0.32104,
+        "directional_hit_rate": 0.6667,
         "rows": [
           {
             "forecast_time_utc": "2026-10-21T20:19:20.778513+00:00",
@@ -2120,17 +2220,27 @@
             "actual_up": false,
             "return_pct": -0.166,
             "base_rate_p_up": 0.2083
+          },
+          {
+            "forecast_time_utc": "2026-10-24T06:41:29.794120+00:00",
+            "outcome_time_utc": "2026-10-25T06:30:27.726788+00:00",
+            "price_at_forecast": 102.13,
+            "price_at_outcome": 101.84,
+            "p_up": 0.426,
+            "actual_up": false,
+            "return_pct": -0.284,
+            "base_rate_p_up": 0.1923
           }
         ]
       },
       "XRP": {
-        "n": 17,
-        "brier": 0.20617,
+        "n": 18,
+        "brier": 0.21399,
         "coinflip_brier": 0.25,
-        "skill_vs_coinflip": 0.17532,
-        "expanding_historical_base_rate_brier": 0.25117,
-        "skill_vs_expanding_historical_rate": 0.17916,
-        "directional_hit_rate": 0.8235,
+        "skill_vs_coinflip": 0.14404,
+        "expanding_historical_base_rate_brier": 0.28069,
+        "skill_vs_expanding_historical_rate": 0.23762,
+        "directional_hit_rate": 0.7778,
         "rows": [
           {
             "forecast_time_utc": "2026-10-21T20:19:20.778513+00:00",
@@ -2301,17 +2411,27 @@
             "actual_up": true,
             "return_pct": 0.8215,
             "base_rate_p_up": 0.125
+          },
+          {
+            "forecast_time_utc": "2026-10-24T06:41:29.794120+00:00",
+            "outcome_time_utc": "2026-10-25T06:30:27.726788+00:00",
+            "price_at_forecast": 1.2888,
+            "price_at_outcome": 1.3011,
+            "p_up": 0.411,
+            "actual_up": true,
+            "return_pct": 0.9544,
+            "base_rate_p_up": 0.1154
           }
         ]
       },
       "ALL_COINS_POOLED": {
-        "n": 68,
-        "brier": 0.2322,
+        "n": 72,
+        "brier": 0.23249,
         "coinflip_brier": 0.25,
-        "skill_vs_coinflip": 0.07119,
-        "expanding_historical_base_rate_brier": 0.18277,
-        "skill_vs_expanding_historical_rate": -0.2705,
-        "directional_hit_rate": 0.6765,
+        "skill_vs_coinflip": 0.07003,
+        "expanding_historical_base_rate_brier": 0.18518,
+        "skill_vs_expanding_historical_rate": -0.25547,
+        "directional_hit_rate": 0.6806,
         "rows": [
           {
             "forecast_time_utc": "2026-10-21T20:19:20.778513+00:00",
@@ -2484,6 +2604,16 @@
             "base_rate_p_up": 0.125
           },
           {
+            "forecast_time_utc": "2026-10-24T06:41:29.794120+00:00",
+            "outcome_time_utc": "2026-10-25T06:30:27.726788+00:00",
+            "price_at_forecast": 80744.7,
+            "price_at_outcome": 80600.0,
+            "p_up": 0.459,
+            "actual_up": false,
+            "return_pct": -0.1792,
+            "base_rate_p_up": 0.1154
+          },
+          {
             "forecast_time_utc": "2026-10-21T20:19:20.778513+00:00",
             "outcome_time_utc": "2026-10-22T20:24:40.989042+00:00",
             "price_at_forecast": 2490.12,
@@ -2652,6 +2782,16 @@
             "actual_up": false,
             "return_pct": -0.8899,
             "base_rate_p_up": 0.2917
+          },
+          {
+            "forecast_time_utc": "2026-10-24T06:41:29.794120+00:00",
+            "outcome_time_utc": "2026-10-25T06:30:27.726788+00:00",
+            "price_at_forecast": 2377.96,
+            "price_at_outcome": 2349.92,
+            "p_up": 0.459,
+            "actual_up": false,
+            "return_pct": -1.1792,
+            "base_rate_p_up": 0.2692
           },
           {
             "forecast_time_utc": "2026-10-21T20:19:20.778513+00:00",
@@ -2824,6 +2964,16 @@
             "base_rate_p_up": 0.2083
           },
           {
+            "forecast_time_utc": "2026-10-24T06:41:29.794120+00:00",
+            "outcome_time_utc": "2026-10-25T06:30:27.726788+00:00",
+            "price_at_forecast": 102.13,
+            "price_at_outcome": 101.84,
+            "p_up": 0.426,
+            "actual_up": false,
+            "return_pct": -0.284,
+            "base_rate_p_up": 0.1923
+          },
+          {
             "forecast_time_utc": "2026-10-21T20:19:20.778513+00:00",
             "outcome_time_utc": "2026-10-22T20:24:40.989042+00:00",
             "price_at_forecast": 1.3901,
@@ -2992,18 +3142,28 @@
             "actual_up": true,
             "return_pct": 0.8215,
             "base_rate_p_up": 0.125
+          },
+          {
+            "forecast_time_utc": "2026-10-24T06:41:29.794120+00:00",
+            "outcome_time_utc": "2026-10-25T06:30:27.726788+00:00",
+            "price_at_forecast": 1.2888,
+            "price_at_outcome": 1.3011,
+            "p_up": 0.411,
+            "actual_up": true,
+            "return_pct": 0.9544,
+            "base_rate_p_up": 0.1154
           }
         ]
       }
     },
     "72h": {
       "BTC": {
-        "n": 3,
-        "brier": 0.3629,
+        "n": 4,
+        "brier": 0.36068,
         "coinflip_brier": 0.25,
-        "skill_vs_coinflip": -0.45161,
+        "skill_vs_coinflip": -0.44273,
         "expanding_historical_base_rate_brier": 0.25,
-        "skill_vs_expanding_historical_rate": -0.45161,
+        "skill_vs_expanding_historical_rate": -0.44273,
         "directional_hit_rate": 0.0,
         "rows": [
           {
@@ -3035,17 +3195,27 @@
             "actual_up": false,
             "return_pct": -4.1877,
             "base_rate_p_up": 0.5
+          },
+          {
+            "forecast_time_utc": "2026-10-22T05:17:56.179078+00:00",
+            "outcome_time_utc": "2026-10-25T06:30:27.726788+00:00",
+            "price_at_forecast": 82746.6,
+            "price_at_outcome": 80600.0,
+            "p_up": 0.595,
+            "actual_up": false,
+            "return_pct": -2.5942,
+            "base_rate_p_up": 0.5
           }
         ]
       },
       "ETH": {
-        "n": 3,
-        "brier": 0.2373,
+        "n": 4,
+        "brier": 0.23367,
         "coinflip_brier": 0.25,
-        "skill_vs_coinflip": 0.05081,
+        "skill_vs_coinflip": 0.06532,
         "expanding_historical_base_rate_brier": 0.25,
-        "skill_vs_expanding_historical_rate": 0.05081,
-        "directional_hit_rate": 0.6667,
+        "skill_vs_expanding_historical_rate": 0.06532,
+        "directional_hit_rate": 0.75,
         "rows": [
           {
             "forecast_time_utc": "2026-10-21T21:17:17.781125+00:00",
@@ -3076,17 +3246,27 @@
             "actual_up": false,
             "return_pct": -4.8598,
             "base_rate_p_up": 0.5
+          },
+          {
+            "forecast_time_utc": "2026-10-22T05:17:56.179078+00:00",
+            "outcome_time_utc": "2026-10-25T06:30:27.726788+00:00",
+            "price_at_forecast": 2439.02,
+            "price_at_outcome": 2349.92,
+            "p_up": 0.472,
+            "actual_up": false,
+            "return_pct": -3.6531,
+            "base_rate_p_up": 0.5
           }
         ]
       },
       "SOL": {
-        "n": 3,
-        "brier": 0.24953,
+        "n": 4,
+        "brier": 0.25192,
         "coinflip_brier": 0.25,
-        "skill_vs_coinflip": 0.00189,
+        "skill_vs_coinflip": -0.00767,
         "expanding_historical_base_rate_brier": 0.25,
-        "skill_vs_expanding_historical_rate": 0.00189,
-        "directional_hit_rate": 0.6667,
+        "skill_vs_expanding_historical_rate": -0.00767,
+        "directional_hit_rate": 0.5,
         "rows": [
           {
             "forecast_time_utc": "2026-10-21T21:17:17.781125+00:00",
@@ -3117,16 +3297,26 @@
             "actual_up": false,
             "return_pct": -4.7242,
             "base_rate_p_up": 0.5
+          },
+          {
+            "forecast_time_utc": "2026-10-22T05:17:56.179078+00:00",
+            "outcome_time_utc": "2026-10-25T06:30:27.726788+00:00",
+            "price_at_forecast": 105.08,
+            "price_at_outcome": 101.84,
+            "p_up": 0.509,
+            "actual_up": false,
+            "return_pct": -3.0834,
+            "base_rate_p_up": 0.5
           }
         ]
       },
       "XRP": {
-        "n": 3,
-        "brier": 0.16881,
+        "n": 4,
+        "brier": 0.1816,
         "coinflip_brier": 0.25,
-        "skill_vs_coinflip": 0.32477,
+        "skill_vs_coinflip": 0.27362,
         "expanding_historical_base_rate_brier": 0.25,
-        "skill_vs_expanding_historical_rate": 0.32477,
+        "skill_vs_expanding_historical_rate": 0.27362,
         "directional_hit_rate": 1.0,
         "rows": [
           {
@@ -3158,17 +3348,27 @@
             "actual_up": false,
             "return_pct": -4.7099,
             "base_rate_p_up": 0.5
+          },
+          {
+            "forecast_time_utc": "2026-10-22T05:17:56.179078+00:00",
+            "outcome_time_utc": "2026-10-25T06:30:27.726788+00:00",
+            "price_at_forecast": 1.3428,
+            "price_at_outcome": 1.3011,
+            "p_up": 0.469,
+            "actual_up": false,
+            "return_pct": -3.1055,
+            "base_rate_p_up": 0.5
           }
         ]
       },
       "ALL_COINS_POOLED": {
-        "n": 12,
-        "brier": 0.25463,
+        "n": 16,
+        "brier": 0.25697,
         "coinflip_brier": 0.25,
-        "skill_vs_coinflip": -0.01854,
+        "skill_vs_coinflip": -0.02786,
         "expanding_historical_base_rate_brier": 0.25,
-        "skill_vs_expanding_historical_rate": -0.01854,
-        "directional_hit_rate": 0.5833,
+        "skill_vs_expanding_historical_rate": -0.02786,
+        "directional_hit_rate": 0.5625,
         "rows": [
           {
             "forecast_time_utc": "2026-10-21T21:17:17.781125+00:00",
@@ -3201,6 +3401,16 @@
             "base_rate_p_up": 0.5
           },
           {
+            "forecast_time_utc": "2026-10-22T05:17:56.179078+00:00",
+            "outcome_time_utc": "2026-10-25T06:30:27.726788+00:00",
+            "price_at_forecast": 82746.6,
+            "price_at_outcome": 80600.0,
+            "p_up": 0.595,
+            "actual_up": false,
+            "return_pct": -2.5942,
+            "base_rate_p_up": 0.5
+          },
+          {
             "forecast_time_utc": "2026-10-21T21:17:17.781125+00:00",
             "outcome_time_utc": "2026-10-24T21:01:23.643597+00:00",
             "price_at_forecast": 2492.01,
@@ -3228,6 +3438,16 @@
             "p_up": 0.503,
             "actual_up": false,
             "return_pct": -4.8598,
+            "base_rate_p_up": 0.5
+          },
+          {
+            "forecast_time_utc": "2026-10-22T05:17:56.179078+00:00",
+            "outcome_time_utc": "2026-10-25T06:30:27.726788+00:00",
+            "price_at_forecast": 2439.02,
+            "price_at_outcome": 2349.92,
+            "p_up": 0.472,
+            "actual_up": false,
+            "return_pct": -3.6531,
             "base_rate_p_up": 0.5
           },
           {
@@ -3261,6 +3481,16 @@
             "base_rate_p_up": 0.5
           },
           {
+            "forecast_time_utc": "2026-10-22T05:17:56.179078+00:00",
+            "outcome_time_utc": "2026-10-25T06:30:27.726788+00:00",
+            "price_at_forecast": 105.08,
+            "price_at_outcome": 101.84,
+            "p_up": 0.509,
+            "actual_up": false,
+            "return_pct": -3.0834,
+            "base_rate_p_up": 0.5
+          },
+          {
             "forecast_time_utc": "2026-10-21T21:17:17.781125+00:00",
             "outcome_time_utc": "2026-10-24T21:01:23.643597+00:00",
             "price_at_forecast": 1.3833,
@@ -3288,6 +3518,16 @@
             "p_up": 0.393,
             "actual_up": false,
             "return_pct": -4.7099,
+            "base_rate_p_up": 0.5
+          },
+          {
+            "forecast_time_utc": "2026-10-22T05:17:56.179078+00:00",
+            "outcome_time_utc": "2026-10-25T06:30:27.726788+00:00",
+            "price_at_forecast": 1.3428,
+            "price_at_outcome": 1.3011,
+            "p_up": 0.469,
+            "actual_up": false,
+            "return_pct": -3.1055,
             "base_rate_p_up": 0.5
           }
         ]
