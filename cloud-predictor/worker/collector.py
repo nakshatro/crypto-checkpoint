@@ -418,13 +418,13 @@ def automatic_macro_events():
      parser=ScheduleParser();parser.feed(rr.text)
      for row in parser.rows:
       joined=" | ".join(row)
-      m=re.search(r"(?:(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday),?\\s+)?(January|February|March|April|May|June|July|August|September|October|November|December)\\s+(\\d{1,2}),?\\s+(20\\d{2})",joined,re.I)
-      tm=re.search(r"(\\d{1,2}:\\d{2}\\s+[AP]M)",joined,re.I)
+      m=re.search(r"(?:(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday),?\s+)?(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{1,2}),?\s+(20\d{2})",joined,re.I)
+      tm=re.search(r"(\d{1,2}:\d{2}\s+[AP]M)",joined,re.I)
       if not m or not tm:continue
       # Identify the release text while excluding date/time columns.
       release=" ".join(x for x in row if x and not re.search(r"^(?:Date|Time|Release)$",x,re.I))
-      release=re.sub(r"(?:(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday),?\\s+)?(?:January|February|March|April|May|June|July|August|September|October|November|December)\\s+\\d{1,2},?\\s+20\\d{2}"," ",release,flags=re.I)
-      release=re.sub(r"\\b\\d{1,2}:\\d{2}\\s+[AP]M\\b"," ",release,flags=re.I)
+      release=re.sub(r"(?:(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday),?\s+)?(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s+20\d{2}"," ",release,flags=re.I)
+      release=re.sub(r"\b\d{1,2}:\d{2}\s+[AP]M\b"," ",release,flags=re.I)
       release=" ".join(release.split())
       if not any(k in release.lower() for k in ("consumer price index","producer price index","employment situation","job openings and labor turnover","productivity and costs","employment cost index","import and export price")):continue
       try:
