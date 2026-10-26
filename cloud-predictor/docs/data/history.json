@@ -38171,5 +38171,1099 @@
         }
       }
     }
+  },
+  {
+    "updated_at": "2026-10-26T14:53:46.281498+00:00",
+    "coins": {
+      "BTC": {
+        "price": 80337.7,
+        "forecasts": [
+          {
+            "horizon": "4h",
+            "hours": 4,
+            "analogue_count": 120,
+            "analogue_window": 120,
+            "up_frequency_pct": 46.7,
+            "median_return_pct": -0.0,
+            "range_10_90_pct": [
+              -0.8,
+              0.8
+            ],
+            "range_method": "Blended interval: 65% empirical 10th/90th quantiles of 120 nearest historical analogues + 35% rolling 168h volatility envelope (normal 10th/90th proxy); rounded to 0.1 percentage point. Recompute on completed candles; genuine regime changes can move the range.",
+            "rolling_168h_hourly_sigma_pct": 0.304,
+            "volatility_blend_weight": 0.35,
+            "interpretation": "historical analogue frequency, not calibrated probability"
+          },
+          {
+            "horizon": "24h",
+            "hours": 24,
+            "analogue_count": 120,
+            "analogue_window": 120,
+            "up_frequency_pct": 48.3,
+            "median_return_pct": -0.1,
+            "range_10_90_pct": [
+              -2.3,
+              1.6
+            ],
+            "range_method": "Blended interval: 65% empirical 10th/90th quantiles of 120 nearest historical analogues + 35% rolling 168h volatility envelope (normal 10th/90th proxy); rounded to 0.1 percentage point. Recompute on completed candles; genuine regime changes can move the range.",
+            "rolling_168h_hourly_sigma_pct": 0.304,
+            "volatility_blend_weight": 0.35,
+            "interpretation": "historical analogue frequency, not calibrated probability"
+          },
+          {
+            "horizon": "72h",
+            "hours": 72,
+            "analogue_count": 120,
+            "analogue_window": 120,
+            "up_frequency_pct": 30.0,
+            "median_return_pct": -0.9,
+            "range_10_90_pct": [
+              -3.5,
+              2.0
+            ],
+            "range_method": "Blended interval: 65% empirical 10th/90th quantiles of 120 nearest historical analogues + 35% rolling 168h volatility envelope (normal 10th/90th proxy); rounded to 0.1 percentage point. Recompute on completed candles; genuine regime changes can move the range.",
+            "rolling_168h_hourly_sigma_pct": 0.304,
+            "volatility_blend_weight": 0.35,
+            "interpretation": "historical analogue frequency, not calibrated probability"
+          }
+        ],
+        "model": {
+          "regime": "RANGE",
+          "vol_ratio": 0.721,
+          "layers": {
+            "structure": {
+              "score": -0.209604671219785,
+              "components": [
+                {
+                  "name": "trend",
+                  "score": 0.0,
+                  "weight": 0.625,
+                  "note": "daily close vs EMA20/50/200; EMA50 slope +0.56% over 10 days"
+                },
+                {
+                  "name": "momentum",
+                  "score": -0.559,
+                  "weight": 0.375,
+                  "note": "daily RSI14 36.0"
+                }
+              ]
+            },
+            "derivs": {
+              "score": -0.5511442544958621,
+              "components": [
+                {
+                  "name": "funding_crowding",
+                  "score": -0.8,
+                  "weight": 0.375,
+                  "note": "funding 0.0085% (90th percentile of available history)"
+                },
+                {
+                  "name": "long_short_ratio",
+                  "score": -0.41,
+                  "weight": 0.188,
+                  "note": "account long/short ratio 2.270; historical percentile unavailable"
+                },
+                {
+                  "name": "price_vs_oi",
+                  "score": -0.482,
+                  "weight": 0.375,
+                  "note": "price -0.8%, OI +4.0% over 24h"
+                },
+                {
+                  "name": "perp_basis",
+                  "score": 0.106,
+                  "weight": 0.063,
+                  "note": "perpetual basis -3.5 bps"
+                }
+              ]
+            },
+            "liquidity": {
+              "score": -0.04382009382819925,
+              "components": [
+                {
+                  "name": "taker_cvd_24h",
+                  "score": -0.147,
+                  "weight": 0.4,
+                  "note": "24h taker CVD -1.5% of volume"
+                },
+                {
+                  "name": "liquidation_magnet",
+                  "score": 0.096,
+                  "weight": 0.3,
+                  "note": "estimated liquidation fuel above vs below; OI-delta weighted"
+                },
+                {
+                  "name": "recent_liquidation_flow",
+                  "score": -0.199,
+                  "weight": 0.2,
+                  "note": "liquidated longs $0.1M vs shorts $0.6M"
+                },
+                {
+                  "name": "book_imbalance",
+                  "score": 0.261,
+                  "weight": 0.1,
+                  "note": "top-400-level notional imbalance +0.13"
+                }
+              ]
+            },
+            "onchain": {
+              "score": -0.22009266733123956,
+              "components": [
+                {
+                  "name": "stablecoin_supply_30d",
+                  "score": -0.29,
+                  "weight": 0.5,
+                  "note": "global stablecoin supply -0.87% over 30d"
+                },
+                {
+                  "name": "spot_etf_flow_5d",
+                  "score": -0.15,
+                  "weight": 0.5,
+                  "note": "automatically sourced 5-session spot ETF flow $-226M"
+                }
+              ]
+            },
+            "news": {
+              "score": 0.11999999999999998,
+              "components": [
+                {
+                  "name": "headline_sentiment",
+                  "score": 0.2,
+                  "weight": 0.6,
+                  "note": "3 matching keyword-scored headlines; not semantic sentiment"
+                },
+                {
+                  "name": "fear_greed",
+                  "score": 0.0,
+                  "weight": 0.4,
+                  "note": "Fear & Greed 50; contrarian at extremes"
+                }
+              ]
+            }
+          },
+          "horizons": {
+            "4h": {
+              "composite": -0.242,
+              "p_up": 0.41,
+              "coverage": 1.0,
+              "bias": "Bearish",
+              "range": [
+                79920.56417703,
+                80757.01301349
+              ]
+            },
+            "24h": {
+              "composite": -0.223,
+              "p_up": 0.416,
+              "coverage": 1.0,
+              "bias": "Bearish",
+              "range": [
+                79319.77208701,
+                81368.69120363
+              ]
+            },
+            "72h": {
+              "composite": -0.236,
+              "p_up": 0.412,
+              "coverage": 1.0,
+              "bias": "Bearish",
+              "range": [
+                78582.78328634,
+                82131.80764765
+              ]
+            },
+            "1w": {
+              "composite": -0.235,
+              "p_up": 0.412,
+              "coverage": 1.0,
+              "bias": "Bearish",
+              "range": [
+                77672.5192698,
+                83094.33119932
+              ]
+            },
+            "1m": {
+              "composite": -0.176,
+              "p_up": 0.432,
+              "coverage": 1.0,
+              "bias": "Bearish",
+              "range": [
+                74918.11937781,
+                86149.3333641
+              ]
+            }
+          },
+          "patterns": [],
+          "levels": {
+            "liq_above": [
+              {
+                "price": 85760.49475,
+                "strength": 1.0,
+                "dist_pct": 6.7500000000000115
+              },
+              {
+                "price": 88371.47,
+                "strength": 0.9142806751355875,
+                "dist_pct": 10.000000000000009
+              },
+              {
+                "price": 87166.40449999999,
+                "strength": 0.8269688118975823,
+                "dist_pct": 8.499999999999996
+              }
+            ],
+            "liq_below": [
+              {
+                "price": 78329.25749999999,
+                "strength": 0.955177134692002,
+                "dist_pct": -2.500000000000002
+              },
+              {
+                "price": 79132.6345,
+                "strength": 0.7956577396884452,
+                "dist_pct": -1.5000000000000013
+              },
+              {
+                "price": 73709.83975,
+                "strength": 0.733337957214411,
+                "dist_pct": -8.250000000000002
+              }
+            ],
+            "liq_method": "OI-delta weighted"
+          },
+          "confidence": {
+            "value": 0.5,
+            "label": "Medium",
+            "notes": [
+              "scheduled event within 24h: FOMC meeting (date only; announcement time not inferred), Job Openings and Labor Turnover Survey, Productivity and Costs, Employment Situation, Consumer Price Index, Producer Price Index, U.S. Import and Export Price Indexes, Job Openings and Labor Turnover Survey, Employment Situation, Productivity and Costs, FOMC meeting (date only; announcement time not inferred), Consumer Price Index, Producer Price Index, U.S. Import and Export Price Indexes"
+            ]
+          },
+          "data_quality": {
+            "missing": []
+          },
+          "method": "five-layer weighted model; missing components excluded and weights renormalized; not calibrated"
+        }
+      },
+      "ETH": {
+        "price": 2324.48,
+        "forecasts": [
+          {
+            "horizon": "4h",
+            "hours": 4,
+            "analogue_count": 120,
+            "analogue_window": 120,
+            "up_frequency_pct": 41.7,
+            "median_return_pct": -0.2,
+            "range_10_90_pct": [
+              -1.2,
+              0.9
+            ],
+            "range_method": "Blended interval: 65% empirical 10th/90th quantiles of 120 nearest historical analogues + 35% rolling 168h volatility envelope (normal 10th/90th proxy); rounded to 0.1 percentage point. Recompute on completed candles; genuine regime changes can move the range.",
+            "rolling_168h_hourly_sigma_pct": 0.4619,
+            "volatility_blend_weight": 0.35,
+            "interpretation": "historical analogue frequency, not calibrated probability"
+          },
+          {
+            "horizon": "24h",
+            "hours": 24,
+            "analogue_count": 120,
+            "analogue_window": 120,
+            "up_frequency_pct": 31.7,
+            "median_return_pct": -0.9,
+            "range_10_90_pct": [
+              -4.0,
+              2.2
+            ],
+            "range_method": "Blended interval: 65% empirical 10th/90th quantiles of 120 nearest historical analogues + 35% rolling 168h volatility envelope (normal 10th/90th proxy); rounded to 0.1 percentage point. Recompute on completed candles; genuine regime changes can move the range.",
+            "rolling_168h_hourly_sigma_pct": 0.4619,
+            "volatility_blend_weight": 0.35,
+            "interpretation": "historical analogue frequency, not calibrated probability"
+          },
+          {
+            "horizon": "72h",
+            "hours": 72,
+            "analogue_count": 120,
+            "analogue_window": 120,
+            "up_frequency_pct": 20.8,
+            "median_return_pct": -2.3,
+            "range_10_90_pct": [
+              -6.7,
+              2.7
+            ],
+            "range_method": "Blended interval: 65% empirical 10th/90th quantiles of 120 nearest historical analogues + 35% rolling 168h volatility envelope (normal 10th/90th proxy); rounded to 0.1 percentage point. Recompute on completed candles; genuine regime changes can move the range.",
+            "rolling_168h_hourly_sigma_pct": 0.4619,
+            "volatility_blend_weight": 0.35,
+            "interpretation": "historical analogue frequency, not calibrated probability"
+          }
+        ],
+        "model": {
+          "regime": "RANGE",
+          "vol_ratio": 0.587,
+          "layers": {
+            "structure": {
+              "score": -0.616834794612379,
+              "components": [
+                {
+                  "name": "trend",
+                  "score": -0.5,
+                  "weight": 0.5,
+                  "note": "daily close vs EMA20/50/200; EMA50 slope -1.26% over 10 days"
+                },
+                {
+                  "name": "momentum",
+                  "score": -0.834,
+                  "weight": 0.3,
+                  "note": "daily RSI14 29.2"
+                },
+                {
+                  "name": "relative_strength_vs_BTC_30d",
+                  "score": -0.583,
+                  "weight": 0.2,
+                  "note": "-8.8% vs BTC over 30d"
+                }
+              ]
+            },
+            "derivs": {
+              "score": -0.4106708154197171,
+              "components": [
+                {
+                  "name": "funding_crowding",
+                  "score": -0.72,
+                  "weight": 0.375,
+                  "note": "funding 0.0072% (86th percentile of available history)"
+                },
+                {
+                  "name": "long_short_ratio",
+                  "score": -0.495,
+                  "weight": 0.188,
+                  "note": "account long/short ratio 2.690; historical percentile unavailable"
+                },
+                {
+                  "name": "price_vs_oi",
+                  "score": -0.147,
+                  "weight": 0.375,
+                  "note": "price -1.3%, OI +1.2% over 24h"
+                },
+                {
+                  "name": "perp_basis",
+                  "score": 0.115,
+                  "weight": 0.063,
+                  "note": "perpetual basis -3.8 bps"
+                }
+              ]
+            },
+            "liquidity": {
+              "score": -0.035178761980458245,
+              "components": [
+                {
+                  "name": "taker_cvd_24h",
+                  "score": -0.003,
+                  "weight": 0.4,
+                  "note": "24h taker CVD -0.0% of volume"
+                },
+                {
+                  "name": "liquidation_magnet",
+                  "score": 0.054,
+                  "weight": 0.3,
+                  "note": "estimated liquidation fuel above vs below; OI-delta weighted"
+                },
+                {
+                  "name": "recent_liquidation_flow",
+                  "score": -0.15,
+                  "weight": 0.2,
+                  "note": "liquidated longs $0.3M vs shorts $0.8M"
+                },
+                {
+                  "name": "book_imbalance",
+                  "score": -0.201,
+                  "weight": 0.1,
+                  "note": "top-400-level notional imbalance -0.10"
+                }
+              ]
+            },
+            "onchain": {
+              "score": -0.36088005642494275,
+              "components": [
+                {
+                  "name": "stablecoin_supply_30d",
+                  "score": -0.29,
+                  "weight": 0.364,
+                  "note": "global stablecoin supply -0.87% over 30d"
+                },
+                {
+                  "name": "chain_tvl_30d",
+                  "score": -0.624,
+                  "weight": 0.273,
+                  "note": "Ethereum TVL -9.4% over 30d"
+                },
+                {
+                  "name": "spot_etf_flow_5d",
+                  "score": -0.235,
+                  "weight": 0.364,
+                  "note": "automatically sourced 5-session spot ETF flow $-117M"
+                }
+              ]
+            },
+            "news": {
+              "score": 0.0,
+              "components": [
+                {
+                  "name": "fear_greed",
+                  "score": 0.0,
+                  "weight": 1.0,
+                  "note": "Fear & Greed 50; contrarian at extremes"
+                }
+              ]
+            }
+          },
+          "horizons": {
+            "4h": {
+              "composite": -0.247,
+              "p_up": 0.409,
+              "coverage": 1.0,
+              "bias": "Bearish",
+              "range": [
+                2308.37223896,
+                2340.70016057
+              ]
+            },
+            "24h": {
+              "composite": -0.25,
+              "p_up": 0.408,
+              "coverage": 1.0,
+              "bias": "Bearish",
+              "range": [
+                2285.22215375,
+                2364.41225705
+              ]
+            },
+            "72h": {
+              "composite": -0.292,
+              "p_up": 0.395,
+              "coverage": 1.0,
+              "bias": "Bearish",
+              "range": [
+                2256.9043915,
+                2394.07893873
+              ]
+            },
+            "1w": {
+              "composite": -0.316,
+              "p_up": 0.388,
+              "coverage": 1.0,
+              "bias": "Bearish",
+              "range": [
+                2222.05172503,
+                2431.62983541
+              ]
+            },
+            "1m": {
+              "composite": -0.327,
+              "p_up": 0.385,
+              "coverage": 1.0,
+              "bias": "Bearish",
+              "range": [
+                2117.42799108,
+                2551.77852242
+              ]
+            }
+          },
+          "patterns": [],
+          "levels": {
+            "liq_above": [
+              {
+                "price": 2440.704,
+                "strength": 0.9352118657147125,
+                "dist_pct": 5.000000000000004
+              },
+              {
+                "price": 2510.4384,
+                "strength": 0.7806894369331071,
+                "dist_pct": 8.000000000000007
+              },
+              {
+                "price": 2556.9280000000003,
+                "strength": 0.6999702194360582,
+                "dist_pct": 10.000000000000009
+              }
+            ],
+            "liq_below": [
+              {
+                "price": 2173.3888,
+                "strength": 0.8044371614413334,
+                "dist_pct": -6.499999999999995
+              },
+              {
+                "price": 2272.1792,
+                "strength": 0.7560891699107064,
+                "dist_pct": -2.2499999999999964
+              },
+              {
+                "price": 2179.2000000000003,
+                "strength": 0.685483982746751,
+                "dist_pct": -6.249999999999989
+              }
+            ],
+            "liq_method": "OI-delta weighted"
+          },
+          "confidence": {
+            "value": 0.49,
+            "label": "Medium",
+            "notes": [
+              "scheduled event within 24h: FOMC meeting (date only; announcement time not inferred), Job Openings and Labor Turnover Survey, Productivity and Costs, Employment Situation, Consumer Price Index, Producer Price Index, U.S. Import and Export Price Indexes, Job Openings and Labor Turnover Survey, Employment Situation, Productivity and Costs, FOMC meeting (date only; announcement time not inferred), Consumer Price Index, Producer Price Index, U.S. Import and Export Price Indexes"
+            ]
+          },
+          "data_quality": {
+            "missing": []
+          },
+          "method": "five-layer weighted model; missing components excluded and weights renormalized; not calibrated"
+        }
+      },
+      "XRP": {
+        "price": 1.301,
+        "forecasts": [
+          {
+            "horizon": "4h",
+            "hours": 4,
+            "analogue_count": 120,
+            "analogue_window": 120,
+            "up_frequency_pct": 41.7,
+            "median_return_pct": -0.1,
+            "range_10_90_pct": [
+              -1.4,
+              0.9
+            ],
+            "range_method": "Blended interval: 65% empirical 10th/90th quantiles of 120 nearest historical analogues + 35% rolling 168h volatility envelope (normal 10th/90th proxy); rounded to 0.1 percentage point. Recompute on completed candles; genuine regime changes can move the range.",
+            "rolling_168h_hourly_sigma_pct": 0.473,
+            "volatility_blend_weight": 0.35,
+            "interpretation": "historical analogue frequency, not calibrated probability"
+          },
+          {
+            "horizon": "24h",
+            "hours": 24,
+            "analogue_count": 120,
+            "analogue_window": 120,
+            "up_frequency_pct": 36.7,
+            "median_return_pct": -0.7,
+            "range_10_90_pct": [
+              -3.7,
+              2.2
+            ],
+            "range_method": "Blended interval: 65% empirical 10th/90th quantiles of 120 nearest historical analogues + 35% rolling 168h volatility envelope (normal 10th/90th proxy); rounded to 0.1 percentage point. Recompute on completed candles; genuine regime changes can move the range.",
+            "rolling_168h_hourly_sigma_pct": 0.473,
+            "volatility_blend_weight": 0.35,
+            "interpretation": "historical analogue frequency, not calibrated probability"
+          },
+          {
+            "horizon": "72h",
+            "hours": 72,
+            "analogue_count": 120,
+            "analogue_window": 120,
+            "up_frequency_pct": 26.7,
+            "median_return_pct": -2.0,
+            "range_10_90_pct": [
+              -6.5,
+              3.7
+            ],
+            "range_method": "Blended interval: 65% empirical 10th/90th quantiles of 120 nearest historical analogues + 35% rolling 168h volatility envelope (normal 10th/90th proxy); rounded to 0.1 percentage point. Recompute on completed candles; genuine regime changes can move the range.",
+            "rolling_168h_hourly_sigma_pct": 0.473,
+            "volatility_blend_weight": 0.35,
+            "interpretation": "historical analogue frequency, not calibrated probability"
+          }
+        ],
+        "model": {
+          "regime": "RANGE",
+          "vol_ratio": 0.582,
+          "layers": {
+            "structure": {
+              "score": -0.8786716135559686,
+              "components": [
+                {
+                  "name": "trend",
+                  "score": -1.0,
+                  "weight": 0.5,
+                  "note": "daily close vs EMA20/50/200; EMA50 slope -1.88% over 10 days"
+                },
+                {
+                  "name": "momentum",
+                  "score": -0.699,
+                  "weight": 0.3,
+                  "note": "daily RSI14 32.5"
+                },
+                {
+                  "name": "relative_strength_vs_BTC_30d",
+                  "score": -0.845,
+                  "weight": 0.2,
+                  "note": "-12.7% vs BTC over 30d"
+                }
+              ]
+            },
+            "derivs": {
+              "score": -0.5190594847737313,
+              "components": [
+                {
+                  "name": "funding_crowding",
+                  "score": -1,
+                  "weight": 0.375,
+                  "note": "funding 0.0100% (100th percentile of available history)"
+                },
+                {
+                  "name": "long_short_ratio",
+                  "score": -0.646,
+                  "weight": 0.188,
+                  "note": "account long/short ratio 3.640; historical percentile unavailable"
+                },
+                {
+                  "name": "price_vs_oi",
+                  "score": -0.08,
+                  "weight": 0.375,
+                  "note": "price -0.9%, OI -2.0% over 24h"
+                },
+                {
+                  "name": "perp_basis",
+                  "score": 0.115,
+                  "weight": 0.063,
+                  "note": "perpetual basis -3.8 bps"
+                }
+              ]
+            },
+            "liquidity": {
+              "score": 0.06225539701295048,
+              "components": [
+                {
+                  "name": "taker_cvd_24h",
+                  "score": -0.243,
+                  "weight": 0.4,
+                  "note": "24h taker CVD -2.4% of volume"
+                },
+                {
+                  "name": "liquidation_magnet",
+                  "score": 0.377,
+                  "weight": 0.3,
+                  "note": "estimated liquidation fuel above vs below; OI-delta weighted"
+                },
+                {
+                  "name": "recent_liquidation_flow",
+                  "score": 0.242,
+                  "weight": 0.2,
+                  "note": "liquidated longs $0.4M vs shorts $0.0M"
+                },
+                {
+                  "name": "book_imbalance",
+                  "score": -0.018,
+                  "weight": 0.1,
+                  "note": "top-400-level notional imbalance -0.01"
+                }
+              ]
+            },
+            "onchain": {
+              "score": -0.13476180066457288,
+              "components": [
+                {
+                  "name": "stablecoin_supply_30d",
+                  "score": -0.29,
+                  "weight": 0.5,
+                  "note": "global stablecoin supply -0.87% over 30d"
+                },
+                {
+                  "name": "spot_etf_flow_5d",
+                  "score": 0.02,
+                  "weight": 0.5,
+                  "note": "automatically sourced 5-session spot ETF flow $+2M"
+                }
+              ]
+            },
+            "news": {
+              "score": 0.0,
+              "components": [
+                {
+                  "name": "fear_greed",
+                  "score": 0.0,
+                  "weight": 1.0,
+                  "note": "Fear & Greed 50; contrarian at extremes"
+                }
+              ]
+            }
+          },
+          "horizons": {
+            "4h": {
+              "composite": -0.272,
+              "p_up": 0.401,
+              "coverage": 1.0,
+              "bias": "Bearish",
+              "range": [
+                1.29078634,
+                1.31129447
+              ]
+            },
+            "24h": {
+              "composite": -0.278,
+              "p_up": 0.399,
+              "coverage": 1.0,
+              "bias": "Bearish",
+              "range": [
+                1.27612393,
+                1.32636099
+              ]
+            },
+            "72h": {
+              "composite": -0.323,
+              "p_up": 0.386,
+              "coverage": 1.0,
+              "bias": "Bearish",
+              "range": [
+                1.25821546,
+                1.34523939
+              ]
+            },
+            "1w": {
+              "composite": -0.353,
+              "p_up": 0.378,
+              "coverage": 1.0,
+              "bias": "Bearish",
+              "range": [
+                1.23621539,
+                1.36917968
+              ]
+            },
+            "1m": {
+              "composite": -0.309,
+              "p_up": 0.39,
+              "coverage": 1.0,
+              "bias": "Bearish",
+              "range": [
+                1.17045255,
+                1.44610817
+              ]
+            }
+          },
+          "patterns": [],
+          "levels": {
+            "liq_above": [
+              {
+                "price": 1.4018274999999998,
+                "strength": 1.0,
+                "dist_pct": 7.74999999999999
+              },
+              {
+                "price": 1.4180899999999999,
+                "strength": 0.8764200432697005,
+                "dist_pct": 8.999999999999986
+              },
+              {
+                "price": 1.3465349999999998,
+                "strength": 0.7764378171217385,
+                "dist_pct": 3.499999999999992
+              }
+            ],
+            "liq_below": [
+              {
+                "price": 1.2326975,
+                "strength": 0.8890493911146448,
+                "dist_pct": -5.249999999999999
+              },
+              {
+                "price": 1.1676475,
+                "strength": 0.7041972213530835,
+                "dist_pct": -10.250000000000004
+              },
+              {
+                "price": 1.2457075,
+                "strength": 0.6612402858066544,
+                "dist_pct": -4.249999999999998
+              }
+            ],
+            "liq_method": "OI-delta weighted"
+          },
+          "confidence": {
+            "value": 0.33,
+            "label": "Low",
+            "notes": [
+              "layers disagree",
+              "scheduled event within 24h: FOMC meeting (date only; announcement time not inferred), Job Openings and Labor Turnover Survey, Productivity and Costs, Employment Situation, Consumer Price Index, Producer Price Index, U.S. Import and Export Price Indexes, Job Openings and Labor Turnover Survey, Employment Situation, Productivity and Costs, FOMC meeting (date only; announcement time not inferred), Consumer Price Index, Producer Price Index, U.S. Import and Export Price Indexes"
+            ]
+          },
+          "data_quality": {
+            "missing": []
+          },
+          "method": "five-layer weighted model; missing components excluded and weights renormalized; not calibrated"
+        }
+      },
+      "SOL": {
+        "price": 101.91,
+        "forecasts": [
+          {
+            "horizon": "4h",
+            "hours": 4,
+            "analogue_count": 120,
+            "analogue_window": 120,
+            "up_frequency_pct": 47.5,
+            "median_return_pct": -0.1,
+            "range_10_90_pct": [
+              -1.4,
+              1.0
+            ],
+            "range_method": "Blended interval: 65% empirical 10th/90th quantiles of 120 nearest historical analogues + 35% rolling 168h volatility envelope (normal 10th/90th proxy); rounded to 0.1 percentage point. Recompute on completed candles; genuine regime changes can move the range.",
+            "rolling_168h_hourly_sigma_pct": 0.4681,
+            "volatility_blend_weight": 0.35,
+            "interpretation": "historical analogue frequency, not calibrated probability"
+          },
+          {
+            "horizon": "24h",
+            "hours": 24,
+            "analogue_count": 120,
+            "analogue_window": 120,
+            "up_frequency_pct": 32.5,
+            "median_return_pct": -0.6,
+            "range_10_90_pct": [
+              -3.5,
+              2.3
+            ],
+            "range_method": "Blended interval: 65% empirical 10th/90th quantiles of 120 nearest historical analogues + 35% rolling 168h volatility envelope (normal 10th/90th proxy); rounded to 0.1 percentage point. Recompute on completed candles; genuine regime changes can move the range.",
+            "rolling_168h_hourly_sigma_pct": 0.4681,
+            "volatility_blend_weight": 0.35,
+            "interpretation": "historical analogue frequency, not calibrated probability"
+          },
+          {
+            "horizon": "72h",
+            "hours": 72,
+            "analogue_count": 120,
+            "analogue_window": 120,
+            "up_frequency_pct": 15.0,
+            "median_return_pct": -3.0,
+            "range_10_90_pct": [
+              -7.2,
+              2.1
+            ],
+            "range_method": "Blended interval: 65% empirical 10th/90th quantiles of 120 nearest historical analogues + 35% rolling 168h volatility envelope (normal 10th/90th proxy); rounded to 0.1 percentage point. Recompute on completed candles; genuine regime changes can move the range.",
+            "rolling_168h_hourly_sigma_pct": 0.4681,
+            "volatility_blend_weight": 0.35,
+            "interpretation": "historical analogue frequency, not calibrated probability"
+          }
+        ],
+        "model": {
+          "regime": "RANGE",
+          "vol_ratio": 0.479,
+          "layers": {
+            "structure": {
+              "score": -0.4421819650459864,
+              "components": [
+                {
+                  "name": "trend",
+                  "score": 0.0,
+                  "weight": 0.5,
+                  "note": "daily close vs EMA20/50/200; EMA50 slope -1.00% over 10 days"
+                },
+                {
+                  "name": "momentum",
+                  "score": -0.927,
+                  "weight": 0.3,
+                  "note": "daily RSI14 26.8"
+                },
+                {
+                  "name": "relative_strength_vs_BTC_30d",
+                  "score": -0.82,
+                  "weight": 0.2,
+                  "note": "-12.3% vs BTC over 30d"
+                }
+              ]
+            },
+            "derivs": {
+              "score": -0.37602022681086816,
+              "components": [
+                {
+                  "name": "funding_crowding",
+                  "score": -1,
+                  "weight": 0.375,
+                  "note": "funding 0.0100% (100th percentile of available history)"
+                },
+                {
+                  "name": "long_short_ratio",
+                  "score": -0.536,
+                  "weight": 0.188,
+                  "note": "account long/short ratio 2.920; historical percentile unavailable"
+                },
+                {
+                  "name": "price_vs_oi",
+                  "score": 0.241,
+                  "weight": 0.375,
+                  "note": "price +0.1%, OI +2.0% over 24h"
+                },
+                {
+                  "name": "perp_basis",
+                  "score": 0.147,
+                  "weight": 0.063,
+                  "note": "perpetual basis -4.9 bps"
+                }
+              ]
+            },
+            "liquidity": {
+              "score": 0.22738621291280278,
+              "components": [
+                {
+                  "name": "taker_cvd_24h",
+                  "score": 0.181,
+                  "weight": 0.4,
+                  "note": "24h taker CVD +1.8% of volume"
+                },
+                {
+                  "name": "liquidation_magnet",
+                  "score": 0.46,
+                  "weight": 0.3,
+                  "note": "estimated liquidation fuel above vs below; OI-delta weighted"
+                },
+                {
+                  "name": "recent_liquidation_flow",
+                  "score": 0.086,
+                  "weight": 0.2,
+                  "note": "liquidated longs $0.5M vs shorts $0.3M"
+                },
+                {
+                  "name": "book_imbalance",
+                  "score": -0.002,
+                  "weight": 0.1,
+                  "note": "top-400-level notional imbalance -0.00"
+                }
+              ]
+            },
+            "onchain": {
+              "score": -0.3907272105756415,
+              "components": [
+                {
+                  "name": "stablecoin_supply_30d",
+                  "score": -0.29,
+                  "weight": 0.364,
+                  "note": "global stablecoin supply -0.87% over 30d"
+                },
+                {
+                  "name": "chain_tvl_30d",
+                  "score": -0.901,
+                  "weight": 0.273,
+                  "note": "Solana TVL -13.5% over 30d"
+                },
+                {
+                  "name": "spot_etf_flow_5d",
+                  "score": -0.109,
+                  "weight": 0.364,
+                  "note": "automatically sourced 5-session spot ETF flow $-11M"
+                }
+              ]
+            },
+            "news": {
+              "score": 0.0,
+              "components": [
+                {
+                  "name": "fear_greed",
+                  "score": 0.0,
+                  "weight": 1.0,
+                  "note": "Fear & Greed 50; contrarian at extremes"
+                }
+              ]
+            }
+          },
+          "horizons": {
+            "4h": {
+              "composite": -0.131,
+              "p_up": 0.449,
+              "coverage": 1.0,
+              "bias": "Neutral",
+              "range": [
+                101.14296031,
+                102.68285671
+              ]
+            },
+            "24h": {
+              "composite": -0.127,
+              "p_up": 0.45,
+              "coverage": 1.0,
+              "bias": "Neutral",
+              "range": [
+                100.04138153,
+                103.81352138
+              ]
+            },
+            "72h": {
+              "composite": -0.192,
+              "p_up": 0.427,
+              "coverage": 1.0,
+              "bias": "Bearish",
+              "range": [
+                98.69521548,
+                105.22949922
+              ]
+            },
+            "1w": {
+              "composite": -0.226,
+              "p_up": 0.415,
+              "coverage": 1.0,
+              "bias": "Bearish",
+              "range": [
+                97.04039999,
+                107.0239622
+              ]
+            },
+            "1m": {
+              "composite": -0.278,
+              "p_up": 0.399,
+              "coverage": 1.0,
+              "bias": "Bearish",
+              "range": [
+                92.08643846,
+                112.78151564
+              ]
+            }
+          },
+          "patterns": [],
+          "levels": {
+            "liq_above": [
+              {
+                "price": 105.98639999999999,
+                "strength": 1.0,
+                "dist_pct": 4.0000000000000036
+              },
+              {
+                "price": 111.08189999999999,
+                "strength": 0.7873224829849711,
+                "dist_pct": 8.999999999999986
+              },
+              {
+                "price": 109.04369999999999,
+                "strength": 0.5214030101137977,
+                "dist_pct": 6.999999999999984
+              }
+            ],
+            "liq_below": [
+              {
+                "price": 98.08837499999998,
+                "strength": 0.710026151911119,
+                "dist_pct": -3.750000000000009
+              },
+              {
+                "price": 96.8145,
+                "strength": 0.673428559910166,
+                "dist_pct": -5.000000000000004
+              },
+              {
+                "price": 94.521525,
+                "strength": 0.6646930904271291,
+                "dist_pct": -7.250000000000001
+              }
+            ],
+            "liq_method": "OI-delta weighted"
+          },
+          "confidence": {
+            "value": 0.45,
+            "label": "Medium",
+            "notes": [
+              "scheduled event within 24h: FOMC meeting (date only; announcement time not inferred), Job Openings and Labor Turnover Survey, Productivity and Costs, Employment Situation, Consumer Price Index, Producer Price Index, U.S. Import and Export Price Indexes, Job Openings and Labor Turnover Survey, Employment Situation, Productivity and Costs, FOMC meeting (date only; announcement time not inferred), Consumer Price Index, Producer Price Index, U.S. Import and Export Price Indexes"
+            ]
+          },
+          "data_quality": {
+            "missing": []
+          },
+          "method": "five-layer weighted model; missing components excluded and weights renormalized; not calibrated"
+        }
+      }
+    }
   }
 ]
