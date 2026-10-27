@@ -808,6 +808,18 @@ def main():
     elif isinstance(pp,(int,float)): line+=f" | P(up) {pp*100:.0f}%"
     lines.append(line)
    lines.append("")
+  # Always show the current ETF window in the Telegram report.
+  etfs=(snap.get("model_context",{}).get("etf_flows",{}) or {})
+  lines.extend(["","💸 ETF FLOWS · RECENT WINDOW"])
+  for coin in ("BTC","ETH","SOL","XRP"):
+   meta=etfs.get(coin,{}) or {}; value=meta.get("five_session_net_flow_usd")
+   if value is None:
+    lines.append(f"• {coin}: N/A"+(f" — {str(meta.get('error'))[:90]}" if meta.get("error") else " — source data unavailable"))
+    continue
+   sign="🟢" if value>0 else "🔴" if value<0 else "⚪"
+   start_date=str(meta.get("period_start") or "?"); end_date=str(meta.get("period_end") or "?")
+   lines.append(f"{sign} {coin}: {value/1_000_000:+,.1f}M USD · {start_date}–{end_date} · {meta.get('sessions','?')} sessions")
+  lines.append("Source: BTC/ETH/SOL reported ETF totals; XRP holdings-derived estimate.")
   evs=snap.get("model_context",{}).get("events",[]) or []
   if evs:
    lines.append("🗓 UPCOMING MACRO EVENTS")
