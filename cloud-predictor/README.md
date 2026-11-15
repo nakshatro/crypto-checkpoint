@@ -4,7 +4,7 @@ This additive Forecast Lab lives under `cloud-predictor/`; it does not replace t
 
 ## Architecture
 
-1. GitHub Actions refreshes the public-market snapshots on a best-effort 15-minute schedule.
+1. GitHub Actions refreshes the public-market snapshots on a best-effort 30-minute schedule.
 2. The worker reads completed OKX hourly and daily candles and public derivatives endpoints where available.
 3. It scores structure, derivatives, liquidity, on-chain flows and news; missing components are excluded and reported.
 4. Hourly model snapshots are retained in `docs/data/history.json` and evaluated in `docs/data/calibration.json`.
@@ -20,7 +20,7 @@ This additive Forecast Lab lives under `cloud-predictor/`; it does not replace t
 | On-chain | 30d stablecoin supply, ETH/SOL chain TVL, optional ETF flow | ETF flows are manual only; unknown values remain null |
 | News | Asset-matched headlines and Fear & Greed | Keyword-based headlines; not semantic or fully time-filtered news analysis |
 
-The model detects the UPTREND, DOWNTREND, RANGE and HIGH_VOL regimes, adjusts layer weights by horizon and regime, applies supported HEALTHY_TREND / EXHAUSTION interactions, and shrinks directional estimates toward 50%. Confidence is reduced by layer disagreement, low layer coverage and configured events within 24 hours.
+The model detects the UPTREND, DOWNTREND, RANGE and HIGH_VOL regimes, adjusts layer weights by horizon and regime, applies supported HEALTHY_TREND / EXHAUSTION interactions, and shrinks directional estimates toward 50%. Confidence is reduced by layer disagreement, low layer coverage, precisely timed events within 24 hours, and date-only events scheduled for the current UTC date. Events farther away do not trigger an imminent-event penalty.
 
 ## Reading the dashboard
 
@@ -29,7 +29,7 @@ The model detects the UPTREND, DOWNTREND, RANGE and HIGH_VOL regimes, adjusts la
 - **Confidence** summarizes data coverage and agreement; it is not the chance of a profitable trade.
 - **Historical analogue forecasts** are a separate reference method and should not be confused with the five-layer model.
 - **Missing inputs** are displayed instead of being filled with fabricated values.
-- Calibration shows Brier score, skill against a 50/50 baseline and hit rate. Treat early results cautiously; aim for 100+ evaluated outcomes per horizon.
+- Calibration samples at most one forecast per coin per horizon interval to reduce overlapping-outcome dependence. It reports Brier score, skill versus a 50/50 reference and a past-only expanding base-rate benchmark. Small samples remain unreliable.
 
 ## Manual inputs
 
@@ -41,7 +41,7 @@ Do not add unverified dates or estimates.
 
 ## Schedule
 
-The current workflow runs at minutes 7, 22, 37 and 52 of each UTC hour (about every 15 minutes). GitHub cron can be delayed. Edit `.github/workflows/crypto-data.yml` to change it; for example `0,30 * * * *` is twice hourly and `0 */3 * * *` is every three hours.
+The current workflow runs at every 30 minutes (`*/30 * * * *`). GitHub Actions schedules are best-effort and may be delayed. GitHub cron can be delayed. Edit `.github/workflows/crypto-data.yml` to change it; for example `0,30 * * * *` is twice hourly and `0 */3 * * *` is every three hours.
 
 ## Limitations and safety
 
