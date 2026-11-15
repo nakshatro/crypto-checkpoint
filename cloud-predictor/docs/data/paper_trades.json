@@ -1,14 +1,20 @@
 {
   "created_at": "2026-10-22T20:31:36.957687+00:00",
-  "method": "Paper simulation only. One portfolio position at a time; strict high-conviction signal gate; 72h re-entry cooldown after exit; 72h max hold; only strongest eligible signal selected.",
+  "method": "Paper simulation only; no real orders. One portfolio position total; 72h re-entry cooldown after exit; 72h maximum hold; highest-ranked eligible signal only. All gate values are recorded below.",
   "assumptions": {
     "fee_per_side_pct": 0.05,
     "slippage_per_side_pct": 0.02,
     "max_hold_hours": 72,
     "reentry_cooldown_hours": 72,
     "max_simultaneous_open_trades": 1,
+    "signal_gate": {
+      "long_p_up_min": 0.6,
+      "short_p_up_max": 0.4,
+      "confidence_min": 0.5,
+      "coverage_min": 0.65
+    },
     "same_candle_stop_target": "stop first",
-    "funding": "estimated from entry funding rate and 8h intervals; not realized historical funding"
+    "funding": "entry funding rate held constant as a rough estimate; actual historical funding cashflows are not replayed"
   },
   "trades": [
     {
@@ -272,7 +278,7 @@
       "funding_note": "Estimate using entry funding rate held constant; not historical realized funding."
     }
   ],
-  "updated_at": "2026-11-15T05:09:14.491214+00:00",
+  "updated_at": "2026-11-15T05:10:16.768693+00:00",
   "summary": {
     "closed_trades": 9,
     "open_trades": 0,
