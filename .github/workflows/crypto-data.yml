@@ -25,6 +25,8 @@ concurrency:
 
 jobs:
   update-data:
+    # Feature branches must not run the production collector that commits generated data to main.
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -36,9 +38,10 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Check worker and dashboard syntax
+      - name: Check worker syntax and regression tests
         run: |
-          python -m py_compile cloud-predictor/worker/collector.py
+          python -m py_compile cloud-predictor/worker/collector.py cloud-predictor/worker/paper_trader.py cloud-predictor/worker/calibration_review.py
+          python -m unittest discover -s tests -p 'test_*.py'
           python - <<'PY'
           import ast
           from pathlib import Path
