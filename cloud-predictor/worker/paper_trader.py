@@ -7,7 +7,7 @@ import requests
 ROOT=Path(__file__).resolve().parents[1]; DATA=ROOT/"docs"/"data"; DATA.mkdir(parents=True,exist_ok=True)
 S=requests.Session(); S.headers.update({"User-Agent":"CryptoCheckpointPaperTrader/1.0"})
 SYMS={"BTC":"BTC-USDT-SWAP","ETH":"ETH-USDT-SWAP","XRP":"XRP-USDT-SWAP","SOL":"SOL-USDT-SWAP"}
-FEE_SIDE=.0005; SLIP_SIDE=.0002; MAX_HOURS=72; REENTRY_COOLDOWN_HOURS=72; MAX_OPEN_TRADES=1
+FEE_SIDE=.0005; SLIP_SIDE=.0002; MAX_HOURS=72; REENTRY_COOLDOWN_HOURS=72; MAX_OPEN_TRADES=1; MIN_P_UP_LONG=.60; MAX_P_UP_SHORT=.40; MIN_CONFIDENCE=.50; MIN_COVERAGE=.65
 def read(p,d):
  try:return json.loads(p.read_text(encoding="utf-8"))
  except Exception:return d
@@ -18,8 +18,8 @@ def candles(inst,after):
 def candidate(coin,v,now):
  h=((v.get("model") or {}).get("horizons") or {}).get("24h") or {}; p=h.get("p_up"); conf=((v.get("model") or {}).get("confidence") or {}).get("value",0); cov=h.get("coverage",0); price=v.get("price"); band=h.get("range")
  if not isinstance(p,(int,float)) or not isinstance(price,(int,float)) or not isinstance(band,list) or len(band)<2:return None
- side="long" if p>=.60 else "short" if p<=.40 else None
- if not side or conf<.50 or cov<.65:return None
+ side="long" if p>=MIN_P_UP_LONG else "short" if p<=MAX_P_UP_SHORT else None
+ if not side or conf<MIN_CONFIDENCE or cov<MIN_COVERAGE:return None
  edge=float(band[0] if side=="long" else band[1]); risk=price-edge if side=="long" else edge-price
  if risk<=0:return None
  risk=max(risk,price*.005); stop=price-risk if side=="long" else price+risk; tp=price+1.5*risk if side=="long" else price-1.5*risk
@@ -43,8 +43,8 @@ def main():
  now=datetime.now(timezone.utc).isoformat(); snap=read(DATA/"latest.json",{}); path=DATA/"paper_trades.json"
  store=read(path,{"created_at":now,"method":"Paper simulation only. No real orders. One open position per coin; 72h re-entry cooldown; top-ranked candidates only; max two simultaneous trades.","assumptions":{"fee_per_side_pct":FEE_SIDE*100,"slippage_per_side_pct":SLIP_SIDE*100,"max_hold_hours":MAX_HOURS,"reentry_cooldown_hours":REENTRY_COOLDOWN_HOURS,"max_simultaneous_open_trades":MAX_OPEN_TRADES,"signal_gate":{"long_p_up_min":0.65,"short_p_up_max":0.35,"confidence_min":0.65,"coverage_min":0.80},"same_candle_stop_target":"stop first","funding":"estimated from entry funding rate and 8h intervals; not realized historical funding"},"trades":[]})
  trades=store.get("trades",[]); errors=[]
- store["method"]="Paper simulation only. One portfolio position at a time; strict high-conviction signal gate; 72h re-entry cooldown after exit; 72h max hold; only strongest eligible signal selected."
- store["assumptions"]={"fee_per_side_pct":FEE_SIDE*100,"slippage_per_side_pct":SLIP_SIDE*100,"max_hold_hours":MAX_HOURS,"reentry_cooldown_hours":REENTRY_COOLDOWN_HOURS,"max_simultaneous_open_trades":MAX_OPEN_TRADES,"same_candle_stop_target":"stop first","funding":"estimated from entry funding rate and 8h intervals; not realized historical funding"}
+ store["method"]="Paper simulation only; no real orders. One portfolio position total; 72h re-entry cooldown after exit; 72h maximum hold; highest-ranked eligible signal only. All gate values are recorded below."
+ store["assumptions"]={"fee_per_side_pct":FEE_SIDE*100,"slippage_per_side_pct":SLIP_SIDE*100,"max_hold_hours":MAX_HOURS,"reentry_cooldown_hours":REENTRY_COOLDOWN_HOURS,"max_simultaneous_open_trades":MAX_OPEN_TRADES,"signal_gate":{"long_p_up_min":MIN_P_UP_LONG,"short_p_up_max":MAX_P_UP_SHORT,"confidence_min":MIN_CONFIDENCE,"coverage_min":MIN_COVERAGE},"same_candle_stop_target":"stop first","funding":"entry funding rate held constant as a rough estimate; actual historical funding cashflows are not replayed"}
  for t in trades:
   if t.get("status")!="open":continue
   try:
@@ -81,7 +81,7 @@ def main():
  candidates.sort(key=lambda t:(t["selection_score"],t["confidence"],t["coverage"]),reverse=True)
  slots=max(0,MAX_OPEN_TRADES-open_count)
  for t in candidates[:slots]:
-  t["selection_rule"]="Top-ranked eligible signal; one open trade per coin; 72h re-entry cooldown; max two simultaneous portfolio trades."
+  t["selection_rule"]="Top-ranked eligible signal; one open portfolio trade total; 72h re-entry cooldown; 72h maximum hold."
   trades.append(t);active.add(t["coin"])
  closed=[t for t in trades if t.get("status")=="closed"]; wins=sum((t.get("net_return_pct") or 0)>0 for t in closed)
  summary={"closed_trades":len(closed),"open_trades":sum(t.get("status")=="open" for t in trades),"wins_net":wins,"losses_or_flat_net":len(closed)-wins,"win_rate_net_pct":round(100*wins/len(closed),2) if closed else None,"mean_net_return_pct":round(sum(t.get("net_return_pct",0) or 0 for t in closed)/len(closed),4) if closed else None,"compounded_net_return_pct":round((math.prod(1+(t.get("net_return_pct",0) or 0)/100 for t in closed)-1)*100,4) if closed else None}
