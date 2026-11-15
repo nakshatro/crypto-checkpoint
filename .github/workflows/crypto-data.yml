@@ -10,6 +10,13 @@ on:
       - "cloud-predictor/worker/calibration_review.py"
       - "cloud-predictor/docs/index.html"
       - "cloud-predictor/docs/closed-trades.html"
+  pull_request:
+    paths:
+      - "cloud-predictor/worker/collector.py"
+      - "cloud-predictor/worker/paper_trader.py"
+      - "cloud-predictor/worker/calibration_review.py"
+      - "tests/test_backtest.py"
+      - ".github/workflows/crypto-data.yml"
   schedule:
     # Refresh twice per hour; GitHub Actions schedules are best-effort.
     # A push to this workflow file also triggers an immediate refresh (recovery note: 2026-10-22).
@@ -24,7 +31,25 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  test:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install worker dependency
+        run: python -m pip install --disable-pip-version-check requests
+      - name: Compile workers and run regression tests
+        run: |
+          python -m py_compile cloud-predictor/worker/collector.py cloud-predictor/worker/paper_trader.py cloud-predictor/worker/calibration_review.py
+          python -m unittest discover -s tests -p 'test_*.py' -v
+
   update-data:
+    # Feature branches must not run the production collector that commits generated data to main.
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -36,9 +61,11 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Check worker and dashboard syntax
+      - name: Check worker syntax and regression tests
         run: |
-          python -m py_compile cloud-predictor/worker/collector.py
+          python -m pip install --disable-pip-version-check requests
+          python -m py_compile cloud-predictor/worker/collector.py cloud-predictor/worker/paper_trader.py cloud-predictor/worker/calibration_review.py
+          python -m unittest discover -s tests -p 'test_*.py'
           python - <<'PY'
           import ast
           from pathlib import Path
