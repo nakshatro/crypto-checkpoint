@@ -1,189 +1,182 @@
 {
-  "updated_at": "2026-11-15T00:32:36.676585+00:00",
+  "updated_at": "2026-11-15T05:08:57.788548+00:00",
   "note": "Calibration requires future hourly observations; treat early samples cautiously. n>=100 per horizon is preferred.",
   "horizons": {
     "4h": {
-      "n": 252,
-      "brier": 0.2551,
-      "skill_vs_coinflip": -0.0205,
-      "hit_rate": 0.524,
-      "base_rate_up": 0.44,
+      "n": 192,
+      "sampling": "non-overlapping forecast origins; at least one horizon apart per coin",
+      "brier": 0.25736,
+      "base_rate_brier": 0.26144,
+      "skill_vs_coinflip": -0.0294,
+      "skill_vs_past_base_rate": 0.0156,
+      "hit_rate": 0.526,
+      "base_rate_up": 0.453,
       "bins": [
         {
           "range": "0.00-0.40",
-          "n": 84,
-          "mean_p": 0.379,
-          "freq_up": 0.429
+          "n": 68,
+          "mean_p": 0.378,
+          "freq_up": 0.485
         },
         {
           "range": "0.40-0.45",
-          "n": 96,
+          "n": 75,
           "mean_p": 0.421,
-          "freq_up": 0.5
+          "freq_up": 0.467
         },
         {
           "range": "0.45-0.50",
-          "n": 45,
+          "n": 33,
           "mean_p": 0.471,
-          "freq_up": 0.4
+          "freq_up": 0.394
         },
         {
           "range": "0.50-0.55",
-          "n": 23,
-          "mean_p": 0.516,
-          "freq_up": 0.391
+          "n": 13,
+          "mean_p": 0.518,
+          "freq_up": 0.462
         },
         {
           "range": "0.55-0.60",
           "n": 3,
           "mean_p": 0.572,
           "freq_up": 0.0
-        },
-        {
-          "range": "0.60-1.00",
-          "n": 1,
-          "mean_p": 0.607,
-          "freq_up": 0.0
         }
       ]
     },
     "24h": {
-      "n": 296,
-      "brier": 0.2462,
-      "skill_vs_coinflip": 0.0151,
-      "hit_rate": 0.584,
-      "base_rate_up": 0.355,
+      "n": 72,
+      "sampling": "non-overlapping forecast origins; at least one horizon apart per coin",
+      "brier": 0.25917,
+      "base_rate_brier": 0.26673,
+      "skill_vs_coinflip": -0.0367,
+      "skill_vs_past_base_rate": 0.0283,
+      "hit_rate": 0.556,
+      "base_rate_up": 0.389,
       "bins": [
         {
           "range": "0.00-0.40",
-          "n": 110,
-          "mean_p": 0.377,
-          "freq_up": 0.4
+          "n": 28,
+          "mean_p": 0.374,
+          "freq_up": 0.607
         },
         {
           "range": "0.40-0.45",
-          "n": 118,
-          "mean_p": 0.42,
-          "freq_up": 0.407
+          "n": 29,
+          "mean_p": 0.421,
+          "freq_up": 0.31
         },
         {
           "range": "0.45-0.50",
-          "n": 44,
-          "mean_p": 0.474,
-          "freq_up": 0.25
+          "n": 9,
+          "mean_p": 0.477,
+          "freq_up": 0.111
         },
         {
           "range": "0.50-0.55",
-          "n": 15,
-          "mean_p": 0.515,
-          "freq_up": 0.067
+          "n": 3,
+          "mean_p": 0.517,
+          "freq_up": 0.333
         },
         {
           "range": "0.55-0.60",
-          "n": 6,
-          "mean_p": 0.575,
-          "freq_up": 0.167
+          "n": 2,
+          "mean_p": 0.581,
+          "freq_up": 0.0
         },
         {
           "range": "0.60-1.00",
-          "n": 3,
+          "n": 1,
           "mean_p": 0.608,
           "freq_up": 0.0
         }
       ]
     },
     "72h": {
-      "n": 248,
-      "brier": 0.2071,
-      "skill_vs_coinflip": 0.1715,
-      "hit_rate": 0.738,
-      "base_rate_up": 0.198,
+      "n": 28,
+      "sampling": "non-overlapping forecast origins; at least one horizon apart per coin",
+      "brier": 0.19209,
+      "base_rate_brier": 0.18306,
+      "skill_vs_coinflip": 0.2317,
+      "skill_vs_past_base_rate": -0.0493,
+      "hit_rate": 0.821,
+      "base_rate_up": 0.143,
       "bins": [
         {
           "range": "0.00-0.40",
-          "n": 133,
-          "mean_p": 0.375,
-          "freq_up": 0.18
+          "n": 12,
+          "mean_p": 0.377,
+          "freq_up": 0.083
         },
         {
           "range": "0.40-0.45",
-          "n": 70,
-          "mean_p": 0.418,
-          "freq_up": 0.229
+          "n": 10,
+          "mean_p": 0.413,
+          "freq_up": 0.1
         },
         {
           "range": "0.45-0.50",
-          "n": 24,
-          "mean_p": 0.481,
-          "freq_up": 0.333
-        },
-        {
-          "range": "0.50-0.55",
-          "n": 15,
-          "mean_p": 0.517,
-          "freq_up": 0.067
+          "n": 5,
+          "mean_p": 0.482,
+          "freq_up": 0.4
         },
         {
           "range": "0.55-0.60",
-          "n": 4,
-          "mean_p": 0.583,
-          "freq_up": 0.0
-        },
-        {
-          "range": "0.60-1.00",
-          "n": 2,
-          "mean_p": 0.608,
+          "n": 1,
+          "mean_p": 0.591,
           "freq_up": 0.0
         }
       ]
     },
     "1w": {
-      "n": 212,
-      "brier": 0.1792,
-      "skill_vs_coinflip": 0.2832,
-      "hit_rate": 0.877,
-      "base_rate_up": 0.042,
+      "n": 12,
+      "sampling": "non-overlapping forecast origins; at least one horizon apart per coin",
+      "brier": 0.19813,
+      "base_rate_brier": 0.18461,
+      "skill_vs_coinflip": 0.2075,
+      "skill_vs_past_base_rate": -0.0733,
+      "hit_rate": 0.75,
+      "base_rate_up": 0.083,
       "bins": [
         {
           "range": "0.00-0.40",
-          "n": 113,
-          "mean_p": 0.37,
-          "freq_up": 0.035
+          "n": 6,
+          "mean_p": 0.36,
+          "freq_up": 0.167
         },
         {
           "range": "0.40-0.45",
-          "n": 56,
-          "mean_p": 0.416,
-          "freq_up": 0.071
+          "n": 2,
+          "mean_p": 0.411,
+          "freq_up": 0.0
         },
         {
           "range": "0.45-0.50",
-          "n": 25,
-          "mean_p": 0.479,
-          "freq_up": 0.04
+          "n": 2,
+          "mean_p": 0.464,
+          "freq_up": 0.0
         },
         {
           "range": "0.50-0.55",
-          "n": 10,
-          "mean_p": 0.511,
+          "n": 1,
+          "mean_p": 0.509,
           "freq_up": 0.0
         },
         {
           "range": "0.55-0.60",
-          "n": 6,
-          "mean_p": 0.575,
-          "freq_up": 0.0
-        },
-        {
-          "range": "0.60-1.00",
-          "n": 2,
-          "mean_p": 0.611,
+          "n": 1,
+          "mean_p": 0.599,
           "freq_up": 0.0
         }
       ]
     },
     "1m": {
-      "n": 0
+      "n": 0,
+      "sampling": "non-overlapping forecast origins",
+      "brier": null,
+      "base_rate_brier": null,
+      "skill_vs_coinflip": null,
+      "skill_vs_past_base_rate": null
     }
   }
 }
