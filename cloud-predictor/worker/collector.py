@@ -848,7 +848,7 @@ def main():
    add_event("auto-setup:"+c+":"+side,f"PROVISIONAL SETUP — {c} {side.upper()} | reference ${price:,.6g} | SL ${stop:,.6g} | TP1 ${target:,.6g} | model P(up) {p*100:.1f}% | confidence {conf:.2f}. Experimental and uncalibrated; confirm structure before trading.")
  nstate["last_setup"]=generated_setups
  if nstate.get("last_hourly_utc_hour")!=hour_key or os.getenv("TELEGRAM_FORCE_SEND","").lower() in ("1","true","yes"):
-  lines=["📊 CRYPTO CHECKPOINT | HOURLY","🕒 "+now_dt.strftime("%d %b %Y · %H:%M UTC"),"⚠️ Model probabilities are experimental, not calibrated.",""]
+  lines=["📊 CRYPTO CHECKPOINT","🕒 "+now_dt.strftime("%d %b %Y · %H:%M UTC"),"━━━━━━━━━━━━━━━━━━","⚠️ Experimental model · Not financial advice","", "1️⃣ PRICE & MARKET TREND"]
   for c in ("BTC","ETH","XRP","SOL"):
    v=snap["coins"].get(c,{})
    if "error" in v: lines.extend([f"🔴 {c} — DATA UNAVAILABLE",str(v.get("error",""))[:100],""]); continue
@@ -856,7 +856,7 @@ def main():
    f24=next((x for x in v.get("forecasts",[]) if x.get("horizon")=="24h"),{}); med=f24.get("median_return_pct")
    ch=float(v.get("change_1h_pct") or 0); arrow="🟢" if ch>0 else "🔴" if ch<0 else "⚪"
    lines.append(f"{'🟠' if c=='BTC' else '🔵' if c=='ETH' else '🟣' if c=='XRP' else '🟢'} {c}  |  ${v.get('price',0):,.6g}")
-   lines.append(f"   1h: {arrow} {ch:+.2f}%  ·  Confidence: {conf}")
+   lines.append(f"   1H change: {arrow} {ch:+.2f}%  |  Model confidence: {conf}")
    mh=(m.get("horizons",{}) or {})
    price=float(v.get("price") or 0)
    for horizon,label in (("4h","4H"),("24h","24H"),("72h","72H")):
@@ -886,7 +886,7 @@ def main():
    lines.append("")
   # Always show the current ETF window in the Telegram report.
   etfs=(snap.get("model_context",{}).get("etf_flows",{}) or {})
-  lines.extend(["","💸 ETF FLOWS · RECENT WINDOW"])
+  lines.extend(["","2️⃣ MODEL OUTLOOK & SCENARIOS","", "💸 ETF FLOWS · RECENT FIVE-SESSION WINDOW"])
   for coin in ("BTC","ETH","SOL","XRP"):
    meta=etfs.get(coin,{}) or {}; value=meta.get("five_session_net_flow_usd")
    if value is None:
@@ -898,7 +898,7 @@ def main():
   lines.append("Source: BTC/ETH/SOL reported ETF totals; XRP holdings-derived estimate.")
   evs=snap.get("model_context",{}).get("events",[]) or []
   if evs:
-   lines.append("🗓 UPCOMING MACRO EVENTS")
+   lines.append("3️⃣ UPCOMING MACRO EVENTS")
    for e in evs[:3]:
     event_name=str(e.get("name") or "Macro event")
     when=e.get("time_utc") or e.get("date_utc") or "time not confirmed"
@@ -909,16 +909,16 @@ def main():
     lines.append(f"• {event_name} — {when}{countdown} | tracker: {tracking}")
    lines.append("Event tracker saves pre-event 4h/24h/72h outlooks and checks observed post-event returns when the calendar has an exact release time.")
   else:
-   lines.append("🗓 MACRO EVENTS")
+   lines.append("3️⃣ MACRO EVENTS")
    lines.append("Calendar feeds unavailable this run; retrying automatically.")
-  lines.extend(["","🎯 TRADE PLAN","Setups appear only when model direction, confidence and data coverage pass thresholds."])
+  lines.extend(["","4️⃣ TRADE PLAN","Only shown when direction, confidence and data coverage pass the model filters."])
   if generated_setups:
    for c,su in generated_setups.items():
     lines.append(f"• {c} {su['side'].upper()} | Ref ${su['reference_price']:,.6g} | SL ${su['stop_loss']:,.6g} | TP1 ${su['take_profit_1']:,.6g}")
    lines.append("⚠️ Experimental levels; verify the chart and risk before trading.")
   else:
    lines.append("⏸ NO TRADE — no setup passed all thresholds.")
-  lines.extend(["","📌 KEY NOTES","• OI, funding and liquidation alerts are sent separately when thresholds trigger.","• Missing inputs and conflicting forecasts are reported as alerts.","• Model probabilities are not guaranteed outcomes."])
+  lines.extend(["","5️⃣ DATA QUALITY & IMPORTANT NOTES","• Early Watch means prepare and wait; it is not an entry.","• Confirmed Trigger requires its stated trigger conditions; always verify the chart.","• Missing inputs and conflicting forecasts are reported separately.","• OI, funding and liquidation alerts may be sent separately when thresholds trigger.","• Model probabilities are experimental, uncalibrated and not guaranteed outcomes."])
   notify_lines.insert(0,"\n".join(lines)); nstate["last_hourly_utc_hour"]=hour_key
  if notify_lines:
   message="\n\n".join(notify_lines)
