@@ -1,4 +1,6 @@
-import unittest
+import unittest, sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'cloud-predictor' / 'worker'))
 from pre_move import evaluate_pre_move
 
 class PreMoveTests(unittest.TestCase):
