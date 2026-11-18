@@ -767,6 +767,9 @@ def main():
   if abs(ch1)>=1.5: add_event(c+":price-impulse",f"PRICE MOVE — {c}: {ch1:+.2f}% over 1h; 4h {ch4:+.2f}%. Confirm candle close.")
   if vr>=2.0: add_event(c+":volume-spike",f"VOLUME SPIKE — {c}: {vr:.2f}x baseline; volume alone is not a signal.")
   if ch1*ch4<0 and abs(ch1)>=.8 and abs(ch4)>=1: add_event(c+":possible-reversal",f"POSSIBLE REVERSAL — {c}: 1h {ch1:+.2f}% opposes 4h {ch4:+.2f}%.")
+  pm=v.get("pre_move",{}) or {}; pm_action=pm.get("action","WAIT"); pm_stage=pm.get("stage","NO_EDGE")
+  if pm_action in ("LONG","SHORT") and pm_stage in ("EARLY_WATCH","CONFIRMED_TRIGGER"):
+   add_event("pre-move:"+c+":"+pm_action+":"+pm_stage,f"PRE-MOVE {pm_stage.replace('_',' ')} — {c} {pm_action} | long score {pm.get('score_long')} / short score {pm.get('score_short')} | confidence {pm.get('confidence')} | entry ref {pm.get('entry_reference')} | stop {pm.get('stop_reference')} | target {pm.get('target_reference')}. Early watch is not an entry; confirmed trigger requires hourly close + volume.")
   d=v.get("derivatives",{}) or {}; oi=d.get("oi_change_24h")
   if isinstance(oi,(int,float)) and abs(oi)>=.08: add_event(c+":oi-shift",f"OPEN INTEREST — {c}: 24h change {oi*100:+.1f}%; direction is not implied.")
   fr=d.get("funding_rate")
@@ -846,6 +849,11 @@ def main():
     if isinstance(freq,(int,float)): line+=f" | up {freq:.0f}%"
     elif isinstance(pp,(int,float)): line+=f" | P(up) {pp*100:.0f}%"
     lines.append(line)
+   pm=v.get("pre_move",{}) or {}; pa=pm.get("action","WAIT"); ps=pm.get("stage","NO_EDGE")
+   if pa in ("LONG","SHORT"):
+    lines.append(f"   PRE-MOVE: {pa} {ps.replace('_',' ')} | L {pm.get('score_long')} / S {pm.get('score_short')} | conf {pm.get('confidence')} | entry ref {pm.get('entry_reference')} · SL {pm.get('stop_reference')} · target {pm.get('target_reference')}")
+   else:
+    lines.append(f"   PRE-MOVE: WAIT ({ps.replace('_',' ').lower()}) | L {pm.get('score_long')} / S {pm.get('score_short')}")
    lines.append("")
   # Always show the current ETF window in the Telegram report.
   etfs=(snap.get("model_context",{}).get("etf_flows",{}) or {})
