@@ -31,6 +31,8 @@ def validate_levels(rows, mtf, lookback=72):
             half=max(p*0.0015,min(p*0.008,atr*0.35))
             lo,hi=p-half,p+half
             touches=holds=breaks=reclaims=0
+            breakout_retests=failed_retests=0
+            retest_events=[]
             for i,c in enumerate(recent):
                 h,l,cl=_num(c.get("h"),0),_num(c.get("l"),0),_num(c.get("c"),0)
                 if h>=lo and l<=hi:
@@ -43,11 +45,32 @@ def validate_levels(rows, mtf, lookback=72):
                     elif side=="resistance" and prev<=hi and cl>hi: breaks+=1
                     if side=="support" and prev<lo and cl>hi: reclaims+=1
                     elif side=="resistance" and prev>hi and cl<lo: reclaims+=1
+                    # Check the next six completed candles after a close-break for a retest.
+                    if side=="support" and prev>=lo and cl<lo:
+                        future=recent[i+1:i+7]
+                        for ret in future:
+                            rh,rl,rc=_num(ret.get("h"),0),_num(ret.get("l"),0),_num(ret.get("c"),0)
+                            if rh>=lo:
+                                if rc<lo:
+                                    breakout_retests+=1; retest_events.append("bearish_breakdown_retest")
+                                elif rc>hi:
+                                    failed_retests+=1; retest_events.append("failed_breakdown_reclaim")
+                                break
+                    elif side=="resistance" and prev<=hi and cl>hi:
+                        future=recent[i+1:i+7]
+                        for ret in future:
+                            rh,rl,rc=_num(ret.get("h"),0),_num(ret.get("l"),0),_num(ret.get("c"),0)
+                            if rl<=hi:
+                                if rc>hi:
+                                    breakout_retests+=1; retest_events.append("bullish_breakout_retest")
+                                elif rc<lo:
+                                    failed_retests+=1; retest_events.append("failed_breakout_rejection")
+                                break
             status="broken" if breaks and breaks>=max(1,holds) else ("tested" if touches else "active")
             out["summary"][status]=out["summary"].get(status,0)+1
             if reclaims:
                 out["summary"]["reclaimed"]+=1
-            out["levels"].append({"price":p,"side":side,"timeframe":level.get("timeframe"),"zone_low":round(lo,8),"zone_high":round(hi,8),"touches_lookback":touches,"holds_lookback":holds,"close_breaks_lookback":breaks,"reclaims_lookback":reclaims,"status":status})
+            out["levels"].append({"price":p,"side":side,"timeframe":level.get("timeframe"),"zone_low":round(lo,8),"zone_high":round(hi,8),"touches_lookback":touches,"holds_lookback":holds,"close_breaks_lookback":breaks,"reclaims_lookback":reclaims,"breakout_retests_lookback":breakout_retests,"failed_retests_lookback":failed_retests,"retest_events":retest_events[-3:],"status":status})
     return out
 
 def detect_market_phase(rows, derivatives, sentiment=None):
@@ -111,7 +134,7 @@ def update_level_history(path, now, coins, max_snapshots=500):
     for coin,payload in coins.items():
         sr=payload.get("support_resistance") or {}
         val=payload.get("level_validation") or {}
-        snap["coins"][coin]={"price":payload.get("price"),"levels":[{"side":x.get("side"),"timeframe":x.get("timeframe"),"price":x.get("price"),"status":x.get("status"),"touches":x.get("touches_lookback"),"breaks":x.get("close_breaks_lookback")} for x in val.get("levels",[])]}
+        snap["coins"][coin]={"price":payload.get("price"),"levels":[{"side":x.get("side"),"timeframe":x.get("timeframe"),"price":x.get("price"),"status":x.get("status"),"touches":x.get("touches_lookback"),"breaks":x.get("close_breaks_lookback"),"retests":x.get("breakout_retests_lookback"),"failed_retests":x.get("failed_retests_lookback")} for x in val.get("levels",[])]}
     snapshots.append(snap)
     store={"updated_at":now,"method":"Append-only snapshots of detected levels and rolling 72-hour OHLC validation. Historical snapshots are descriptive, not a fully independent backtest.","snapshots":snapshots[-max_snapshots:]}
     path.write_text(json.dumps(store,indent=2,allow_nan=False),encoding="utf-8")
