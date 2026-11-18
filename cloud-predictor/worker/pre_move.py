@@ -76,9 +76,10 @@ def evaluate_pre_move(coin, rows, derivatives, model, forecasts, mtf, market_pha
     # Recent completed candle volume relative to preceding 24h.
     prev=vols[-48:-24]; recent=vols[-24:]
     vr=(sum(recent)/24)/(sum(prev)/len(prev)) if prev and sum(prev)>0 else None
-    if vr is not None and vr>=1.35:
-        # Volume validates participation but does not decide direction.
-        evidence.append({"name":"volume_expansion","bias":"confirming","weight":5,"detail":f"24h average volume {vr:.2f}x previous 24h"})
+    if vr is not None:
+        if vr>=1.35:
+            # Volume validates participation but does not decide direction.
+            evidence.append({"name":"volume_expansion","bias":"confirming","weight":5,"detail":f"24h average volume {vr:.2f}x previous 24h"})
     else: missing.append("comparable volume baseline")
     total=22+12+16+12+8+6+10
     coverage=100*(sum(x["weight"] for x in evidence if x["bias"] in ("bullish","bearish"))+sum(x["weight"] for x in evidence if x["name"]=="volume_expansion"))/total
@@ -108,13 +109,15 @@ def evaluate_pre_move(coin, rows, derivatives, model, forecasts, mtf, market_pha
     if action=="LONG":
         entry=round(prev_high,8) if stage=="EARLY_WATCH" else round(price,8)
         stop=round(min(price-1.2*atr,entry-1.2*atr),8)
+        risk=entry-stop
         near=_nearest(mtf,"resistance",price)
-        target=round(near[1],8) if near else round(entry+2*(entry-stop),8)
+        target=round(near[1],8) if near and near[1]-entry>=1.5*risk else round(entry+2*risk,8)
         invalidation=f"Hourly close below {stop}"
     elif action=="SHORT":
         entry=round(prev_low,8) if stage=="EARLY_WATCH" else round(price,8)
         stop=round(max(price+1.2*atr,entry+1.2*atr),8)
+        risk=stop-entry
         near=_nearest(mtf,"support",price)
-        target=round(near[1],8) if near else round(entry-2*(stop-entry),8)
+        target=round(near[1],8) if near and entry-near[1]>=1.5*risk else round(entry-2*risk,8)
         invalidation=f"Hourly close above {stop}"
     return {"action":action,"stage":stage,"confidence":confidence,"coverage_pct":round(coverage,1),"score_long":long_score,"score_short":short_score,"edge":round(edge,1),"entry_reference":entry,"stop_reference":stop,"target_reference":target,"invalidation":invalidation,"trigger":{"long_close_above":round(prev_high,8),"short_close_below":round(prev_low,8),"volume_confirmed":vol_confirm,"volume_ratio_last_hour":round(vol_now/vol_base,2) if vol_base else None},"evidence":evidence,"missing":missing,"market_phase":phase,"metrics":{"return_4h_pct":round(r4,3),"return_12h_pct":round(r12,3),"oi_change_24h_pct":round(oi*100,2) if oi is not None else None,"taker_cvd_24h":cvd,"volume_ratio_24h":round(vr,2) if vr is not None else None},"disclaimer":"Early watch is not an entry. Confirmed trigger requires a completed hourly close beyond the recent 6-hour range and at least 1.15x hourly volume. Experimental, uncalibrated decision support; false signals and gaps are possible."}
