@@ -8,6 +8,7 @@ from pathlib import Path
 import requests
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from mtf_levels import build_mtf_levels
+from market_structure import validate_levels, detect_market_phase, update_level_history
 ROOT=Path(__file__).resolve().parents[1]; DATA=ROOT/"docs"/"data"; DATA.mkdir(parents=True,exist_ok=True)
 SYMBOLS={"BTC":"BTCUSDT","ETH":"ETHUSDT","XRP":"XRPUSDT","SOL":"SOLUSDT"}; HORIZONS={"4h":4,"24h":24,"72h":72}
 S=requests.Session(); S.headers.update({"User-Agent":"CryptoCheckpointForecast/1.0"})
@@ -727,15 +728,17 @@ def main():
    display_price=live_price if live_price is not None else last["c"]
    mtf_levels=build_mtf_levels(symbol,display_price,get_json)
    deriv_data=derivatives(symbol)
+   level_validation=validate_levels(rows,mtf_levels)
+   market_phase=detect_market_phase(rows,deriv_data,model_context.get("fear_greed",[])[-1] if model_context.get("fear_greed") else None)
    model=advanced_model(coin,symbol,rows,deriv_data,model_context,display_price)
-   snap["coins"][coin]={"coin":coin,"symbol":symbol,"price":display_price,"price_source":price_source or "last completed OKX hourly candle (ticker unavailable)","price_time":price_time or datetime.fromtimestamp(last["t"]/1000,timezone.utc).isoformat(),"candle_time":datetime.fromtimestamp(last["t"]/1000,timezone.utc).isoformat(),"change_1h_pct":round(f["r1"],3),"change_4h_pct":round(f["r4"],3),"change_12h_pct":round(f["r12"],3),"change_24h_pct":round(f["r24"],3),"volume_ratio_24h":round(f["volratio"],3),"ma6_gap_pct":round(f["ma6gap"],3),"ma24_gap_pct":round(f["ma24gap"],3),"volatility_24h_pct":round(f["volatility24"],3),"derivatives":deriv_data,"forecasts":forecasts,"model":model,"support_resistance":mtf_levels}
+   snap["coins"][coin]={"coin":coin,"symbol":symbol,"price":display_price,"price_source":price_source or "last completed OKX hourly candle (ticker unavailable)","price_time":price_time or datetime.fromtimestamp(last["t"]/1000,timezone.utc).isoformat(),"candle_time":datetime.fromtimestamp(last["t"]/1000,timezone.utc).isoformat(),"change_1h_pct":round(f["r1"],3),"change_4h_pct":round(f["r4"],3),"change_12h_pct":round(f["r12"],3),"change_24h_pct":round(f["r24"],3),"volume_ratio_24h":round(f["volratio"],3),"ma6_gap_pct":round(f["ma6gap"],3),"ma24_gap_pct":round(f["ma24gap"],3),"volatility_24h_pct":round(f["volatility24"],3),"derivatives":deriv_data,"forecasts":forecasts,"model":model,"support_resistance":mtf_levels,"level_validation":level_validation,"market_phase":market_phase}
   except Exception as e:
    issues.append(coin+": "+str(e)[:200]); snap["coins"][coin]={"coin":coin,"symbol":symbol,"error":str(e)[:200]}
  successful=sum(1 for v in snap["coins"].values() if "error" not in v)
  if successful==0:
   write_json("status.json",{"updated_at":now,"ok":False,"coins_updated":[],"issues":issues,"message":"All assets failed; previous latest.json preserved."})
   raise RuntimeError("All four assets failed; keeping previous latest.json")
- write_json("latest.json",snap); write_json("forecasts.json",{"updated_at":now,"items":[{"coin":c,"price":v["price"],**f} for c,v in snap["coins"].items() if "error" not in v for f in v["forecasts"]]})
+ update_level_history(DATA/"level_history.json",now,snap["coins"]); write_json("latest.json",snap); write_json("forecasts.json",{"updated_at":now,"items":[{"coin":c,"price":v["price"],**f} for c,v in snap["coins"].items() if "error" not in v for f in v["forecasts"]]})
  status={"updated_at":now,"ok":bool(snap["coins"]),"coins_updated":[c for c,v in snap["coins"].items() if "error" not in v],"issues":issues}; histpath=DATA/"history.json"
  try: hist=json.loads(histpath.read_text(encoding="utf-8"))
  except Exception: hist=[]
