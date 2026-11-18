@@ -22,7 +22,7 @@ main{max-width:1440px;margin:auto;padding:24px}.head{display:flex;justify-conten
 <section id="limits" class="section"><div class="sectionhead"><h2>5. How to read this dashboard</h2></div><div class="explain"><div class="metric"><div class="label">Bullish / bearish lean</div><div style="margin-top:7px">A directional interpretation of the five-layer weighted model. It is not a validated trade signal.</div></div><div class="metric"><div class="label">24h model P(up)</div><div style="margin-top:7px">An uncalibrated estimate from weighted model scores. It is not a reliable real-world probability until enough out-of-sample results accumulate.</div></div><div class="metric"><div class="label">Support / resistance</div><div style="margin-top:7px">Use independently calculated 15m, 1H, 4H, 1D and 1W swing levels. Stronger zones have repeated touches and multi-timeframe confluence. These levels are reference zones, not guaranteed reversal points.</div></div></div><div class="notice" style="margin-top:12px">Experimental model only. Paper trades are simulations, not live orders. Review the ledger, fees, slippage assumptions and sample size before drawing conclusions. Do not treat a directional lean as a trade instruction.</div></section>
 <div class="foot">Source: OKX public hourly candles; derivatives may use the main checkpoint snapshot and OKX public endpoints. Scheduled GitHub Actions runs are best-effort. The page refreshes the saved snapshot every 60 seconds; it does not fetch a new market snapshot every minute.</div>
 <section id="levels" class="panel section"><div class="sectionhead"><h2>Multi-timeframe support &amp; resistance</h2><div class="muted">Levels are derived independently from completed 15m, 1H, 4H, 1D and 1W candles. Strength is a confluence score, not a reversal probability.</div></div><div id="mtfLevels" class="grid"><div class="muted">Loading structural levels…</div></div></section>
-</main>
+<section id="market-phase" class="panel section"><div class="sectionhead"><h2>Capitulation, distribution &amp; level validation</h2><div class="muted">Rule-based warnings from completed hourly candles and available derivatives. These are not proof of whale activity or reversal signals.</div></div><div id="marketPhase" class="grid"><div class="muted">Loading market-structure diagnostics…</div></div></section>\n</main>
 <script>
 const $=id=>document.getElementById(id);
 const fmt=(n,d=2)=>n!==null&&n!==undefined&&Number.isFinite(Number(n))?Number(n).toLocaleString(undefined,{maximumFractionDigits:d}):"—";
@@ -93,4 +93,21 @@ $("refresh").addEventListener("click",load);load();setInterval(load,60000);
  }catch(e){root.innerHTML='<div class="notice">Could not load multi-timeframe levels: '+String(e.message||e)+'</div>';}
 })();
 </script>
-</body></html>
+<script>
+(async function loadMarketStructure(){
+ const root=document.getElementById('marketPhase');if(!root)return;
+ const fmt=(v)=>v==null?'—':Number(v).toLocaleString(undefined,{maximumFractionDigits:4});
+ const esc=(s)=>String(s??'').replace(/[&<>"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
+ try{
+  const r=await fetch('./data/latest.json?structure='+Date.now(),{cache:'no-store'});if(!r.ok)throw new Error('Snapshot unavailable');
+  const snap=await r.json(),coins=snap.coins||{};
+  root.innerHTML=Object.entries(coins).filter(([,c])=>c.market_phase||c.level_validation).map(([coin,c])=>{
+   const p=c.market_phase||{},m=p.metrics||{},v=c.level_validation||{},e=p.evidence||{};
+   const phase=p.phase||'NOT AVAILABLE', tone=phase==='CAPITULATION_WATCH'?'down':phase==='DISTRIBUTION_RISK'?'down':phase==='MIXED_STRESS'?'warning':'';
+   const evidence=[...(e.capitulation||[]).map(x=>'Capitulation: '+x),...(e.distribution||[]).map(x=>'Distribution: '+x)];
+   const levels=(v.levels||[]).filter(x=>x.status==='broken'||x.touches_lookback>0).slice(0,6);
+   return '<article class="panel"><div class="coinhead"><div><div class="coin">'+esc(coin)+' <span class="symbol">USDT</span></div><div class="small">Market phase diagnostic</div></div><span class="pill '+tone+'">'+esc(phase.replaceAll('_',' '))+'</span></div><div class="metrics" style="margin-top:12px"><div class="metric"><div class="label">Capitulation score</div><div class="value">'+fmt(p.capitulation_score)+'/100</div></div><div class="metric"><div class="label">Distribution score</div><div class="value">'+fmt(p.distribution_score)+'/100</div></div><div class="metric"><div class="label">24h return</div><div class="value">'+fmt(m.return_24h_pct)+'%</div></div><div class="metric"><div class="label">Volume vs baseline</div><div class="value">'+fmt(m.volume_ratio_vs_baseline)+'x</div></div></div><div class="small" style="margin:12px 0 5px">Evidence</div>'+(evidence.length?'<ul>'+evidence.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul>':'<div class="small">No strong pattern detected from available data.</div>')+'<div class="small" style="margin:12px 0 5px">Recent support/resistance validation (72h)</div>'+(levels.length?'<div class="tablewrap"><table style="min-width:0"><thead><tr><th>TF</th><th>Side</th><th>Level</th><th>Status</th><th>Touches</th><th>Close breaks</th></tr></thead><tbody>'+levels.map(x=>'<tr><td>'+esc(x.timeframe)+'</td><td>'+esc(x.side)+'</td><td>'+fmt(x.price)+'</td><td>'+esc(x.status)+'</td><td>'+fmt(x.touches_lookback)+'</td><td>'+fmt(x.close_breaks_lookback)+'</td></tr>').join('')+'</tbody></table></div>':'<div class="small">No level interactions recorded in the validation window.</div>')+'<div class="small" style="margin-top:10px">Confidence: '+esc(p.confidence||'low')+'. '+esc(p.disclaimer||'')+'</div></article>';
+  }).join('')||'<div class="notice">No market-structure diagnostics available in this snapshot.</div>';
+ }catch(e){root.innerHTML='<div class="notice">Could not load market-structure diagnostics: '+esc(e.message)+'</div>';}
+})();
+</script>\n</body></html>
