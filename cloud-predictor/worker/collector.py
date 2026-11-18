@@ -662,7 +662,7 @@ def telegram(message):
  last_error=None
  for attempt in range(3):
   try:
-   r=S.post("https://api.telegram.org/bot"+token+"/sendMessage",json={"chat_id":chat,"text":message,"disable_web_page_preview":True},timeout=20)
+   r=S.post("https://api.telegram.org/bot"+token+"/sendMessage",json={"chat_id":chat,"text":message,"disable_web_page_preview":True},timeout=(10,45))
    r.raise_for_status()
    try: payload=r.json()
    except Exception: return "failed: Telegram returned non-JSON response"
