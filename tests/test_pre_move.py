@@ -29,6 +29,7 @@ class PreMoveTests(unittest.TestCase):
         self.assertEqual(out["action"],"LONG")
         self.assertEqual(out["stage"],"EARLY_WATCH")
         self.assertIsNotNone(out["stop_reference"])
+        self.assertGreaterEqual(out["target_reference"]-out["entry_reference"],1.5*(out["entry_reference"]-out["stop_reference"]))
 
     def test_trigger_requires_breakout_and_volume(self):
         rows=self.candles(breakout=True)
