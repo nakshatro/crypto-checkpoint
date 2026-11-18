@@ -2,10 +2,11 @@
 # Calendar and ETF automation verification refresh: 2026-10-25.
 #!/usr/bin/env python3
 """Experimental Crypto Checkpoint: analogue scenarios plus a five-layer probabilistic model."""
-import json, math, os, statistics, time, re, bisect
+import json, math, os, statistics, time, re, bisect, sys
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 import requests
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 from mtf_levels import build_mtf_levels
 ROOT=Path(__file__).resolve().parents[1]; DATA=ROOT/"docs"/"data"; DATA.mkdir(parents=True,exist_ok=True)
 SYMBOLS={"BTC":"BTCUSDT","ETH":"ETHUSDT","XRP":"XRPUSDT","SOL":"SOLUSDT"}; HORIZONS={"4h":4,"24h":24,"72h":72}
