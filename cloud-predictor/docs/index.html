@@ -111,4 +111,22 @@ $("refresh").addEventListener("click",load);load();setInterval(load,60000);
   }).join('')||'<div class="notice">No market-structure diagnostics available in this snapshot.</div>';
  }catch(e){root.innerHTML='<div class="notice">Could not load market-structure diagnostics: '+esc(e.message)+'</div>';}
 })();
+</script><script>
+(async function loadPreMove(){
+ const root=document.getElementById('preMove');if(!root)return;
+ const esc=s=>String(s??'—').replace(/[&<>"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
+ const fmt=(v,d=2)=>v==null?'—':Number(v).toLocaleString(undefined,{maximumFractionDigits:d});
+ try{
+  const r=await fetch('./data/latest.json?premove='+Date.now(),{cache:'no-store'});if(!r.ok)throw Error('Snapshot unavailable');
+  const snap=await r.json(),coins=snap.coins||{};
+  root.innerHTML=Object.entries(coins).filter(([,c])=>c.pre_move).map(([coin,c])=>{
+   const p=c.pre_move||{},action=p.action||'WAIT',stage=p.stage||'NO_EDGE';
+   const tone=action==='LONG'?'bull':action==='SHORT'?'bear':'neutral';
+   const stageTone=stage==='CONFIRMED_TRIGGER'?'bull':stage==='EARLY_WATCH'?'neutral':'';
+   const evidence=(p.evidence||[]).slice(0,7),missing=(p.missing||[]).slice(0,6);
+   const entry=p.entry_reference==null?'—':fmt(p.entry_reference,8),stop=p.stop_reference==null?'—':fmt(p.stop_reference,8),target=p.target_reference==null?'—':fmt(p.target_reference,8);
+   return '<article class="panel"><div class="coinhead"><div><div class="coin">'+esc(coin)+' <span class="symbol">USDT</span></div><div class="small">Pre-move decision engine</div></div><span class="pill '+tone+'">'+esc(action)+'</span></div><div style="margin-top:9px"><span class="pill '+stageTone+'">'+esc(stage.replaceAll('_',' '))+'</span> <span class="small">Confidence: '+esc(p.confidence||'low')+' · data coverage '+fmt(p.coverage_pct,0)+'%</span></div><div class="metrics" style="margin-top:12px"><div class="metric"><div class="label">Long score</div><div class="value up">'+fmt(p.score_long,1)+'</div></div><div class="metric"><div class="label">Short score</div><div class="value down">'+fmt(p.score_short,1)+'</div></div><div class="metric"><div class="label">4h return</div><div class="value">'+fmt(p.metrics?.return_4h_pct)+'%</div></div><div class="metric"><div class="label">12h return</div><div class="value">'+fmt(p.metrics?.return_12h_pct)+'%</div></div><div class="metric"><div class="label">Entry reference</div><div class="value">'+entry+'</div></div><div class="metric"><div class="label">Stop / target</div><div class="value">'+stop+' / '+target+'</div></div></div><div class="small" style="margin-top:12px">Trigger: hourly close above '+fmt(p.trigger?.long_close_above,8)+' for LONG or below '+fmt(p.trigger?.short_close_below,8)+' for SHORT · volume confirmation '+(p.trigger?.volume_confirmed?'met':'not met')+'</div><div class="small" style="margin-top:10px">Evidence</div>'+(evidence.length?'<ul>'+evidence.map(x=>'<li><b>'+esc(x.name)+'</b> ('+esc(x.bias)+'): '+esc(x.detail)+'</li>').join('')+'</ul>':'<div class="small">No aligned directional evidence.</div>')+(missing.length?'<div class="small">Missing: '+missing.map(esc).join(', ')+'</div>':'')+'<div class="small" style="margin-top:9px">'+esc(p.invalidation||'No trade setup. Wait for clearer evidence.')+'</div></article>';
+  }).join('')||'<div class="notice">No pre-move decision data in this snapshot. Refresh the worker first.</div>';
+ }catch(e){root.innerHTML='<div class="notice">Could not load pre-move decisions: '+esc(e.message)+'</div>';}
+})();
 </script>\n</body></html>
