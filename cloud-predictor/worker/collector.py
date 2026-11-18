@@ -137,6 +137,35 @@ def derivatives(symbol):
     if row.get("funding") is not None: out["funding_rate"]={"fundingRate":float(row.get("funding"))/100,"source":"main checkpoint snapshot; converted from percent to decimal"}
  except Exception:
   pass
+ # Current OKX public derivatives endpoints are the primary fallback when Binance
+ # Futures is blocked (for example, HTTP 451 on hosted runners). Keep the raw
+ # exchange timestamp and source so the dashboard can disclose data provenance.
+ if not isinstance(out.get("open_interest"),dict) or "unavailable" in out.get("open_interest",{}):
+  try:
+   j=get_json("https://www.okx.com/api/v5/public/open-interest",{"instType":"SWAP","instId":base+"-USDT-SWAP"})
+   data=j.get("data",[]) if str(j.get("code"))=="0" else []
+   if data:
+    row=data[0]
+    oi_usd=float(row["oiUsd"]) if row.get("oiUsd") not in (None,"") else None
+    oi_contracts=float(row["oi"]) if row.get("oi") not in (None,"") else None
+    if oi_usd is not None or oi_contracts is not None:
+     out["open_interest"]={"openInterest":oi_usd if oi_usd is not None else oi_contracts,
+      "openInterestContracts":oi_contracts,"source":"OKX public open interest (USDT swap)",
+      "timestamp":row.get("ts"),"unit":"USD" if oi_usd is not None else "contracts"}
+  except Exception as e:
+   out["open_interest_okx_unavailable"]=str(e)[:160]
+ if not isinstance(out.get("funding_rate"),dict) or "unavailable" in out.get("funding_rate",{}):
+  try:
+   j=get_json("https://www.okx.com/api/v5/public/funding-rate",{"instId":base+"-USDT-SWAP"})
+   data=j.get("data",[]) if str(j.get("code"))=="0" else []
+   if data:
+    row=data[0]
+    rate=row.get("fundingRate")
+    if rate not in (None,""):
+     out["funding_rate"]={"fundingRate":float(rate),"source":"OKX public current funding rate",
+      "timestamp":row.get("fundingTime"),"nextFundingTime":row.get("nextFundingTime")}
+  except Exception as e:
+   out["funding_rate_okx_unavailable"]=str(e)[:160]
  # OKX historical derivatives enrich the model when public Rubik endpoints respond.
  base=symbol.replace("USDT","")
  try:
