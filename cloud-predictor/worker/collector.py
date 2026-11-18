@@ -732,11 +732,13 @@ def main():
    level_validation=validate_levels(rows,mtf_levels)
    market_phase=detect_market_phase(rows,deriv_data,model_context.get("fear_greed",[])[-1] if model_context.get("fear_greed") else None)
    model=advanced_model(coin,symbol,rows,deriv_data,model_context,display_price)
+   pre_move=evaluate_pre_move(coin,rows,deriv_data,model,forecasts,mtf_levels,market_phase)
    snap["coins"][coin]={"coin":coin,"symbol":symbol,"price":display_price,"price_source":price_source or "last completed OKX hourly candle (ticker unavailable)","price_time":price_time or datetime.fromtimestamp(last["t"]/1000,timezone.utc).isoformat(),"candle_time":datetime.fromtimestamp(last["t"]/1000,timezone.utc).isoformat(),"change_1h_pct":round(f["r1"],3),"change_4h_pct":round(f["r4"],3),"change_12h_pct":round(f["r12"],3),"change_24h_pct":round(f["r24"],3),"volume_ratio_24h":round(f["volratio"],3),"ma6_gap_pct":round(f["ma6gap"],3),"ma24_gap_pct":round(f["ma24gap"],3),"volatility_24h_pct":round(f["volatility24"],3),"derivatives":deriv_data,"forecasts":forecasts,"model":model,"support_resistance":mtf_levels,"level_validation":level_validation,"market_phase":market_phase,"pre_move":pre_move}
   except Exception as e:
    issues.append(coin+": "+str(e)[:200]); snap["coins"][coin]={"coin":coin,"symbol":symbol,"error":str(e)[:200]}
  successful=sum(1 for v in snap["coins"].values() if "error" not in v)
  if successful==0:
+  print("Asset processing failures: "+" | ".join(issues))
   write_json("status.json",{"updated_at":now,"ok":False,"coins_updated":[],"issues":issues,"message":"All assets failed; previous latest.json preserved."})
   raise RuntimeError("All four assets failed; keeping previous latest.json")
  update_level_history(DATA/"level_history.json",now,snap["coins"]); write_json("latest.json",snap); write_json("forecasts.json",{"updated_at":now,"items":[{"coin":c,"price":v["price"],**f} for c,v in snap["coins"].items() if "error" not in v for f in v["forecasts"]]})
