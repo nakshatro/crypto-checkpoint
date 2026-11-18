@@ -72,7 +72,7 @@ def detect_market_phase(rows, derivatives, sentiment=None):
     cvd=_num(derivatives.get("taker_cvd_24h"))
     liq=derivatives.get("recent_liquidations_usd") or {}
     longliq=_num(liq.get("longs")); shortliq=_num(liq.get("shorts"))
-    fear=_num(sentiment.get("value"))
+    fear=_num(sentiment.get("value") if isinstance(sentiment,dict) else sentiment)
     evidence_cap=[]; evidence_dist=[]; missing=[]
     if ret24<=-4: evidence_cap.append("24h price decline >=4%")
     if ret24<=-7: evidence_cap.append("24h price decline >=7% (strong)")
