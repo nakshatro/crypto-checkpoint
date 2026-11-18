@@ -867,11 +867,11 @@ def main():
     band=analogue.get("range_10_90_pct") or []
     if isinstance(medh,(int,float)) and price>0:
      target=price*(1+medh/100)
-     line=f"   {label} {bias}: target ${target:,.6g} ({medh:+.2f}%)"
+     line=f"   {label} outlook: {bias} | analogue target ${target:,.6g} ({medh:+.2f}%)"
     elif isinstance(pp,(int,float)):
-     line=f"   {label} {bias}: model P(up) {pp*100:.0f}%"
+     line=f"   {label} outlook: {bias} | model P(up) {pp*100:.0f}%"
     else:
-     line=f"   {label}: outlook unavailable"
+     line=f"   {label} outlook: unavailable"
     if price>0 and len(band)>=2:
      low=price*(1+float(band[0])/100); high=price*(1+float(band[1])/100)
      line+=f" | range ${low:,.6g}–${high:,.6g}"
@@ -880,13 +880,13 @@ def main():
     lines.append(line)
    pm=v.get("pre_move",{}) or {}; pa=pm.get("action","WAIT"); ps=pm.get("stage","NO_EDGE")
    if pa in ("LONG","SHORT"):
-    lines.append(f"   PRE-MOVE: {pa} {ps.replace('_',' ')} | L {pm.get('score_long')} / S {pm.get('score_short')} | conf {pm.get('confidence')} | entry ref {pm.get('entry_reference')} · SL {pm.get('stop_reference')} · target {pm.get('target_reference')}")
+    lines.append(f"   EARLY SIGNAL: {pa} · {ps.replace('_',' ')} | Long score {pm.get('score_long')} / Short score {pm.get('score_short')} | Confidence {pm.get('confidence')} | Entry ref {pm.get('entry_reference')} · Stop {pm.get('stop_reference')} · Target {pm.get('target_reference')}")
    else:
-    lines.append(f"   PRE-MOVE: WAIT ({ps.replace('_',' ').lower()}) | L {pm.get('score_long')} / S {pm.get('score_short')}")
+    lines.append(f"   EARLY SIGNAL: WAIT · {ps.replace('_',' ').lower()} | Long score {pm.get('score_long')} / Short score {pm.get('score_short')}")
    lines.append("")
   # Always show the current ETF window in the Telegram report.
   etfs=(snap.get("model_context",{}).get("etf_flows",{}) or {})
-  lines.extend(["","2️⃣ MODEL OUTLOOK & SCENARIOS","", "💸 ETF FLOWS · RECENT FIVE-SESSION WINDOW"])
+  lines.extend(["","2️⃣ ETF FLOWS · RECENT FIVE-SESSION WINDOW"])
   for coin in ("BTC","ETH","SOL","XRP"):
    meta=etfs.get(coin,{}) or {}; value=meta.get("five_session_net_flow_usd")
    if value is None:
