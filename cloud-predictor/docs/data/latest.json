@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-18T14:09:25.872557+00:00",
+  "updated_at": "2026-11-18T14:10:07.281294+00:00",
   "source": "OKX public hourly candles plus five-layer model; missing components disclosed",
   "model_context": {
     "fear_greed": 11,
@@ -100,7 +100,7 @@
         "sessions": 5,
         "five_session_net_flow_usd": -701500000.0,
         "unit_conversion": "US$ millions converted to USD",
-        "updated_at": "2026-11-18T14:09:26.528951+00:00"
+        "updated_at": "2026-11-18T14:10:07.878015+00:00"
       },
       "ETH": {
         "source": "Farside Investors public daily ETF flow table",
@@ -110,7 +110,7 @@
         "sessions": 5,
         "five_session_net_flow_usd": -105700000.0,
         "unit_conversion": "US$ millions converted to USD",
-        "updated_at": "2026-11-18T14:09:26.969722+00:00"
+        "updated_at": "2026-11-18T14:10:08.167892+00:00"
       },
       "SOL": {
         "source": "Farside Investors public daily ETF flow table",
@@ -120,7 +120,7 @@
         "sessions": 5,
         "five_session_net_flow_usd": 6700000.0,
         "unit_conversion": "US$ millions converted to USD",
-        "updated_at": "2026-11-18T14:09:27.198787+00:00"
+        "updated_at": "2026-11-18T14:10:08.413976+00:00"
       },
       "XRP": {
         "source": "XRP Insights issuer-holdings-derived ETF flows",
@@ -130,7 +130,7 @@
         "sessions": 5,
         "five_session_net_flow_usd": 3475851.0,
         "unit_conversion": "USD; daily flows aggregated across funds",
-        "updated_at": "2026-11-18T14:09:27.292551+00:00",
+        "updated_at": "2026-11-18T14:10:08.766227+00:00",
         "caveat": "Derived from reported holdings changes; latest provisional session may be revised."
       }
     }
@@ -139,9 +139,9 @@
     "BTC": {
       "coin": "BTC",
       "symbol": "BTCUSDT",
-      "price": 63958.7,
+      "price": 63886.1,
       "price_source": "OKX live ticker (BTC-USDT-SWAP)",
-      "price_time": "2026-11-18T14:09:28.766000+00:00",
+      "price_time": "2026-11-18T14:10:09.867000+00:00",
       "candle_time": "2026-11-18T13:00:00+00:00",
       "change_1h_pct": -0.213,
       "change_4h_pct": -1.09,
@@ -164,13 +164,13 @@
           "timestamp": "1795010400000"
         },
         "taker_buy_sell_ratio": {
-          "buySellRatio": 2.241559953434226,
-          "buy_size": 962.75,
-          "sell_size": 429.5,
+          "buySellRatio": 0.2787886564865905,
+          "buy_size": 217.26,
+          "sell_size": 779.3,
           "trade_count": 500,
           "source": "OKX public recent trades (up to 500; not a 1h aggregate)",
           "instrument": "BTC-USDT-SWAP",
-          "timestamp": "1795010967014"
+          "timestamp": "1795011010258"
         },
         "funding_history": [
           0.0001,
@@ -274,7 +274,7 @@
           -1.08871264091e-05,
           2.39227616186e-05
         ],
-        "oi_change_24h": -0.005326814195078522,
+        "oi_change_24h": -0.004028294787848941,
         "oi_series": [
           [
             1792422000000,
@@ -3154,16 +3154,16 @@
           ],
           [
             1795010400000,
-            3001919502.5419
+            3005838428.6662
           ]
         ],
         "oi_history_count": 720,
         "taker_cvd_24h": 0.008995612096144492,
         "taker_cvd_count": 24,
-        "basis": -0.0004110569634300423,
-        "book_imbalance": -0.1507166860874792,
+        "basis": -0.00038491267489271805,
+        "book_imbalance": 0.15243335488315823,
         "recent_liquidations_usd": {
-          "longs": 379021.12582000013,
+          "longs": 378892.9130600001,
           "shorts": 3406.61765
         }
       },
@@ -3239,7 +3239,7 @@
             ]
           },
           "derivs": {
-            "score": -0.16272342071804644,
+            "score": -0.16039130279681518,
             "components": [
               {
                 "name": "long_short_ratio",
@@ -3249,20 +3249,20 @@
               },
               {
                 "name": "price_vs_oi",
-                "score": -0.021,
+                "score": -0.016,
                 "weight": 0.6,
-                "note": "price -1.8%, OI -0.5% over 24h"
+                "note": "price -1.8%, OI -0.4% over 24h"
               },
               {
                 "name": "perp_basis",
-                "score": 0.123,
+                "score": 0.115,
                 "weight": 0.1,
-                "note": "perpetual basis -4.1 bps"
+                "note": "perpetual basis -3.8 bps"
               }
             ]
           },
           "liquidity": {
-            "score": 0.005210354205663199,
+            "score": 0.05276068624143081,
             "components": [
               {
                 "name": "taker_cvd_24h",
@@ -3272,7 +3272,7 @@
               },
               {
                 "name": "liquidation_magnet",
-                "score": -0.199,
+                "score": -0.242,
                 "weight": 0.3,
                 "note": "estimated liquidation fuel above vs below; OI-delta weighted"
               },
@@ -3284,9 +3284,9 @@
               },
               {
                 "name": "book_imbalance",
-                "score": -0.301,
+                "score": 0.305,
                 "weight": 0.1,
-                "note": "top-400-level notional imbalance -0.15"
+                "note": "top-400-level notional imbalance +0.15"
               }
             ]
           },
@@ -3327,53 +3327,53 @@
         },
         "horizons": {
           "4h": {
-            "composite": -0.224,
-            "p_up": 0.416,
+            "composite": -0.207,
+            "p_up": 0.422,
             "coverage": 1.0,
             "bias": "Bearish",
             "range": [
-              63375.63658435,
-              64547.12766862
+              63303.69842401,
+              64473.85973996
             ]
           },
           "24h": {
-            "composite": -0.253,
-            "p_up": 0.407,
+            "composite": -0.236,
+            "p_up": 0.412,
             "coverage": 1.0,
             "bias": "Bearish",
             "range": [
-              62539.91534342,
-              65409.67129915
+              62468.92581653,
+              65335.42429075
             ]
           },
           "72h": {
-            "composite": -0.344,
-            "p_up": 0.381,
+            "composite": -0.332,
+            "p_up": 0.384,
             "coverage": 1.0,
             "bias": "Bearish",
             "range": [
-              61521.28556481,
-              66492.68246159
+              61451.45229221,
+              66417.2061191
             ]
           },
           "1w": {
-            "composite": -0.407,
-            "p_up": 0.366,
+            "composite": -0.397,
+            "p_up": 0.368,
             "coverage": 1.0,
             "bias": "Bearish",
             "range": [
-              60273.14069174,
-              67869.62250086
+              60204.72419775,
+              67792.5831834
             ]
           },
           "1m": {
-            "composite": -0.566,
+            "composite": -0.563,
             "p_up": 0.338,
             "coverage": 1.0,
             "bias": "Bearish",
             "range": [
-              56563.80813218,
-              72320.36598616
+              56499.60212939,
+              72238.27459639
             ]
           }
         },
@@ -3381,43 +3381,43 @@
         "levels": {
           "liq_above": [
             {
-              "price": 67956.11875,
+              "price": 67878.98125,
               "strength": 1.0,
               "dist_pct": 6.25
             },
             {
-              "price": 71154.05374999999,
-              "strength": 0.9934152392573741,
-              "dist_pct": 11.249999999999982
+              "price": 71233.0015,
+              "strength": 0.6493562361700871,
+              "dist_pct": 11.5
             },
             {
-              "price": 66676.94475,
-              "strength": 0.42955215612613123,
-              "dist_pct": 4.249999999999998
+              "price": 65962.39825,
+              "strength": 0.4732853652360242,
+              "dist_pct": 3.2499999999999973
             }
           ],
           "liq_below": [
             {
-              "price": 62039.939,
-              "strength": 0.9586991688960534,
-              "dist_pct": -3.0000000000000027
-            },
-            {
-              "price": 58842.004,
-              "strength": 0.7577841749422114,
+              "price": 58775.212,
+              "strength": 0.7275064890836318,
               "dist_pct": -7.9999999999999964
             },
             {
-              "price": 57722.72675,
-              "strength": 0.35722208166432984,
-              "dist_pct": -9.749999999999993
+              "price": 62129.23225,
+              "strength": 0.5685156558122152,
+              "dist_pct": -2.749999999999997
+            },
+            {
+              "price": 61969.517,
+              "strength": 0.4445125941522329,
+              "dist_pct": -3.0000000000000027
             }
           ],
           "liq_method": "OI-delta weighted"
         },
         "confidence": {
-          "value": 0.37,
-          "label": "Medium",
+          "value": 0.35,
+          "label": "Low",
           "event_adjustment": 1.0,
           "notes": [
             "layers disagree"
@@ -3432,7 +3432,7 @@
       },
       "support_resistance": {
         "method": "confirmed 5-candle swing pivots clustered by ATR/price proximity; strength is confluence, not reversal probability",
-        "current_price": 63958.7,
+        "current_price": 63886.1,
         "timeframes": {
           "15m": {
             "source": "OKX completed 15m candles",
@@ -3440,22 +3440,22 @@
             "atr": 182.38571429,
             "support": [
               {
-                "price": 63903.55,
-                "distance_pct": -0.086,
-                "touches": 2,
-                "strength": 73,
-                "last_test_utc": "2026-11-18T12:30:00+00:00"
+                "price": 63877.2,
+                "distance_pct": -0.014,
+                "touches": 1,
+                "strength": 63,
+                "last_test_utc": "2026-11-16T12:15:00+00:00"
               },
               {
                 "price": 63632.6,
-                "distance_pct": -0.51,
+                "distance_pct": -0.397,
                 "touches": 1,
                 "strength": 62,
                 "last_test_utc": "2026-11-17T19:30:00+00:00"
               },
               {
                 "price": 63363.15,
-                "distance_pct": -0.931,
+                "distance_pct": -0.819,
                 "touches": 2,
                 "strength": 73,
                 "last_test_utc": "2026-11-17T16:45:00+00:00"
@@ -3464,28 +3464,28 @@
             "resistance": [
               {
                 "price": 64084.86666667,
-                "distance_pct": 0.197,
+                "distance_pct": 0.311,
                 "touches": 3,
                 "strength": 82,
                 "last_test_utc": "2026-11-17T20:15:00+00:00"
               },
               {
                 "price": 64401.33333333,
-                "distance_pct": 0.692,
+                "distance_pct": 0.806,
                 "touches": 3,
                 "strength": 82,
                 "last_test_utc": "2026-11-18T12:15:00+00:00"
               },
               {
                 "price": 64708.1625,
-                "distance_pct": 1.172,
+                "distance_pct": 1.287,
                 "touches": 8,
                 "strength": 100,
                 "last_test_utc": "2026-11-18T08:45:00+00:00"
               },
               {
                 "price": 65071.32307692,
-                "distance_pct": 1.74,
+                "distance_pct": 1.855,
                 "touches": 13,
                 "strength": 100,
                 "last_test_utc": "2026-11-18T07:45:00+00:00"
@@ -3499,21 +3499,21 @@
             "support": [
               {
                 "price": 63805.2,
-                "distance_pct": -0.24,
+                "distance_pct": -0.127,
                 "touches": 2,
                 "strength": 73,
                 "last_test_utc": "2026-11-16T12:00:00+00:00"
               },
               {
                 "price": 63286.1,
-                "distance_pct": -1.052,
+                "distance_pct": -0.939,
                 "touches": 2,
                 "strength": 73,
                 "last_test_utc": "2026-11-17T15:00:00+00:00"
               },
               {
                 "price": 61931.1,
-                "distance_pct": -3.17,
+                "distance_pct": -3.06,
                 "touches": 1,
                 "strength": 64,
                 "last_test_utc": "2026-11-15T01:00:00+00:00"
@@ -3522,28 +3522,28 @@
             "resistance": [
               {
                 "price": 64849.55,
-                "distance_pct": 1.393,
+                "distance_pct": 1.508,
                 "touches": 2,
                 "strength": 73,
                 "last_test_utc": "2026-11-18T07:00:00+00:00"
               },
               {
                 "price": 65155.03333333,
-                "distance_pct": 1.87,
+                "distance_pct": 1.986,
                 "touches": 3,
                 "strength": 82,
                 "last_test_utc": "2026-11-17T23:00:00+00:00"
               },
               {
                 "price": 65526.18,
-                "distance_pct": 2.451,
+                "distance_pct": 2.567,
                 "touches": 5,
                 "strength": 100,
                 "last_test_utc": "2026-11-17T14:00:00+00:00"
               },
               {
                 "price": 65782.8,
-                "distance_pct": 2.852,
+                "distance_pct": 2.969,
                 "touches": 1,
                 "strength": 63,
                 "last_test_utc": "2026-11-15T13:00:00+00:00"
@@ -3557,21 +3557,21 @@
             "support": [
               {
                 "price": 63877.2,
-                "distance_pct": -0.127,
+                "distance_pct": -0.014,
                 "touches": 1,
                 "strength": 64,
                 "last_test_utc": "2026-11-16T12:00:00+00:00"
               },
               {
                 "price": 63300.0,
-                "distance_pct": -1.03,
+                "distance_pct": -0.917,
                 "touches": 1,
                 "strength": 64,
                 "last_test_utc": "2026-11-17T12:00:00+00:00"
               },
               {
                 "price": 61931.1,
-                "distance_pct": -3.17,
+                "distance_pct": -3.06,
                 "touches": 1,
                 "strength": 64,
                 "last_test_utc": "2026-11-15T00:00:00+00:00"
@@ -3580,28 +3580,28 @@
             "resistance": [
               {
                 "price": 65538.55,
-                "distance_pct": 2.47,
+                "distance_pct": 2.587,
                 "touches": 2,
                 "strength": 73,
                 "last_test_utc": "2026-11-17T12:00:00+00:00"
               },
               {
                 "price": 66122.7,
-                "distance_pct": 3.383,
+                "distance_pct": 3.501,
                 "touches": 1,
                 "strength": 64,
                 "last_test_utc": "2026-11-15T08:00:00+00:00"
               },
               {
                 "price": 70187.7,
-                "distance_pct": 9.739,
+                "distance_pct": 9.864,
                 "touches": 1,
                 "strength": 64,
                 "last_test_utc": "2026-11-13T12:00:00+00:00"
               },
               {
                 "price": 74789.0,
-                "distance_pct": 16.933,
+                "distance_pct": 17.066,
                 "touches": 1,
                 "strength": 64,
                 "last_test_utc": "2026-11-11T20:00:00+00:00"
@@ -3615,28 +3615,28 @@
             "support": [
               {
                 "price": 63700.0,
-                "distance_pct": -0.404,
+                "distance_pct": -0.291,
                 "touches": 1,
                 "strength": 58,
                 "last_test_utc": "2026-07-23T16:00:00+00:00"
               },
               {
                 "price": 62395.98,
-                "distance_pct": -2.443,
+                "distance_pct": -2.332,
                 "touches": 10,
                 "strength": 100,
                 "last_test_utc": "2026-11-14T16:00:00+00:00"
               },
               {
                 "price": 60960.95,
-                "distance_pct": -4.687,
+                "distance_pct": -4.579,
                 "touches": 2,
                 "strength": 66,
                 "last_test_utc": "2026-07-05T16:00:00+00:00"
               },
               {
                 "price": 59909.0,
-                "distance_pct": -6.332,
+                "distance_pct": -6.225,
                 "touches": 1,
                 "strength": 48,
                 "last_test_utc": "2026-02-05T16:00:00+00:00"
@@ -3645,28 +3645,28 @@
             "resistance": [
               {
                 "price": 65222.72222222,
-                "distance_pct": 1.976,
+                "distance_pct": 2.092,
                 "touches": 9,
                 "strength": 94,
                 "last_test_utc": "2026-08-09T16:00:00+00:00"
               },
               {
                 "price": 67105.95,
-                "distance_pct": 4.921,
+                "distance_pct": 5.04,
                 "touches": 2,
                 "strength": 66,
                 "last_test_utc": "2026-07-20T16:00:00+00:00"
               },
               {
                 "price": 69000.8,
-                "distance_pct": 7.883,
+                "distance_pct": 8.006,
                 "touches": 2,
                 "strength": 60,
                 "last_test_utc": "2026-03-31T16:00:00+00:00"
               },
               {
                 "price": 70509.95,
-                "distance_pct": 10.243,
+                "distance_pct": 10.368,
                 "touches": 2,
                 "strength": 58,
                 "last_test_utc": "2026-02-25T16:00:00+00:00"
@@ -3680,28 +3680,28 @@
             "support": [
               {
                 "price": 62400.0,
-                "distance_pct": -2.437,
+                "distance_pct": -2.326,
                 "touches": 1,
                 "strength": 49,
                 "last_test_utc": "2026-02-22T16:00:00+00:00"
               },
               {
                 "price": 59909.0,
-                "distance_pct": -6.332,
+                "distance_pct": -6.225,
                 "touches": 1,
                 "strength": 48,
                 "last_test_utc": "2026-02-01T16:00:00+00:00"
               },
               {
                 "price": 59001.65,
-                "distance_pct": -7.75,
+                "distance_pct": -7.646,
                 "touches": 2,
                 "strength": 64,
                 "last_test_utc": "2026-05-31T16:00:00+00:00"
               },
               {
                 "price": 57750.0,
-                "distance_pct": -9.707,
+                "distance_pct": -9.605,
                 "touches": 1,
                 "strength": 56,
                 "last_test_utc": "2026-06-28T16:00:00+00:00"
@@ -3710,28 +3710,28 @@
             "resistance": [
               {
                 "price": 65098.5,
-                "distance_pct": 1.782,
+                "distance_pct": 1.898,
                 "touches": 1,
                 "strength": 44,
                 "last_test_utc": "2024-08-18T16:00:00+00:00"
               },
               {
                 "price": 66703.35,
-                "distance_pct": 4.291,
+                "distance_pct": 4.41,
                 "touches": 2,
                 "strength": 66,
                 "last_test_utc": "2026-07-19T16:00:00+00:00"
               },
               {
                 "price": 70098.0,
-                "distance_pct": 9.599,
+                "distance_pct": 9.723,
                 "touches": 1,
                 "strength": 44,
                 "last_test_utc": "2024-07-28T16:00:00+00:00"
               },
               {
                 "price": 72466.1,
-                "distance_pct": 13.301,
+                "distance_pct": 13.43,
                 "touches": 2,
                 "strength": 53,
                 "last_test_utc": "2024-05-19T16:00:00+00:00"
@@ -3739,11 +3739,11 @@
             ]
           }
         },
-        "updated_at": "2026-11-18T14:09:29.053635+00:00",
+        "updated_at": "2026-11-18T14:10:10.814330+00:00",
         "confluence_support": [
           {
-            "price": 63783.71,
-            "distance_pct": -0.274,
+            "price": 63778.44,
+            "distance_pct": -0.169,
             "timeframes": [
               "15m",
               "1H",
@@ -3755,7 +3755,7 @@
           },
           {
             "price": 63316.41666667,
-            "distance_pct": -1.004,
+            "distance_pct": -0.892,
             "timeframes": [
               "15m",
               "1H",
@@ -3766,7 +3766,7 @@
           },
           {
             "price": 62397.99,
-            "distance_pct": -2.44,
+            "distance_pct": -2.329,
             "timeframes": [
               "1D",
               "1W"
@@ -3776,7 +3776,7 @@
           },
           {
             "price": 61931.1,
-            "distance_pct": -3.17,
+            "distance_pct": -3.06,
             "timeframes": [
               "1H",
               "4H"
@@ -3786,7 +3786,7 @@
           },
           {
             "price": 60960.95,
-            "distance_pct": -4.687,
+            "distance_pct": -4.579,
             "timeframes": [
               "1D"
             ],
@@ -3795,7 +3795,7 @@
           },
           {
             "price": 59909.0,
-            "distance_pct": -6.332,
+            "distance_pct": -6.225,
             "timeframes": [
               "1D",
               "1W"
@@ -3807,7 +3807,7 @@
         "confluence_resistance": [
           {
             "price": 64084.86666667,
-            "distance_pct": 0.197,
+            "distance_pct": 0.311,
             "timeframes": [
               "15m"
             ],
@@ -3816,7 +3816,7 @@
           },
           {
             "price": 64401.33333333,
-            "distance_pct": 0.692,
+            "distance_pct": 0.806,
             "timeframes": [
               "15m"
             ],
@@ -3825,7 +3825,7 @@
           },
           {
             "price": 64778.85625,
-            "distance_pct": 1.282,
+            "distance_pct": 1.397,
             "timeframes": [
               "15m",
               "1H"
@@ -3835,7 +3835,7 @@
           },
           {
             "price": 65136.89465812,
-            "distance_pct": 1.842,
+            "distance_pct": 1.958,
             "timeframes": [
               "15m",
               "1H",
@@ -3847,7 +3847,7 @@
           },
           {
             "price": 65615.84333333,
-            "distance_pct": 2.591,
+            "distance_pct": 2.708,
             "timeframes": [
               "1H",
               "4H"
@@ -3857,7 +3857,7 @@
           },
           {
             "price": 66122.7,
-            "distance_pct": 3.383,
+            "distance_pct": 3.501,
             "timeframes": [
               "4H"
             ],
@@ -3870,14 +3870,14 @@
         "lookback_hours": 72,
         "levels": [
           {
-            "price": 63903.55,
+            "price": 63877.2,
             "side": "support",
             "timeframe": "15m",
-            "zone_low": 63722.02833333,
-            "zone_high": 64085.07166667,
-            "touches_lookback": 17,
-            "holds_lookback": 16,
-            "close_breaks_lookback": 1,
+            "zone_low": 63695.67833333,
+            "zone_high": 64058.72166667,
+            "touches_lookback": 13,
+            "holds_lookback": 13,
+            "close_breaks_lookback": 0,
             "reclaims_lookback": 0,
             "breakout_retests_lookback": 0,
             "failed_retests_lookback": 0,
@@ -4471,9 +4471,9 @@
           "return_72h_pct": -2.279,
           "volume_ratio_vs_baseline": 1.136,
           "position_in_7d_range_pct": 15.4,
-          "oi_change_24h_pct": -0.53,
+          "oi_change_24h_pct": -0.4,
           "taker_cvd_24h": 0.009,
-          "long_liquidations_usd": 379021.12582000013,
+          "long_liquidations_usd": 378892.9130600001,
           "short_liquidations_usd": 3406.61765,
           "fear_greed": 11.0
         },
@@ -4481,17 +4481,17 @@
         "disclaimer": "Heuristic market-stress/distribution proxy, not proof of whale selling, a bottom/top, or a trade signal."
       },
       "pre_move": {
-        "action": "SHORT",
-        "stage": "EARLY_WATCH",
+        "action": "WAIT",
+        "stage": "CONFLICTING_EVIDENCE",
         "confidence": "low",
         "coverage_pct": 51.2,
-        "score_long": 0.0,
-        "score_short": 51.2,
-        "edge": -44.0,
-        "entry_reference": 63929.9,
-        "stop_reference": 64377.17428571,
-        "target_reference": 63035.35142858,
-        "invalidation": "Hourly close above 64377.17428571",
+        "score_long": 7.0,
+        "score_short": 44.2,
+        "edge": -32.0,
+        "entry_reference": null,
+        "stop_reference": null,
+        "target_reference": null,
+        "invalidation": null,
         "trigger": {
           "long_close_above": 64926.6,
           "short_close_below": 63929.9,
@@ -4503,7 +4503,7 @@
             "name": "five_layer_model",
             "bias": "bearish",
             "weight": 22,
-            "detail": "24h model P(up)=0.407"
+            "detail": "24h model P(up)=0.412"
           },
           {
             "name": "hourly_trend",
@@ -4513,9 +4513,9 @@
           },
           {
             "name": "order_book",
-            "bias": "bearish",
+            "bias": "bullish",
             "weight": 6,
-            "detail": "bid/ask notional imbalance -0.15"
+            "detail": "bid/ask notional imbalance +0.15"
           }
         ],
         "missing": [],
@@ -4523,7 +4523,7 @@
         "metrics": {
           "return_4h_pct": -1.09,
           "return_12h_pct": -0.562,
-          "oi_change_24h_pct": -0.53,
+          "oi_change_24h_pct": -0.4,
           "taker_cvd_24h": 0.008995612096144492,
           "volume_ratio_24h": 0.97
         },
@@ -4533,9 +4533,9 @@
     "ETH": {
       "coin": "ETH",
       "symbol": "ETHUSDT",
-      "price": 1792.21,
+      "price": 1789.47,
       "price_source": "OKX live ticker (ETH-USDT-SWAP)",
-      "price_time": "2026-11-18T14:09:32.862000+00:00",
+      "price_time": "2026-11-18T14:10:14.561000+00:00",
       "candle_time": "2026-11-18T13:00:00+00:00",
       "change_1h_pct": -0.278,
       "change_4h_pct": -1.287,
@@ -4558,13 +4558,13 @@
           "timestamp": "1795010400000"
         },
         "taker_buy_sell_ratio": {
-          "buySellRatio": 1.050822649283062,
-          "buy_size": 775.36,
-          "sell_size": 737.86,
+          "buySellRatio": 0.5349229537355672,
+          "buy_size": 875.15,
+          "sell_size": 1636.03,
           "trade_count": 500,
           "source": "OKX public recent trades (up to 500; not a 1h aggregate)",
           "instrument": "ETH-USDT-SWAP",
-          "timestamp": "1795010973393"
+          "timestamp": "1795011014864"
         },
         "funding_history": [
           1.07226187845e-05,
@@ -7550,10 +7550,10 @@
         "oi_history_count": 719,
         "taker_cvd_24h": 0.003635098319156891,
         "taker_cvd_count": 24,
-        "basis": -0.00046289841331804873,
-        "book_imbalance": 0.0025638275041128815,
+        "basis": -0.0005752615205893207,
+        "book_imbalance": 0.05651689481027299,
         "recent_liquidations_usd": {
-          "longs": 501217.9052700001,
+          "longs": 502986.1179800001,
           "shorts": 337.12874999999997
         }
       },
@@ -7635,7 +7635,7 @@
             ]
           },
           "derivs": {
-            "score": -0.2173819513427175,
+            "score": -0.21401105812457935,
             "components": [
               {
                 "name": "long_short_ratio",
@@ -7651,14 +7651,14 @@
               },
               {
                 "name": "perp_basis",
-                "score": 0.139,
+                "score": 0.173,
                 "weight": 0.1,
-                "note": "perpetual basis -4.6 bps"
+                "note": "perpetual basis -5.8 bps"
               }
             ]
           },
           "liquidity": {
-            "score": -0.060913041841571786,
+            "score": -0.06594700676068092,
             "components": [
               {
                 "name": "taker_cvd_24h",
@@ -7668,7 +7668,7 @@
               },
               {
                 "name": "liquidation_magnet",
-                "score": -0.453,
+                "score": -0.506,
                 "weight": 0.3,
                 "note": "estimated liquidation fuel above vs below; OI-delta weighted"
               },
@@ -7680,9 +7680,9 @@
               },
               {
                 "name": "book_imbalance",
-                "score": 0.005,
+                "score": 0.113,
                 "weight": 0.1,
-                "note": "top-400-level notional imbalance +0.00"
+                "note": "top-400-level notional imbalance +0.06"
               }
             ]
           },
@@ -7734,18 +7734,18 @@
             "coverage": 1.0,
             "bias": "Bearish",
             "range": [
-              1770.03438523,
-              1814.66343869
+              1767.32828817,
+              1811.889111
             ]
           },
           "24h": {
             "composite": -0.29,
-            "p_up": 0.396,
+            "p_up": 0.395,
             "coverage": 1.0,
             "bias": "Bearish",
             "range": [
-              1738.3772602,
-              1847.70979099
+              1735.71956177,
+              1844.88494076
             ]
           },
           "72h": {
@@ -7754,8 +7754,8 @@
             "coverage": 1.0,
             "bias": "Bearish",
             "range": [
-              1699.99685918,
-              1889.42506967
+              1697.3978382,
+              1886.53644351
             ]
           },
           "1w": {
@@ -7764,8 +7764,8 @@
             "coverage": 1.0,
             "bias": "Bearish",
             "range": [
-              1653.27949801,
-              1942.81528801
+              1650.75190034,
+              1939.84503682
             ]
           },
           "1m": {
@@ -7774,8 +7774,8 @@
             "coverage": 1.0,
             "bias": "Bearish",
             "range": [
-              1516.50479871,
-              2118.03924843
+              1514.18630749,
+              2114.80110807
             ]
           }
         },
@@ -7783,36 +7783,36 @@
         "levels": {
           "liq_above": [
             {
-              "price": 1904.223125,
-              "strength": 0.8511877681180575,
-              "dist_pct": 6.25
-            },
-            {
-              "price": 1998.3141500000002,
-              "strength": 0.7178157250039696,
+              "price": 1995.2590500000001,
+              "strength": 0.62933217269438,
               "dist_pct": 11.5
             },
             {
-              "price": 1908.70365,
-              "strength": 0.46933869666537836,
+              "price": 1999.732725,
+              "strength": 0.5554952807293686,
+              "dist_pct": 11.749999999999993
+            },
+            {
+              "price": 1905.78555,
+              "strength": 0.5363646933205234,
               "dist_pct": 6.499999999999995
             }
           ],
           "liq_below": [
             {
-              "price": 1648.8332,
+              "price": 1740.259575,
               "strength": 1.0,
+              "dist_pct": -2.749999999999997
+            },
+            {
+              "price": 1650.786075,
+              "strength": 0.5666219809724288,
+              "dist_pct": -7.750000000000002
+            },
+            {
+              "price": 1646.3124,
+              "strength": 0.5310920932734416,
               "dist_pct": -7.9999999999999964
-            },
-            {
-              "price": 1742.924225,
-              "strength": 0.7732158929739922,
-              "dist_pct": -2.750000000000008
-            },
-            {
-              "price": 1738.4437,
-              "strength": 0.6985531785663981,
-              "dist_pct": -3.0000000000000027
             }
           ],
           "liq_method": "OI-delta weighted"
@@ -7834,7 +7834,7 @@
       },
       "support_resistance": {
         "method": "confirmed 5-candle swing pivots clustered by ATR/price proximity; strength is confluence, not reversal probability",
-        "current_price": 1792.21,
+        "current_price": 1789.47,
         "timeframes": {
           "15m": {
             "source": "OKX completed 15m candles",
@@ -7842,29 +7842,22 @@
             "atr": 7.24928571,
             "support": [
               {
-                "price": 1790.965,
-                "distance_pct": -0.069,
-                "touches": 2,
-                "strength": 72,
-                "last_test_utc": "2026-11-17T20:45:00+00:00"
-              },
-              {
                 "price": 1785.605,
-                "distance_pct": -0.369,
+                "distance_pct": -0.216,
                 "touches": 4,
                 "strength": 91,
                 "last_test_utc": "2026-11-18T12:30:00+00:00"
               },
               {
                 "price": 1766.03,
-                "distance_pct": -1.461,
+                "distance_pct": -1.31,
                 "touches": 1,
                 "strength": 63,
                 "last_test_utc": "2026-11-17T16:45:00+00:00"
               },
               {
                 "price": 1750.05,
-                "distance_pct": -2.352,
+                "distance_pct": -2.203,
                 "touches": 1,
                 "strength": 64,
                 "last_test_utc": "2026-11-17T15:45:00+00:00"
@@ -7873,28 +7866,28 @@
             "resistance": [
               {
                 "price": 1793.99,
-                "distance_pct": 0.099,
+                "distance_pct": 0.253,
                 "touches": 2,
                 "strength": 72,
                 "last_test_utc": "2026-11-17T19:15:00+00:00"
               },
               {
                 "price": 1804.31666667,
-                "distance_pct": 0.676,
+                "distance_pct": 0.83,
                 "touches": 3,
                 "strength": 82,
                 "last_test_utc": "2026-11-18T12:15:00+00:00"
               },
               {
                 "price": 1811.502,
-                "distance_pct": 1.076,
+                "distance_pct": 1.231,
                 "touches": 5,
                 "strength": 100,
                 "last_test_utc": "2026-11-18T04:15:00+00:00"
               },
               {
                 "price": 1817.945,
-                "distance_pct": 1.436,
+                "distance_pct": 1.591,
                 "touches": 4,
                 "strength": 91,
                 "last_test_utc": "2026-11-18T08:45:00+00:00"
@@ -7907,29 +7900,29 @@
             "atr": 12.74428571,
             "support": [
               {
-                "price": 1786.76333333,
-                "distance_pct": -0.304,
-                "touches": 3,
-                "strength": 82,
+                "price": 1784.895,
+                "distance_pct": -0.256,
+                "touches": 2,
+                "strength": 73,
                 "last_test_utc": "2026-11-17T10:00:00+00:00"
               },
               {
                 "price": 1771.65,
-                "distance_pct": -1.147,
+                "distance_pct": -0.996,
                 "touches": 1,
                 "strength": 63,
                 "last_test_utc": "2026-11-15T07:00:00+00:00"
               },
               {
                 "price": 1750.05,
-                "distance_pct": -2.352,
+                "distance_pct": -2.203,
                 "touches": 1,
                 "strength": 64,
                 "last_test_utc": "2026-11-17T15:00:00+00:00"
               },
               {
                 "price": 1727.83,
-                "distance_pct": -3.592,
+                "distance_pct": -3.445,
                 "touches": 1,
                 "strength": 64,
                 "last_test_utc": "2026-11-14T22:00:00+00:00"
@@ -7938,28 +7931,28 @@
             "resistance": [
               {
                 "price": 1804.75,
-                "distance_pct": 0.7,
+                "distance_pct": 0.854,
                 "touches": 1,
                 "strength": 64,
                 "last_test_utc": "2026-11-17T18:00:00+00:00"
               },
               {
                 "price": 1816.3,
-                "distance_pct": 1.344,
+                "distance_pct": 1.499,
                 "touches": 2,
                 "strength": 73,
                 "last_test_utc": "2026-11-18T05:00:00+00:00"
               },
               {
                 "price": 1834.594,
-                "distance_pct": 2.365,
+                "distance_pct": 2.522,
                 "touches": 5,
                 "strength": 100,
                 "last_test_utc": "2026-11-17T23:00:00+00:00"
               },
               {
                 "price": 1843.0425,
-                "distance_pct": 2.836,
+                "distance_pct": 2.994,
                 "touches": 4,
                 "strength": 91,
                 "last_test_utc": "2026-11-17T05:00:00+00:00"
@@ -7973,21 +7966,21 @@
             "support": [
               {
                 "price": 1786.0,
-                "distance_pct": -0.346,
+                "distance_pct": -0.194,
                 "touches": 1,
                 "strength": 64,
                 "last_test_utc": "2026-11-16T12:00:00+00:00"
               },
               {
                 "price": 1750.05,
-                "distance_pct": -2.352,
+                "distance_pct": -2.203,
                 "touches": 1,
                 "strength": 64,
                 "last_test_utc": "2026-11-17T12:00:00+00:00"
               },
               {
                 "price": 1709.08,
-                "distance_pct": -4.638,
+                "distance_pct": -4.492,
                 "touches": 1,
                 "strength": 64,
                 "last_test_utc": "2026-11-15T00:00:00+00:00"
@@ -7996,28 +7989,28 @@
             "resistance": [
               {
                 "price": 1841.59,
-                "distance_pct": 2.755,
+                "distance_pct": 2.913,
                 "touches": 4,
                 "strength": 91,
                 "last_test_utc": "2026-11-17T20:00:00+00:00"
               },
               {
                 "price": 1866.83,
-                "distance_pct": 4.164,
+                "distance_pct": 4.323,
                 "touches": 1,
                 "strength": 64,
                 "last_test_utc": "2026-11-16T12:00:00+00:00"
               },
               {
                 "price": 1988.29,
-                "distance_pct": 10.941,
+                "distance_pct": 11.111,
                 "touches": 1,
                 "strength": 64,
                 "last_test_utc": "2026-11-13T12:00:00+00:00"
               },
               {
                 "price": 2103.41,
-                "distance_pct": 17.364,
+                "distance_pct": 17.544,
                 "touches": 1,
                 "strength": 64,
                 "last_test_utc": "2026-11-11T16:00:00+00:00"
@@ -8031,28 +8024,28 @@
             "support": [
               {
                 "price": 1743.5,
-                "distance_pct": -2.718,
+                "distance_pct": -2.569,
                 "touches": 2,
                 "strength": 66,
                 "last_test_utc": "2026-07-13T16:00:00+00:00"
               },
               {
                 "price": 1710.7,
-                "distance_pct": -4.548,
+                "distance_pct": -4.402,
                 "touches": 2,
                 "strength": 73,
                 "last_test_utc": "2026-11-14T16:00:00+00:00"
               },
               {
                 "price": 1670.38,
-                "distance_pct": -6.798,
+                "distance_pct": -6.655,
                 "touches": 1,
                 "strength": 56,
                 "last_test_utc": "2026-06-18T16:00:00+00:00"
               },
               {
                 "price": 1601.29,
-                "distance_pct": -10.653,
+                "distance_pct": -10.516,
                 "touches": 1,
                 "strength": 55,
                 "last_test_utc": "2026-06-10T16:00:00+00:00"
@@ -8061,28 +8054,28 @@
             "resistance": [
               {
                 "price": 1841.325,
-                "distance_pct": 2.74,
+                "distance_pct": 2.898,
                 "touches": 2,
                 "strength": 66,
                 "last_test_utc": "2026-07-06T16:00:00+00:00"
               },
               {
                 "price": 1898.0,
-                "distance_pct": 5.903,
+                "distance_pct": 6.065,
                 "touches": 1,
                 "strength": 58,
                 "last_test_utc": "2026-08-02T16:00:00+00:00"
               },
               {
                 "price": 1946.1925,
-                "distance_pct": 8.592,
+                "distance_pct": 8.758,
                 "touches": 4,
                 "strength": 85,
                 "last_test_utc": "2026-08-09T16:00:00+00:00"
               },
               {
                 "price": 1989.02,
-                "distance_pct": 10.981,
+                "distance_pct": 11.151,
                 "touches": 2,
                 "strength": 67,
                 "last_test_utc": "2026-07-26T16:00:00+00:00"
@@ -8096,28 +8089,28 @@
             "support": [
               {
                 "price": 1742.67,
-                "distance_pct": -2.764,
+                "distance_pct": -2.615,
                 "touches": 3,
                 "strength": 66,
                 "last_test_utc": "2026-02-01T16:00:00+00:00"
               },
               {
                 "price": 1623.19,
-                "distance_pct": -9.431,
+                "distance_pct": -9.292,
                 "touches": 1,
                 "strength": 44,
                 "last_test_utc": "2023-06-11T16:00:00+00:00"
               },
               {
                 "price": 1530.56,
-                "distance_pct": -14.599,
+                "distance_pct": -14.469,
                 "touches": 1,
                 "strength": 44,
                 "last_test_utc": "2023-09-10T16:00:00+00:00"
               },
               {
                 "price": 1510.23666667,
-                "distance_pct": -15.733,
+                "distance_pct": -15.604,
                 "touches": 3,
                 "strength": 74,
                 "last_test_utc": "2026-06-21T16:00:00+00:00"
@@ -8126,28 +8119,28 @@
             "resistance": [
               {
                 "price": 1935.0,
-                "distance_pct": 7.967,
+                "distance_pct": 8.133,
                 "touches": 1,
                 "strength": 44,
                 "last_test_utc": "2023-05-28T16:00:00+00:00"
               },
               {
                 "price": 1982.29,
-                "distance_pct": 10.606,
+                "distance_pct": 10.775,
                 "touches": 1,
                 "strength": 58,
                 "last_test_utc": "2026-07-26T16:00:00+00:00"
               },
               {
                 "price": 2030.0,
-                "distance_pct": 13.268,
+                "distance_pct": 13.441,
                 "touches": 1,
                 "strength": 44,
                 "last_test_utc": "2023-07-09T16:00:00+00:00"
               },
               {
                 "price": 2137.9,
-                "distance_pct": 19.288,
+                "distance_pct": 19.471,
                 "touches": 1,
                 "strength": 44,
                 "last_test_utc": "2023-11-05T16:00:00+00:00"
@@ -8155,11 +8148,11 @@
             ]
           }
         },
-        "updated_at": "2026-11-18T14:09:33.444507+00:00",
+        "updated_at": "2026-11-18T14:10:14.901566+00:00",
         "confluence_support": [
           {
-            "price": 1787.33333333,
-            "distance_pct": -0.272,
+            "price": 1785.5,
+            "distance_pct": -0.222,
             "timeframes": [
               "15m",
               "1H",
@@ -8170,7 +8163,7 @@
           },
           {
             "price": 1768.84,
-            "distance_pct": -1.304,
+            "distance_pct": -1.153,
             "timeframes": [
               "15m",
               "1H"
@@ -8180,7 +8173,7 @@
           },
           {
             "price": 1747.264,
-            "distance_pct": -2.508,
+            "distance_pct": -2.359,
             "timeframes": [
               "15m",
               "1H",
@@ -8193,7 +8186,7 @@
           },
           {
             "price": 1727.83,
-            "distance_pct": -3.592,
+            "distance_pct": -3.445,
             "timeframes": [
               "1H"
             ],
@@ -8202,7 +8195,7 @@
           },
           {
             "price": 1709.89,
-            "distance_pct": -4.593,
+            "distance_pct": -4.447,
             "timeframes": [
               "4H",
               "1D"
@@ -8212,7 +8205,7 @@
           },
           {
             "price": 1670.38,
-            "distance_pct": -6.798,
+            "distance_pct": -6.655,
             "timeframes": [
               "1D"
             ],
@@ -8223,7 +8216,7 @@
         "confluence_resistance": [
           {
             "price": 1793.99,
-            "distance_pct": 0.099,
+            "distance_pct": 0.253,
             "timeframes": [
               "15m"
             ],
@@ -8232,7 +8225,7 @@
           },
           {
             "price": 1806.85622222,
-            "distance_pct": 0.817,
+            "distance_pct": 0.972,
             "timeframes": [
               "15m",
               "1H"
@@ -8242,7 +8235,7 @@
           },
           {
             "price": 1817.1225,
-            "distance_pct": 1.39,
+            "distance_pct": 1.545,
             "timeframes": [
               "15m",
               "1H"
@@ -8252,7 +8245,7 @@
           },
           {
             "price": 1840.137875,
-            "distance_pct": 2.674,
+            "distance_pct": 2.831,
             "timeframes": [
               "1H",
               "4H",
@@ -8263,7 +8256,7 @@
           },
           {
             "price": 1866.83,
-            "distance_pct": 4.164,
+            "distance_pct": 4.323,
             "timeframes": [
               "4H"
             ],
@@ -8272,7 +8265,7 @@
           },
           {
             "price": 1898.0,
-            "distance_pct": 5.903,
+            "distance_pct": 6.065,
             "timeframes": [
               "1D"
             ],
@@ -8284,23 +8277,6 @@
       "level_validation": {
         "lookback_hours": 72,
         "levels": [
-          {
-            "price": 1790.965,
-            "side": "support",
-            "timeframe": "15m",
-            "zone_low": 1784.53666667,
-            "zone_high": 1797.39333333,
-            "touches_lookback": 21,
-            "holds_lookback": 19,
-            "close_breaks_lookback": 1,
-            "reclaims_lookback": 0,
-            "breakout_retests_lookback": 1,
-            "failed_retests_lookback": 0,
-            "retest_events": [
-              "bearish_breakdown_retest"
-            ],
-            "status": "tested"
-          },
           {
             "price": 1785.605,
             "side": "support",
@@ -8347,13 +8323,13 @@
             "status": "tested"
           },
           {
-            "price": 1786.76333333,
+            "price": 1784.895,
             "side": "support",
             "timeframe": "1H",
-            "zone_low": 1780.335,
-            "zone_high": 1793.19166666,
-            "touches_lookback": 13,
-            "holds_lookback": 12,
+            "zone_low": 1778.46666667,
+            "zone_high": 1791.32333333,
+            "touches_lookback": 12,
+            "holds_lookback": 11,
             "close_breaks_lookback": 1,
             "reclaims_lookback": 0,
             "breakout_retests_lookback": 0,
@@ -8899,7 +8875,7 @@
         ],
         "summary": {
           "active": 19,
-          "tested": 20,
+          "tested": 19,
           "broken": 0,
           "reclaimed": 5
         }
@@ -8923,7 +8899,7 @@
           "position_in_7d_range_pct": 20.4,
           "oi_change_24h_pct": 0.82,
           "taker_cvd_24h": 0.004,
-          "long_liquidations_usd": 501217.9052700001,
+          "long_liquidations_usd": 502986.1179800001,
           "short_liquidations_usd": 337.12874999999997,
           "fear_greed": 11.0
         },
@@ -8953,7 +8929,7 @@
             "name": "five_layer_model",
             "bias": "bearish",
             "weight": 22,
-            "detail": "24h model P(up)=0.396"
+            "detail": "24h model P(up)=0.395"
           },
           {
             "name": "historical_analogue",
@@ -8983,9 +8959,9 @@
     "XRP": {
       "coin": "XRP",
       "symbol": "XRPUSDT",
-      "price": 0.9889,
+      "price": 0.9871,
       "price_source": "OKX live ticker (XRP-USDT-SWAP)",
-      "price_time": "2026-11-18T14:09:37.332000+00:00",
+      "price_time": "2026-11-18T14:10:18.373000+00:00",
       "candle_time": "2026-11-18T13:00:00+00:00",
       "change_1h_pct": 0.438,
       "change_4h_pct": -1.3,
@@ -9005,16 +8981,16 @@
         "global_long_short_ratio": {
           "longShortRatio": 2.16,
           "source": "OKX public account long/short ratio",
-          "timestamp": "1795006800000"
+          "timestamp": "1795010400000"
         },
         "taker_buy_sell_ratio": {
-          "buySellRatio": 4.690226656605461,
-          "buy_size": 1678.21,
-          "sell_size": 357.81,
+          "buySellRatio": 1.4097926909625424,
+          "buy_size": 1390.69,
+          "sell_size": 986.45,
           "trade_count": 500,
           "source": "OKX public recent trades (up to 500; not a 1h aggregate)",
           "instrument": "XRP-USDT-SWAP",
-          "timestamp": "1795010977288"
+          "timestamp": "1795011019821"
         },
         "funding_history": [
           0.0001,
@@ -9118,7 +9094,7 @@
           4.10425890137e-05,
           1.0508768871e-06
         ],
-        "oi_change_24h": -0.022255001034549915,
+        "oi_change_24h": -0.018952386654764286,
         "oi_series": [
           [
             1792422000000,
@@ -11995,13 +11971,17 @@
           [
             1795006800000,
             95225987.784
+          ],
+          [
+            1795010400000,
+            95867476.5888
           ]
         ],
-        "oi_history_count": 719,
+        "oi_history_count": 720,
         "taker_cvd_24h": 0.05004651131115985,
         "taker_cvd_count": 24,
-        "basis": -0.0009093664746893118,
-        "book_imbalance": 0.042210069430843725,
+        "basis": -0.0004050632911393083,
+        "book_imbalance": 0.07744759697744658,
         "recent_liquidations_usd": {
           "longs": 243773.24399999998,
           "shorts": 350496.7041000001
@@ -12085,7 +12065,7 @@
             ]
           },
           "derivs": {
-            "score": -0.0348232365308119,
+            "score": -0.05787860654879753,
             "components": [
               {
                 "name": "long_short_ratio",
@@ -12095,20 +12075,20 @@
               },
               {
                 "name": "price_vs_oi",
-                "score": 0.089,
+                "score": 0.076,
                 "weight": 0.6,
-                "note": "price +1.0%, OI -2.2% over 24h"
+                "note": "price +1.0%, OI -1.9% over 24h"
               },
               {
                 "name": "perp_basis",
-                "score": 0.273,
+                "score": 0.122,
                 "weight": 0.1,
-                "note": "perpetual basis -9.1 bps"
+                "note": "perpetual basis -4.1 bps"
               }
             ]
           },
           "liquidity": {
-            "score": 0.31303835258338547,
+            "score": 0.3101424151988649,
             "components": [
               {
                 "name": "taker_cvd_24h",
@@ -12118,7 +12098,7 @@
               },
               {
                 "name": "liquidation_magnet",
-                "score": 0.384,
+                "score": 0.351,
                 "weight": 0.3,
                 "note": "estimated liquidation fuel above vs below; OI-delta weighted"
               },
@@ -12130,9 +12110,9 @@
               },
               {
                 "name": "book_imbalance",
-                "score": 0.084,
+                "score": 0.155,
                 "weight": 0.1,
-                "note": "top-400-level notional imbalance +0.04"
+                "note": "top-400-level notional imbalance +0.08"
               }
             ]
           },
@@ -12167,53 +12147,53 @@
         },
         "horizons": {
           "4h": {
-            "composite": -0.002,
-            "p_up": 0.499,
+            "composite": -0.011,
+            "p_up": 0.496,
             "coverage": 1.0,
             "bias": "Neutral",
             "range": [
-              0.9754731,
-              1.00251171
+              0.97369754,
+              1.00068694
             ]
           },
           "24h": {
-            "composite": -0.049,
-            "p_up": 0.48,
+            "composite": -0.057,
+            "p_up": 0.477,
             "coverage": 1.0,
             "bias": "Neutral",
             "range": [
-              0.95633393,
-              1.02257504
+              0.95459321,
+              1.02071375
             ]
           },
           "72h": {
-            "composite": -0.159,
-            "p_up": 0.438,
+            "composite": -0.166,
+            "p_up": 0.436,
             "coverage": 1.0,
             "bias": "Bearish",
             "range": [
-              0.93317584,
-              1.0479517
+              0.93147727,
+              1.04604421
             ]
           },
           "1w": {
-            "composite": -0.233,
-            "p_up": 0.413,
+            "composite": -0.239,
+            "p_up": 0.411,
             "coverage": 1.0,
             "bias": "Bearish",
             "range": [
-              0.90505654,
-              1.08051062
+              0.90340916,
+              1.07854387
             ]
           },
           "1m": {
-            "composite": -0.319,
+            "composite": -0.322,
             "p_up": 0.387,
             "coverage": 1.0,
             "bias": "Bearish",
             "range": [
-              0.82318627,
-              1.18797319
+              0.8216879,
+              1.18581083
             ]
           }
         },
@@ -12221,36 +12201,36 @@
         "levels": {
           "liq_above": [
             {
-              "price": 1.068012,
-              "strength": 0.9714647904463428,
-              "dist_pct": 7.999999999999985
+              "price": 1.09814875,
+              "strength": 1.0,
+              "dist_pct": 11.250000000000004
             },
             {
-              "price": 1.05565075,
-              "strength": 0.8460301238557237,
-              "dist_pct": 6.7500000000000115
+              "price": 1.056197,
+              "strength": 0.8086045262642645,
+              "dist_pct": 7.000000000000006
             },
             {
-              "price": 1.038345,
-              "strength": 0.5923324410836456,
-              "dist_pct": 5.000000000000004
+              "price": 1.066068,
+              "strength": 0.7611106930703654,
+              "dist_pct": 8.000000000000007
             }
           ],
           "liq_below": [
             {
-              "price": 0.919677,
-              "strength": 0.6303735314851134,
-              "dist_pct": -7.000000000000006
-            },
-            {
-              "price": 0.92214925,
-              "strength": 0.5485742338807335,
+              "price": 0.92047075,
+              "strength": 0.6258526890149451,
               "dist_pct": -6.75
             },
             {
-              "price": 0.8727042500000001,
-              "strength": 0.4942456620012169,
-              "dist_pct": -11.749999999999993
+              "price": 0.87111575,
+              "strength": 0.5543253420980652,
+              "dist_pct": -11.750000000000005
+            },
+            {
+              "price": 0.9130674999999999,
+              "strength": 0.5485150578099228,
+              "dist_pct": -7.500000000000007
             }
           ],
           "liq_method": "OI-delta weighted"
@@ -12272,7 +12252,7 @@
       },
       "support_resistance": {
         "method": "confirmed 5-candle swing pivots clustered by ATR/price proximity; strength is confluence, not reversal probability",
-        "current_price": 0.9889,
+        "current_price": 0.9871,
         "timeframes": {
           "15m": {
             "source": "OKX completed 15m candles",
@@ -12281,28 +12261,28 @@
             "support": [
               {
                 "price": 0.98195,
-                "distance_pct": -0.703,
+                "distance_pct": -0.522,
                 "touches": 2,
                 "strength": 70,
                 "last_test_utc": "2026-11-18T06:45:00+00:00"
               },
               {
                 "price": 0.978,
-                "distance_pct": -1.102,
+                "distance_pct": -0.922,
                 "touches": 1,
                 "strength": 62,
                 "last_test_utc": "2026-11-18T12:30:00+00:00"
               },
               {
                 "price": 0.97545,
-                "distance_pct": -1.36,
+                "distance_pct": -1.18,
                 "touches": 2,
                 "strength": 70,
                 "last_test_utc": "2026-11-18T04:45:00+00:00"
               },
               {
                 "price": 0.9698,
-                "distance_pct": -1.931,
+                "distance_pct": -1.753,
                 "touches": 2,
                 "strength": 71,
                 "last_test_utc": "2026-11-18T02:00:00+00:00"
@@ -12310,22 +12290,29 @@
             ],
             "resistance": [
               {
-                "price": 0.9902,
-                "distance_pct": 0.131,
+                "price": 0.98835,
+                "distance_pct": 0.127,
                 "touches": 2,
                 "strength": 71,
-                "last_test_utc": "2026-11-18T05:30:00+00:00"
+                "last_test_utc": "2026-11-18T06:15:00+00:00"
+              },
+              {
+                "price": 0.9909,
+                "distance_pct": 0.385,
+                "touches": 1,
+                "strength": 62,
+                "last_test_utc": "2026-11-17T23:00:00+00:00"
               },
               {
                 "price": 1.0036,
-                "distance_pct": 1.487,
+                "distance_pct": 1.672,
                 "touches": 1,
                 "strength": 61,
                 "last_test_utc": "2026-11-18T10:00:00+00:00"
               },
               {
                 "price": 1.0074,
-                "distance_pct": 1.871,
+                "distance_pct": 2.057,
                 "touches": 1,
                 "strength": 62,
                 "last_test_utc": "2026-11-18T08:15:00+00:00"
@@ -12339,28 +12326,28 @@
             "support": [
               {
                 "price": 0.9835,
-                "distance_pct": -0.546,
+                "distance_pct": -0.365,
                 "touches": 1,
                 "strength": 63,
                 "last_test_utc": "2026-11-14T02:00:00+00:00"
               },
               {
                 "price": 0.9787,
-                "distance_pct": -1.031,
+                "distance_pct": -0.851,
                 "touches": 1,
                 "strength": 62,
                 "last_test_utc": "2026-11-14T07:00:00+00:00"
               },
               {
                 "price": 0.9696,
-                "distance_pct": -1.952,
+                "distance_pct": -1.773,
                 "touches": 1,
                 "strength": 62,
                 "last_test_utc": "2026-11-18T02:00:00+00:00"
               },
               {
                 "price": 0.9551,
-                "distance_pct": -3.418,
+                "distance_pct": -3.242,
                 "touches": 1,
                 "strength": 62,
                 "last_test_utc": "2026-11-16T00:00:00+00:00"
@@ -12369,28 +12356,28 @@
             "resistance": [
               {
                 "price": 0.9909,
-                "distance_pct": 0.202,
+                "distance_pct": 0.385,
                 "touches": 1,
                 "strength": 62,
                 "last_test_utc": "2026-11-17T23:00:00+00:00"
               },
               {
                 "price": 0.99865,
-                "distance_pct": 0.986,
+                "distance_pct": 1.17,
                 "touches": 2,
                 "strength": 71,
                 "last_test_utc": "2026-11-14T13:00:00+00:00"
               },
               {
                 "price": 1.0074,
-                "distance_pct": 1.871,
+                "distance_pct": 2.057,
                 "touches": 1,
                 "strength": 62,
                 "last_test_utc": "2026-11-18T08:00:00+00:00"
               },
               {
                 "price": 1.03125,
-                "distance_pct": 4.283,
+                "distance_pct": 4.473,
                 "touches": 2,
                 "strength": 71,
                 "last_test_utc": "2026-11-13T19:00:00+00:00"
@@ -12404,14 +12391,14 @@
             "support": [
               {
                 "price": 0.9435,
-                "distance_pct": -4.591,
+                "distance_pct": -4.417,
                 "touches": 3,
                 "strength": 81,
                 "last_test_utc": "2026-11-17T12:00:00+00:00"
               },
               {
                 "price": 0.8922,
-                "distance_pct": -9.779,
+                "distance_pct": -9.614,
                 "touches": 1,
                 "strength": 63,
                 "last_test_utc": "2026-11-14T20:00:00+00:00"
@@ -12420,28 +12407,28 @@
             "resistance": [
               {
                 "price": 1.04355,
-                "distance_pct": 5.526,
+                "distance_pct": 5.719,
                 "touches": 2,
                 "strength": 72,
                 "last_test_utc": "2026-11-13T12:00:00+00:00"
               },
               {
                 "price": 1.0802,
-                "distance_pct": 9.232,
+                "distance_pct": 9.432,
                 "touches": 1,
                 "strength": 62,
                 "last_test_utc": "2026-11-11T16:00:00+00:00"
               },
               {
                 "price": 1.1161,
-                "distance_pct": 12.863,
+                "distance_pct": 13.069,
                 "touches": 1,
                 "strength": 62,
                 "last_test_utc": "2026-11-09T12:00:00+00:00"
               },
               {
                 "price": 1.1693,
-                "distance_pct": 18.242,
+                "distance_pct": 18.458,
                 "touches": 1,
                 "strength": 62,
                 "last_test_utc": "2026-11-08T12:00:00+00:00"
@@ -12454,15 +12441,15 @@
             "atr": 0.06328571,
             "support": [
               {
-                "price": 0.98685,
-                "distance_pct": -0.207,
-                "touches": 2,
-                "strength": 68,
+                "price": 0.9861,
+                "distance_pct": -0.101,
+                "touches": 1,
+                "strength": 58,
                 "last_test_utc": "2026-08-14T16:00:00+00:00"
               },
               {
                 "price": 0.8922,
-                "distance_pct": -9.779,
+                "distance_pct": -9.614,
                 "touches": 1,
                 "strength": 64,
                 "last_test_utc": "2026-11-14T16:00:00+00:00"
@@ -12471,28 +12458,28 @@
             "resistance": [
               {
                 "price": 1.0766,
-                "distance_pct": 8.868,
+                "distance_pct": 9.067,
                 "touches": 1,
                 "strength": 55,
                 "last_test_utc": "2026-06-27T16:00:00+00:00"
               },
               {
                 "price": 1.093,
-                "distance_pct": 10.527,
+                "distance_pct": 10.728,
                 "touches": 1,
                 "strength": 57,
                 "last_test_utc": "2026-08-02T16:00:00+00:00"
               },
               {
                 "price": 1.12156667,
-                "distance_pct": 13.416,
+                "distance_pct": 13.622,
                 "touches": 3,
                 "strength": 76,
                 "last_test_utc": "2026-07-26T16:00:00+00:00"
               },
               {
                 "price": 1.16355,
-                "distance_pct": 17.661,
+                "distance_pct": 17.876,
                 "touches": 2,
                 "strength": 66,
                 "last_test_utc": "2026-07-21T16:00:00+00:00"
@@ -12506,28 +12493,28 @@
             "support": [
               {
                 "price": 0.9861,
-                "distance_pct": -0.283,
+                "distance_pct": -0.101,
                 "touches": 1,
                 "strength": 58,
                 "last_test_utc": "2026-08-09T16:00:00+00:00"
               },
               {
                 "price": 0.5719,
-                "distance_pct": -42.168,
+                "distance_pct": -42.063,
                 "touches": 1,
                 "strength": 44,
                 "last_test_utc": "2023-12-03T16:00:00+00:00"
               },
               {
                 "price": 0.50465,
-                "distance_pct": -48.969,
+                "distance_pct": -48.875,
                 "touches": 2,
                 "strength": 53,
                 "last_test_utc": "2024-09-29T16:00:00+00:00"
               },
               {
                 "price": 0.485,
-                "distance_pct": -50.956,
+                "distance_pct": -50.866,
                 "touches": 2,
                 "strength": 53,
                 "last_test_utc": "2024-10-20T16:00:00+00:00"
@@ -12536,28 +12523,28 @@
             "resistance": [
               {
                 "price": 1.509,
-                "distance_pct": 52.594,
+                "distance_pct": 52.872,
                 "touches": 1,
                 "strength": 52,
                 "last_test_utc": "2026-04-12T16:00:00+00:00"
               },
               {
                 "price": 1.549,
-                "distance_pct": 56.639,
+                "distance_pct": 56.924,
                 "touches": 1,
                 "strength": 53,
                 "last_test_utc": "2026-05-10T16:00:00+00:00"
               },
               {
                 "price": 1.6067,
-                "distance_pct": 62.473,
+                "distance_pct": 62.77,
                 "touches": 1,
                 "strength": 50,
                 "last_test_utc": "2026-03-15T16:00:00+00:00"
               },
               {
                 "price": 1.6584,
-                "distance_pct": 67.701,
+                "distance_pct": 68.007,
                 "touches": 1,
                 "strength": 61,
                 "last_test_utc": "2026-09-20T16:00:00+00:00"
@@ -12565,11 +12552,11 @@
             ]
           }
         },
-        "updated_at": "2026-11-18T14:09:37.886375+00:00",
+        "updated_at": "2026-11-18T14:10:19.414966+00:00",
         "confluence_support": [
           {
-            "price": 0.9846,
-            "distance_pct": -0.435,
+            "price": 0.9844125,
+            "distance_pct": -0.272,
             "timeframes": [
               "15m",
               "1H",
@@ -12577,11 +12564,11 @@
               "1W"
             ],
             "confirmations": 4,
-            "strength": 100
+            "strength": 98
           },
           {
             "price": 0.97738333,
-            "distance_pct": -1.165,
+            "distance_pct": -0.984,
             "timeframes": [
               "15m",
               "1H"
@@ -12591,7 +12578,7 @@
           },
           {
             "price": 0.9697,
-            "distance_pct": -1.942,
+            "distance_pct": -1.763,
             "timeframes": [
               "15m",
               "1H"
@@ -12601,7 +12588,7 @@
           },
           {
             "price": 0.9551,
-            "distance_pct": -3.418,
+            "distance_pct": -3.242,
             "timeframes": [
               "1H"
             ],
@@ -12610,7 +12597,7 @@
           },
           {
             "price": 0.9435,
-            "distance_pct": -4.591,
+            "distance_pct": -4.417,
             "timeframes": [
               "4H"
             ],
@@ -12619,7 +12606,7 @@
           },
           {
             "price": 0.8922,
-            "distance_pct": -9.779,
+            "distance_pct": -9.614,
             "timeframes": [
               "4H",
               "1D"
@@ -12630,18 +12617,18 @@
         ],
         "confluence_resistance": [
           {
-            "price": 0.99055,
-            "distance_pct": 0.167,
+            "price": 0.99005,
+            "distance_pct": 0.299,
             "timeframes": [
               "15m",
               "1H"
             ],
             "confirmations": 2,
-            "strength": 78
+            "strength": 77
           },
           {
             "price": 0.99865,
-            "distance_pct": 0.986,
+            "distance_pct": 1.17,
             "timeframes": [
               "1H"
             ],
@@ -12650,7 +12637,7 @@
           },
           {
             "price": 1.00613333,
-            "distance_pct": 1.743,
+            "distance_pct": 1.928,
             "timeframes": [
               "15m",
               "1H"
@@ -12660,7 +12647,7 @@
           },
           {
             "price": 1.03125,
-            "distance_pct": 4.283,
+            "distance_pct": 4.473,
             "timeframes": [
               "1H"
             ],
@@ -12669,7 +12656,7 @@
           },
           {
             "price": 1.04355,
-            "distance_pct": 5.526,
+            "distance_pct": 5.719,
             "timeframes": [
               "4H"
             ],
@@ -12678,7 +12665,7 @@
           },
           {
             "price": 1.0784,
-            "distance_pct": 9.05,
+            "distance_pct": 9.249,
             "timeframes": [
               "4H",
               "1D"
@@ -12861,14 +12848,14 @@
             "status": "active"
           },
           {
-            "price": 0.98685,
+            "price": 0.9861,
             "side": "support",
             "timeframe": "1D",
-            "zone_low": 0.98299854,
-            "zone_high": 0.99070146,
+            "zone_low": 0.98224854,
+            "zone_high": 0.98995146,
             "touches_lookback": 8,
-            "holds_lookback": 6,
-            "close_breaks_lookback": 2,
+            "holds_lookback": 7,
+            "close_breaks_lookback": 1,
             "reclaims_lookback": 0,
             "breakout_retests_lookback": 0,
             "failed_retests_lookback": 0,
@@ -12951,11 +12938,26 @@
             "status": "active"
           },
           {
-            "price": 0.9902,
+            "price": 0.98835,
             "side": "resistance",
             "timeframe": "15m",
-            "zone_low": 0.98634854,
-            "zone_high": 0.99405146,
+            "zone_low": 0.98449854,
+            "zone_high": 0.99220146,
+            "touches_lookback": 8,
+            "holds_lookback": 7,
+            "close_breaks_lookback": 1,
+            "reclaims_lookback": 0,
+            "breakout_retests_lookback": 0,
+            "failed_retests_lookback": 0,
+            "retest_events": [],
+            "status": "tested"
+          },
+          {
+            "price": 0.9909,
+            "side": "resistance",
+            "timeframe": "15m",
+            "zone_low": 0.98704854,
+            "zone_high": 0.99475146,
             "touches_lookback": 8,
             "holds_lookback": 6,
             "close_breaks_lookback": 1,
@@ -13242,7 +13244,7 @@
         ],
         "summary": {
           "active": 18,
-          "tested": 17,
+          "tested": 18,
           "broken": 0,
           "reclaimed": 3
         }
@@ -13263,7 +13265,7 @@
           "return_72h_pct": 1.879,
           "volume_ratio_vs_baseline": 1.141,
           "position_in_7d_range_pct": 50.3,
-          "oi_change_24h_pct": -2.23,
+          "oi_change_24h_pct": -1.9,
           "taker_cvd_24h": 0.05,
           "long_liquidations_usd": 243773.24399999998,
           "short_liquidations_usd": 350496.7041000001,
@@ -13296,7 +13298,7 @@
         "metrics": {
           "return_4h_pct": -1.3,
           "return_12h_pct": 1.408,
-          "oi_change_24h_pct": -2.23,
+          "oi_change_24h_pct": -1.9,
           "taker_cvd_24h": 0.05004651131115985,
           "volume_ratio_24h": 1.19
         },
@@ -13306,9 +13308,9 @@
     "SOL": {
       "coin": "SOL",
       "symbol": "SOLUSDT",
-      "price": 74.29,
+      "price": 74.2,
       "price_source": "OKX live ticker (SOL-USDT-SWAP)",
-      "price_time": "2026-11-18T14:09:41.773000+00:00",
+      "price_time": "2026-11-18T14:10:22.467000+00:00",
       "candle_time": "2026-11-18T13:00:00+00:00",
       "change_1h_pct": -0.094,
       "change_4h_pct": -1.291,
@@ -13326,18 +13328,18 @@
           "unavailable": "451 Client Error:  for url: https://fapi.binance.com/fapi/v1/fundingRate?symbol=SOLUSDT&limit=1"
         },
         "global_long_short_ratio": {
-          "longShortRatio": 2.46,
+          "longShortRatio": 2.45,
           "source": "OKX public account long/short ratio",
           "timestamp": "1795010400000"
         },
         "taker_buy_sell_ratio": {
-          "buySellRatio": 0.504065467594416,
-          "buy_size": 575.92,
-          "sell_size": 1142.55,
+          "buySellRatio": 0.22291343430611993,
+          "buy_size": 452.57,
+          "sell_size": 2030.25,
           "trade_count": 500,
           "source": "OKX public recent trades (up to 500; not a 1h aggregate)",
           "instrument": "SOL-USDT-SWAP",
-          "timestamp": "1795010982135"
+          "timestamp": "1795011023488"
         },
         "funding_history": [
           8.32997138771e-05,
@@ -13441,7 +13443,7 @@
           -1.68100467879e-05,
           -0.0001565865156484
         ],
-        "oi_change_24h": -0.029954861565965496,
+        "oi_change_24h": -0.025075798317286013,
         "oi_series": [
           [
             1792422000000,
@@ -16318,13 +16320,17 @@
           [
             1795006800000,
             282463306.4656
+          ],
+          [
+            1795010400000,
+            282324828.374
           ]
         ],
-        "oi_history_count": 719,
-        "taker_cvd_24h": 0.013055039688254697,
+        "oi_history_count": 720,
+        "taker_cvd_24h": 0.01150078355300249,
         "taker_cvd_count": 24,
-        "basis": -0.0005382131324003235,
-        "book_imbalance": 0.02058049533557436,
+        "basis": -0.0006734006734006352,
+        "book_imbalance": 0.06148306054472133,
         "recent_liquidations_usd": {
           "longs": 167564.36099999995,
           "shorts": 49679.18410000001
@@ -16408,40 +16414,40 @@
             ]
           },
           "derivs": {
-            "score": -0.04698614076131381,
+            "score": -0.05402926751998987,
             "components": [
               {
                 "name": "long_short_ratio",
-                "score": -0.45,
+                "score": -0.448,
                 "weight": 0.3,
-                "note": "account long/short ratio 2.460; historical percentile unavailable"
+                "note": "account long/short ratio 2.450; historical percentile unavailable"
               },
               {
                 "name": "price_vs_oi",
-                "score": 0.12,
+                "score": 0.1,
                 "weight": 0.6,
-                "note": "price +0.6%, OI -3.0% over 24h"
+                "note": "price +0.6%, OI -2.5% over 24h"
               },
               {
                 "name": "perp_basis",
-                "score": 0.161,
+                "score": 0.202,
                 "weight": 0.1,
-                "note": "perpetual basis -5.4 bps"
+                "note": "perpetual basis -6.7 bps"
               }
             ]
           },
           "liquidity": {
-            "score": 0.13155545880577407,
+            "score": 0.1156677538512546,
             "components": [
               {
                 "name": "taker_cvd_24h",
-                "score": 0.131,
+                "score": 0.115,
                 "weight": 0.4,
-                "note": "24h taker CVD +1.3% of volume"
+                "note": "24h taker CVD +1.2% of volume"
               },
               {
                 "name": "liquidation_magnet",
-                "score": 0.142,
+                "score": 0.083,
                 "weight": 0.3,
                 "note": "estimated liquidation fuel above vs below; OI-delta weighted"
               },
@@ -16453,9 +16459,9 @@
               },
               {
                 "name": "book_imbalance",
-                "score": 0.041,
+                "score": 0.123,
                 "weight": 0.1,
-                "note": "top-400-level notional imbalance +0.02"
+                "note": "top-400-level notional imbalance +0.06"
               }
             ]
           },
@@ -16496,53 +16502,53 @@
         },
         "horizons": {
           "4h": {
-            "composite": -0.07,
-            "p_up": 0.472,
+            "composite": -0.077,
+            "p_up": 0.47,
             "coverage": 1.0,
             "bias": "Neutral",
             "range": [
-              73.33779759,
-              75.25456561
+              73.24895115,
+              75.16339707
             ]
           },
           "24h": {
-            "composite": -0.117,
-            "p_up": 0.454,
+            "composite": -0.124,
+            "p_up": 0.451,
             "coverage": 1.0,
             "bias": "Neutral",
             "range": [
-              71.97921478,
-              76.67496953
+              71.89201423,
+              76.58208021
             ]
           },
           "72h": {
-            "composite": -0.218,
-            "p_up": 0.418,
+            "composite": -0.223,
+            "p_up": 0.416,
             "coverage": 1.0,
             "bias": "Bearish",
             "range": [
-              70.33329853,
-              78.46929143
+              70.24809195,
+              78.37422835
             ]
           },
           "1w": {
-            "composite": -0.288,
-            "p_up": 0.396,
+            "composite": -0.292,
+            "p_up": 0.395,
             "coverage": 1.0,
             "bias": "Bearish",
             "range": [
-              68.33167111,
-              80.76787836
+              68.24888943,
+              80.67003061
             ]
           },
           "1m": {
-            "composite": -0.38,
-            "p_up": 0.372,
+            "composite": -0.381,
+            "p_up": 0.371,
             "coverage": 1.0,
             "bias": "Bearish",
             "range": [
-              62.48345018,
-              88.32745445
+              62.40775345,
+              88.22044852
             ]
           }
         },
@@ -16550,36 +16556,36 @@
         "levels": {
           "liq_above": [
             {
-              "price": 78.19022500000001,
-              "strength": 0.9272453989070775,
-              "dist_pct": 5.249999999999999
+              "price": 78.281,
+              "strength": 0.7671320158428222,
+              "dist_pct": 5.499999999999994
             },
             {
-              "price": 79.11885000000001,
-              "strength": 0.5727470177430283,
-              "dist_pct": 6.499999999999995
+              "price": 76.05499999999999,
+              "strength": 0.7054594478406602,
+              "dist_pct": 2.499999999999991
             },
             {
-              "price": 76.14725000000001,
-              "strength": 0.4889747035020142,
-              "dist_pct": 2.5000000000000133
+              "price": 78.4665,
+              "strength": 0.4570823308859755,
+              "dist_pct": 5.7499999999999885
             }
           ],
           "liq_below": [
             {
-              "price": 68.16107500000001,
+              "price": 68.264,
               "strength": 1.0,
-              "dist_pct": -8.249999999999991
+              "dist_pct": -8.000000000000007
             },
             {
-              "price": 68.34680000000002,
-              "strength": 0.4655532243524944,
-              "dist_pct": -7.999999999999985
+              "price": 69.5625,
+              "strength": 0.5643884600268997,
+              "dist_pct": -6.25
             },
             {
-              "price": 65.93237500000001,
-              "strength": 0.4361769284391353,
-              "dist_pct": -11.249999999999993
+              "price": 68.4495,
+              "strength": 0.49194660102479004,
+              "dist_pct": -7.750000000000002
             }
           ],
           "liq_method": "OI-delta weighted"
@@ -16601,7 +16607,7 @@
       },
       "support_resistance": {
         "method": "confirmed 5-candle swing pivots clustered by ATR/price proximity; strength is confluence, not reversal probability",
-        "current_price": 74.29,
+        "current_price": 74.2,
         "timeframes": {
           "15m": {
             "source": "OKX completed 15m candles",
@@ -16610,28 +16616,28 @@
             "support": [
               {
                 "price": 74.07,
-                "distance_pct": -0.296,
+                "distance_pct": -0.175,
                 "touches": 4,
                 "strength": 90,
                 "last_test_utc": "2026-11-18T12:45:00+00:00"
               },
               {
                 "price": 73.31,
-                "distance_pct": -1.319,
+                "distance_pct": -1.199,
                 "touches": 1,
                 "strength": 62,
                 "last_test_utc": "2026-11-17T13:30:00+00:00"
               },
               {
                 "price": 73.12,
-                "distance_pct": -1.575,
+                "distance_pct": -1.456,
                 "touches": 2,
                 "strength": 71,
                 "last_test_utc": "2026-11-17T22:00:00+00:00"
               },
               {
                 "price": 72.74,
-                "distance_pct": -2.086,
+                "distance_pct": -1.968,
                 "touches": 1,
                 "strength": 62,
                 "last_test_utc": "2026-11-17T20:45:00+00:00"
@@ -16640,28 +16646,28 @@
             "resistance": [
               {
                 "price": 74.3,
-                "distance_pct": 0.013,
+                "distance_pct": 0.135,
                 "touches": 1,
                 "strength": 62,
                 "last_test_utc": "2026-11-17T14:30:00+00:00"
               },
               {
                 "price": 74.49,
-                "distance_pct": 0.269,
+                "distance_pct": 0.391,
                 "touches": 1,
                 "strength": 62,
                 "last_test_utc": "2026-11-18T13:00:00+00:00"
               },
               {
                 "price": 74.79,
-                "distance_pct": 0.673,
+                "distance_pct": 0.795,
                 "touches": 2,
                 "strength": 71,
                 "last_test_utc": "2026-11-18T12:15:00+00:00"
               },
               {
                 "price": 75.155,
-                "distance_pct": 1.164,
+                "distance_pct": 1.287,
                 "touches": 4,
                 "strength": 89,
                 "last_test_utc": "2026-11-18T10:00:00+00:00"
@@ -16675,28 +16681,28 @@
             "support": [
               {
                 "price": 74.01,
-                "distance_pct": -0.377,
+                "distance_pct": -0.256,
                 "touches": 1,
                 "strength": 63,
                 "last_test_utc": "2026-11-18T02:00:00+00:00"
               },
               {
                 "price": 71.95333333,
-                "distance_pct": -3.145,
+                "distance_pct": -3.028,
                 "touches": 3,
                 "strength": 82,
                 "last_test_utc": "2026-11-17T09:00:00+00:00"
               },
               {
                 "price": 70.93,
-                "distance_pct": -4.523,
+                "distance_pct": -4.407,
                 "touches": 5,
                 "strength": 100,
                 "last_test_utc": "2026-11-17T15:00:00+00:00"
               },
               {
                 "price": 70.37,
-                "distance_pct": -5.277,
+                "distance_pct": -5.162,
                 "touches": 2,
                 "strength": 72,
                 "last_test_utc": "2026-11-16T12:00:00+00:00"
@@ -16705,28 +16711,28 @@
             "resistance": [
               {
                 "price": 74.3,
-                "distance_pct": 0.013,
+                "distance_pct": 0.135,
                 "touches": 1,
                 "strength": 63,
                 "last_test_utc": "2026-11-17T14:00:00+00:00"
               },
               {
                 "price": 75.19,
-                "distance_pct": 1.211,
+                "distance_pct": 1.334,
                 "touches": 1,
                 "strength": 63,
                 "last_test_utc": "2026-11-18T10:00:00+00:00"
               },
               {
                 "price": 75.685,
-                "distance_pct": 1.878,
+                "distance_pct": 2.001,
                 "touches": 2,
                 "strength": 72,
                 "last_test_utc": "2026-11-18T05:00:00+00:00"
               },
               {
                 "price": 76.09,
-                "distance_pct": 2.423,
+                "distance_pct": 2.547,
                 "touches": 3,
                 "strength": 81,
                 "last_test_utc": "2026-11-14T12:00:00+00:00"
@@ -16740,21 +16746,21 @@
             "support": [
               {
                 "price": 71.0,
-                "distance_pct": -4.429,
+                "distance_pct": -4.313,
                 "touches": 1,
                 "strength": 64,
                 "last_test_utc": "2026-11-17T12:00:00+00:00"
               },
               {
                 "price": 69.87,
-                "distance_pct": -5.95,
+                "distance_pct": -5.836,
                 "touches": 1,
                 "strength": 64,
                 "last_test_utc": "2026-11-16T12:00:00+00:00"
               },
               {
                 "price": 67.33,
-                "distance_pct": -9.369,
+                "distance_pct": -9.259,
                 "touches": 1,
                 "strength": 64,
                 "last_test_utc": "2026-11-15T00:00:00+00:00"
@@ -16763,28 +16769,28 @@
             "resistance": [
               {
                 "price": 75.76,
-                "distance_pct": 1.979,
+                "distance_pct": 2.102,
                 "touches": 1,
                 "strength": 63,
                 "last_test_utc": "2026-11-17T20:00:00+00:00"
               },
               {
                 "price": 82.36,
-                "distance_pct": 10.863,
+                "distance_pct": 10.997,
                 "touches": 1,
                 "strength": 63,
                 "last_test_utc": "2026-11-13T12:00:00+00:00"
               },
               {
                 "price": 85.79,
-                "distance_pct": 15.48,
+                "distance_pct": 15.62,
                 "touches": 1,
                 "strength": 63,
                 "last_test_utc": "2026-11-11T16:00:00+00:00"
               },
               {
                 "price": 88.01,
-                "distance_pct": 18.468,
+                "distance_pct": 18.612,
                 "touches": 1,
                 "strength": 63,
                 "last_test_utc": "2026-11-09T12:00:00+00:00"
@@ -16798,28 +16804,28 @@
             "support": [
               {
                 "price": 73.665,
-                "distance_pct": -0.841,
+                "distance_pct": -0.721,
                 "touches": 4,
                 "strength": 86,
                 "last_test_utc": "2026-08-16T16:00:00+00:00"
               },
               {
                 "price": 72.27,
-                "distance_pct": -2.719,
+                "distance_pct": -2.601,
                 "touches": 2,
                 "strength": 67,
                 "last_test_utc": "2026-08-06T16:00:00+00:00"
               },
               {
                 "price": 70.095,
-                "distance_pct": -5.647,
+                "distance_pct": -5.532,
                 "touches": 2,
                 "strength": 67,
                 "last_test_utc": "2026-08-01T16:00:00+00:00"
               },
               {
                 "price": 67.44666667,
-                "distance_pct": -9.212,
+                "distance_pct": -9.102,
                 "touches": 3,
                 "strength": 82,
                 "last_test_utc": "2026-11-14T16:00:00+00:00"
@@ -16828,28 +16834,28 @@
             "resistance": [
               {
                 "price": 75.135,
-                "distance_pct": 1.137,
+                "distance_pct": 1.26,
                 "touches": 2,
                 "strength": 67,
                 "last_test_utc": "2026-07-30T16:00:00+00:00"
               },
               {
                 "price": 76.05,
-                "distance_pct": 2.369,
+                "distance_pct": 2.493,
                 "touches": 1,
                 "strength": 55,
                 "last_test_utc": "2026-06-15T16:00:00+00:00"
               },
               {
                 "price": 77.655,
-                "distance_pct": 4.53,
+                "distance_pct": 4.656,
                 "touches": 2,
                 "strength": 67,
                 "last_test_utc": "2026-08-09T16:00:00+00:00"
               },
               {
                 "price": 78.92,
-                "distance_pct": 6.232,
+                "distance_pct": 6.361,
                 "touches": 2,
                 "strength": 66,
                 "last_test_utc": "2026-07-20T16:00:00+00:00"
@@ -16863,28 +16869,28 @@
             "support": [
               {
                 "price": 70.51,
-                "distance_pct": -5.088,
+                "distance_pct": -4.973,
                 "touches": 1,
                 "strength": 58,
                 "last_test_utc": "2026-07-26T16:00:00+00:00"
               },
               {
                 "price": 67.21,
-                "distance_pct": -9.53,
+                "distance_pct": -9.42,
                 "touches": 1,
                 "strength": 48,
                 "last_test_utc": "2026-02-01T16:00:00+00:00"
               },
               {
                 "price": 60.02,
-                "distance_pct": -19.209,
+                "distance_pct": -19.111,
                 "touches": 1,
                 "strength": 55,
                 "last_test_utc": "2026-05-31T16:00:00+00:00"
               },
               {
                 "price": 19.667,
-                "distance_pct": -73.527,
+                "distance_pct": -73.495,
                 "touches": 1,
                 "strength": 44,
                 "last_test_utc": "2023-02-05T16:00:00+00:00"
@@ -16893,28 +16899,28 @@
             "resistance": [
               {
                 "price": 83.95,
-                "distance_pct": 13.003,
+                "distance_pct": 13.14,
                 "touches": 1,
                 "strength": 56,
                 "last_test_utc": "2026-06-28T16:00:00+00:00"
               },
               {
                 "price": 90.74,
-                "distance_pct": 22.143,
+                "distance_pct": 22.291,
                 "touches": 1,
                 "strength": 52,
                 "last_test_utc": "2026-04-12T16:00:00+00:00"
               },
               {
                 "price": 97.995,
-                "distance_pct": 31.909,
+                "distance_pct": 32.069,
                 "touches": 2,
                 "strength": 62,
                 "last_test_utc": "2026-05-10T16:00:00+00:00"
               },
               {
                 "price": 110.64,
-                "distance_pct": 48.93,
+                "distance_pct": 49.111,
                 "touches": 1,
                 "strength": 59,
                 "last_test_utc": "2026-08-23T16:00:00+00:00"
@@ -16922,11 +16928,11 @@
             ]
           }
         },
-        "updated_at": "2026-11-18T14:09:42.255652+00:00",
+        "updated_at": "2026-11-18T14:10:23.353009+00:00",
         "confluence_support": [
           {
             "price": 74.04,
-            "distance_pct": -0.337,
+            "distance_pct": -0.216,
             "timeframes": [
               "15m",
               "1H"
@@ -16936,7 +16942,7 @@
           },
           {
             "price": 73.665,
-            "distance_pct": -0.841,
+            "distance_pct": -0.721,
             "timeframes": [
               "1D"
             ],
@@ -16945,7 +16951,7 @@
           },
           {
             "price": 73.215,
-            "distance_pct": -1.447,
+            "distance_pct": -1.327,
             "timeframes": [
               "15m"
             ],
@@ -16954,7 +16960,7 @@
           },
           {
             "price": 72.74,
-            "distance_pct": -2.086,
+            "distance_pct": -1.968,
             "timeframes": [
               "15m"
             ],
@@ -16963,7 +16969,7 @@
           },
           {
             "price": 72.27,
-            "distance_pct": -2.719,
+            "distance_pct": -2.601,
             "timeframes": [
               "1D"
             ],
@@ -16972,7 +16978,7 @@
           },
           {
             "price": 71.95333333,
-            "distance_pct": -3.145,
+            "distance_pct": -3.028,
             "timeframes": [
               "1H"
             ],
@@ -16983,7 +16989,7 @@
         "confluence_resistance": [
           {
             "price": 74.36333333,
-            "distance_pct": 0.099,
+            "distance_pct": 0.22,
             "timeframes": [
               "15m",
               "1H"
@@ -16993,7 +16999,7 @@
           },
           {
             "price": 74.79,
-            "distance_pct": 0.673,
+            "distance_pct": 0.795,
             "timeframes": [
               "15m"
             ],
@@ -17002,7 +17008,7 @@
           },
           {
             "price": 75.16,
-            "distance_pct": 1.171,
+            "distance_pct": 1.294,
             "timeframes": [
               "15m",
               "1H",
@@ -17013,7 +17019,7 @@
           },
           {
             "price": 75.7225,
-            "distance_pct": 1.928,
+            "distance_pct": 2.052,
             "timeframes": [
               "1H",
               "4H"
@@ -17023,7 +17029,7 @@
           },
           {
             "price": 76.07,
-            "distance_pct": 2.396,
+            "distance_pct": 2.52,
             "timeframes": [
               "1H",
               "1D"
@@ -17033,7 +17039,7 @@
           },
           {
             "price": 77.655,
-            "distance_pct": 4.53,
+            "distance_pct": 4.656,
             "timeframes": [
               "1D"
             ],
@@ -17679,8 +17685,8 @@
           "return_72h_pct": 2.233,
           "volume_ratio_vs_baseline": 1.025,
           "position_in_7d_range_pct": 37.1,
-          "oi_change_24h_pct": -3.0,
-          "taker_cvd_24h": 0.013,
+          "oi_change_24h_pct": -2.51,
+          "taker_cvd_24h": 0.012,
           "long_liquidations_usd": 167564.36099999995,
           "short_liquidations_usd": 49679.18410000001,
           "fear_greed": 11.0
@@ -17719,8 +17725,8 @@
         "metrics": {
           "return_4h_pct": -1.291,
           "return_12h_pct": 0.013,
-          "oi_change_24h_pct": -3.0,
-          "taker_cvd_24h": 0.013055039688254697,
+          "oi_change_24h_pct": -2.51,
+          "taker_cvd_24h": 0.01150078355300249,
           "volume_ratio_24h": 0.89
         },
         "disclaimer": "Early watch is not an entry. Confirmed trigger requires a completed hourly close beyond the recent 6-hour range and at least 1.15x hourly volume. Experimental, uncalibrated decision support; false signals and gaps are possible."
