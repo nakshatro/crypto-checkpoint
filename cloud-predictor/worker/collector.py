@@ -747,7 +747,7 @@ def main():
  except Exception: hist=[]
  now_dt=datetime.fromisoformat(now.replace("Z","+00:00"))
  if should_log_history(hist,now_dt):
-  hist.append({"updated_at":now,"coins":{c:{"price":v["price"],"forecasts":v["forecasts"],"model":v.get("model")} for c,v in snap["coins"].items() if "error" not in v}})
+  hist.append({"updated_at":now,"coins":{c:{"price":v["price"],"forecasts":v["forecasts"],"model":v.get("model"),"pre_move":v.get("pre_move"),"market_phase":v.get("market_phase"),"level_validation":v.get("level_validation")} for c,v in snap["coins"].items() if "error" not in v}})
  hist=hist[-3000:]
  write_json("history.json",hist)
  event_tracker=update_event_tracker(snap.get("model_context",{}).get("events",[]),snap,hist,now_dt)
