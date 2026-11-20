@@ -169315,5 +169315,3791 @@
         }
       }
     }
+  },
+  {
+    "updated_at": "2026-11-20T10:45:26.952992+00:00",
+    "coins": {
+      "BTC": {
+        "price": 62237.7,
+        "forecasts": [
+          {
+            "horizon": "4h",
+            "hours": 4,
+            "analogue_count": 120,
+            "analogue_window": 120,
+            "up_frequency_pct": 54.2,
+            "median_return_pct": 0.1,
+            "range_10_90_pct": [
+              -1.4,
+              1.2
+            ],
+            "range_method": "Blended interval: 65% empirical 10th/90th quantiles of 120 nearest historical analogues + 35% rolling 168h volatility envelope (normal 10th/90th proxy); rounded to 0.1 percentage point. Recompute on completed candles; genuine regime changes can move the range.",
+            "rolling_168h_hourly_sigma_pct": 0.6334,
+            "volatility_blend_weight": 0.35,
+            "interpretation": "historical analogue frequency, not calibrated probability"
+          },
+          {
+            "horizon": "24h",
+            "hours": 24,
+            "analogue_count": 120,
+            "analogue_window": 120,
+            "up_frequency_pct": 41.7,
+            "median_return_pct": -0.2,
+            "range_10_90_pct": [
+              -4.7,
+              1.9
+            ],
+            "range_method": "Blended interval: 65% empirical 10th/90th quantiles of 120 nearest historical analogues + 35% rolling 168h volatility envelope (normal 10th/90th proxy); rounded to 0.1 percentage point. Recompute on completed candles; genuine regime changes can move the range.",
+            "rolling_168h_hourly_sigma_pct": 0.6334,
+            "volatility_blend_weight": 0.35,
+            "interpretation": "historical analogue frequency, not calibrated probability"
+          },
+          {
+            "horizon": "72h",
+            "hours": 72,
+            "analogue_count": 120,
+            "analogue_window": 120,
+            "up_frequency_pct": 7.5,
+            "median_return_pct": -2.6,
+            "range_10_90_pct": [
+              -8.3,
+              2.2
+            ],
+            "range_method": "Blended interval: 65% empirical 10th/90th quantiles of 120 nearest historical analogues + 35% rolling 168h volatility envelope (normal 10th/90th proxy); rounded to 0.1 percentage point. Recompute on completed candles; genuine regime changes can move the range.",
+            "rolling_168h_hourly_sigma_pct": 0.6334,
+            "volatility_blend_weight": 0.35,
+            "interpretation": "historical analogue frequency, not calibrated probability"
+          }
+        ],
+        "model": {
+          "regime": "RANGE",
+          "vol_ratio": 1.279,
+          "layers": {
+            "structure": {
+              "score": -1.0,
+              "components": [
+                {
+                  "name": "trend",
+                  "score": -1.0,
+                  "weight": 0.625,
+                  "note": "daily close vs EMA20/50/200; EMA50 slope -5.22% over 10 days"
+                },
+                {
+                  "name": "momentum",
+                  "score": -1,
+                  "weight": 0.375,
+                  "note": "daily RSI14 11.0"
+                }
+              ]
+            },
+            "derivs": {
+              "score": 0.23997969584641485,
+              "components": [
+                {
+                  "name": "funding_crowding",
+                  "score": 0.92,
+                  "weight": 0.375,
+                  "note": "funding -0.0032% (4th percentile of available history)"
+                },
+                {
+                  "name": "long_short_ratio",
+                  "score": -0.582,
+                  "weight": 0.188,
+                  "note": "account long/short ratio 3.200; historical percentile unavailable"
+                },
+                {
+                  "name": "price_vs_oi",
+                  "score": -0.013,
+                  "weight": 0.375,
+                  "note": "price -3.5%, OI -0.3% over 24h"
+                },
+                {
+                  "name": "perp_basis",
+                  "score": 0.142,
+                  "weight": 0.063,
+                  "note": "perpetual basis -4.7 bps"
+                }
+              ]
+            },
+            "liquidity": {
+              "score": -0.15937347258008328,
+              "components": [
+                {
+                  "name": "taker_cvd_24h",
+                  "score": -0.198,
+                  "weight": 0.4,
+                  "note": "24h taker CVD -2.0% of volume"
+                },
+                {
+                  "name": "liquidation_magnet",
+                  "score": -0.049,
+                  "weight": 0.3,
+                  "note": "estimated liquidation fuel above vs below; OI-delta weighted"
+                },
+                {
+                  "name": "recent_liquidation_flow",
+                  "score": -0.3,
+                  "weight": 0.2,
+                  "note": "liquidated longs $0.0M vs shorts $0.5M"
+                },
+                {
+                  "name": "book_imbalance",
+                  "score": -0.057,
+                  "weight": 0.1,
+                  "note": "top-400-level notional imbalance -0.03"
+                }
+              ]
+            },
+            "onchain": {
+              "score": -0.9354000000000001,
+              "components": [
+                {
+                  "name": "stablecoin_supply_30d",
+                  "score": -1,
+                  "weight": 0.5,
+                  "note": "global stablecoin supply -5.88% over 30d"
+                },
+                {
+                  "name": "spot_etf_flow_5d",
+                  "score": -0.871,
+                  "weight": 0.5,
+                  "note": "automatically sourced 5-session spot ETF flow $-1306M"
+                }
+              ]
+            },
+            "news": {
+              "score": -0.3567999999999999,
+              "components": [
+                {
+                  "name": "headline_sentiment",
+                  "score": -1,
+                  "weight": 0.6,
+                  "note": "5 matching keyword-scored headlines; not semantic sentiment"
+                },
+                {
+                  "name": "fear_greed",
+                  "score": 0.608,
+                  "weight": 0.4,
+                  "note": "Fear & Greed 12; contrarian at extremes"
+                }
+              ]
+            }
+          },
+          "horizons": {
+            "4h": {
+              "composite": -0.149,
+              "p_up": 0.442,
+              "coverage": 1.0,
+              "bias": "Neutral",
+              "range": [
+                61670.77211935,
+                62809.83954269
+              ]
+            },
+            "24h": {
+              "composite": -0.199,
+              "p_up": 0.424,
+              "coverage": 1.0,
+              "bias": "Bearish",
+              "range": [
+                60858.17119579,
+                63648.49986747
+              ]
+            },
+            "72h": {
+              "composite": -0.292,
+              "p_up": 0.395,
+              "coverage": 1.0,
+              "bias": "Bearish",
+              "range": [
+                59867.71029917,
+                64701.51074649
+              ]
+            },
+            "1w": {
+              "composite": -0.364,
+              "p_up": 0.376,
+              "coverage": 1.0,
+              "bias": "Bearish",
+              "range": [
+                58654.06355179,
+                66040.28888586
+              ]
+            },
+            "1m": {
+              "composite": -0.627,
+              "p_up": 0.33,
+              "coverage": 1.0,
+              "bias": "Bearish",
+              "range": [
+                55047.13624935,
+                70367.53526549
+              ]
+            }
+          },
+          "patterns": [],
+          "levels": {
+            "liq_above": [
+              {
+                "price": 67994.68724999999,
+                "strength": 1.0,
+                "dist_pct": 9.24999999999998
+              },
+              {
+                "price": 67839.093,
+                "strength": 0.9525495221436233,
+                "dist_pct": 8.999999999999986
+              },
+              {
+                "price": 66594.33899999999,
+                "strength": 0.7172852027298419,
+                "dist_pct": 6.999999999999984
+              }
+            ],
+            "liq_below": [
+              {
+                "price": 58814.6265,
+                "strength": 0.9543536706584705,
+                "dist_pct": -5.499999999999994
+              },
+              {
+                "price": 60837.351749999994,
+                "strength": 0.6300843479855778,
+                "dist_pct": -2.2500000000000075
+              },
+              {
+                "price": 59125.814999999995,
+                "strength": 0.5693849663755893,
+                "dist_pct": -5.000000000000004
+              }
+            ],
+            "liq_method": "OI-delta weighted"
+          },
+          "confidence": {
+            "value": 0.22,
+            "label": "Low",
+            "event_adjustment": 1.0,
+            "notes": [
+              "layers disagree"
+            ]
+          },
+          "data_quality": {
+            "missing": []
+          },
+          "method": "five-layer weighted model; missing components excluded and weights renormalized; probabilities remain experimental until out-of-sample calibration is sufficient"
+        },
+        "pre_move": {
+          "action": "SHORT",
+          "stage": "EARLY_WATCH",
+          "confidence": "medium",
+          "coverage_pct": 58.1,
+          "score_long": 0.0,
+          "score_short": 58.1,
+          "edge": -50.0,
+          "entry_reference": 61350.0,
+          "stop_reference": 62383.17714286,
+          "target_reference": 59283.64571428,
+          "invalidation": "Hourly close above 62383.17714286",
+          "trigger": {
+            "long_close_above": 62380.8,
+            "short_close_below": 61350.0,
+            "volume_confirmed": false,
+            "volume_ratio_last_hour": 0.46
+          },
+          "evidence": [
+            {
+              "name": "five_layer_model",
+              "bias": "bearish",
+              "weight": 22,
+              "detail": "24h model P(up)=0.424"
+            },
+            {
+              "name": "historical_analogue",
+              "bias": "bearish",
+              "weight": 12,
+              "detail": "24h analogue up-frequency=41.7%"
+            },
+            {
+              "name": "hourly_trend",
+              "bias": "bearish",
+              "weight": 16,
+              "detail": "4h return -0.44%; 12h +0.16%; price vs MA6/MA24"
+            }
+          ],
+          "missing": [],
+          "market_phase": "NO_CONFIRMED_PATTERN",
+          "metrics": {
+            "return_4h_pct": -0.439,
+            "return_12h_pct": 0.155,
+            "oi_change_24h_pct": -0.32,
+            "taker_cvd_24h": -0.019750574578432982,
+            "volume_ratio_24h": 1.2
+          },
+          "disclaimer": "Early watch is not an entry. Confirmed trigger requires a completed hourly close beyond the recent 6-hour range and at least 1.15x hourly volume. Experimental, uncalibrated decision support; false signals and gaps are possible."
+        },
+        "market_phase": {
+          "phase": "NO_CONFIRMED_PATTERN",
+          "capitulation_score": 33,
+          "distribution_score": 0,
+          "confidence": "low",
+          "evidence": {
+            "capitulation": [
+              "extreme-fear sentiment",
+              "price in bottom 18% of 7-day range"
+            ],
+            "distribution": []
+          },
+          "metrics": {
+            "return_24h_pct": -3.471,
+            "return_72h_pct": -4.222,
+            "volume_ratio_vs_baseline": 1.756,
+            "position_in_7d_range_pct": 4.0,
+            "oi_change_24h_pct": -0.32,
+            "taker_cvd_24h": -0.02,
+            "long_liquidations_usd": 0.0,
+            "short_liquidations_usd": 491167.93833,
+            "fear_greed": 12.0
+          },
+          "missing": [],
+          "disclaimer": "Heuristic market-stress/distribution proxy, not proof of whale selling, a bottom/top, or a trade signal."
+        },
+        "level_validation": {
+          "lookback_hours": 72,
+          "levels": [
+            {
+              "price": 62210.85,
+              "side": "support",
+              "timeframe": "15m",
+              "zone_low": 61986.02166667,
+              "zone_high": 62435.67833333,
+              "touches_lookback": 22,
+              "holds_lookback": 15,
+              "close_breaks_lookback": 5,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 2,
+              "failed_retests_lookback": 0,
+              "retest_events": [
+                "bearish_breakdown_retest",
+                "bearish_breakdown_retest"
+              ],
+              "status": "tested"
+            },
+            {
+              "price": 61965.0,
+              "side": "support",
+              "timeframe": "15m",
+              "zone_low": 61740.17166667,
+              "zone_high": 62189.82833333,
+              "touches_lookback": 16,
+              "holds_lookback": 12,
+              "close_breaks_lookback": 4,
+              "reclaims_lookback": 1,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 1,
+              "retest_events": [
+                "failed_breakdown_reclaim"
+              ],
+              "status": "tested"
+            },
+            {
+              "price": 61661.175,
+              "side": "support",
+              "timeframe": "15m",
+              "zone_low": 61436.34666667,
+              "zone_high": 61886.00333333,
+              "touches_lookback": 13,
+              "holds_lookback": 13,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "tested"
+            },
+            {
+              "price": 61358.975,
+              "side": "support",
+              "timeframe": "15m",
+              "zone_low": 61134.14666667,
+              "zone_high": 61583.80333333,
+              "touches_lookback": 8,
+              "holds_lookback": 8,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "tested"
+            },
+            {
+              "price": 62090.525,
+              "side": "support",
+              "timeframe": "1H",
+              "zone_low": 61865.69666667,
+              "zone_high": 62315.35333333,
+              "touches_lookback": 19,
+              "holds_lookback": 14,
+              "close_breaks_lookback": 4,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 1,
+              "failed_retests_lookback": 0,
+              "retest_events": [
+                "bearish_breakdown_retest"
+              ],
+              "status": "tested"
+            },
+            {
+              "price": 61322.3,
+              "side": "support",
+              "timeframe": "1H",
+              "zone_low": 61097.47166667,
+              "zone_high": 61547.12833333,
+              "touches_lookback": 8,
+              "holds_lookback": 8,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "tested"
+            },
+            {
+              "price": 61970.2,
+              "side": "support",
+              "timeframe": "4H",
+              "zone_low": 61745.37166667,
+              "zone_high": 62195.02833333,
+              "touches_lookback": 16,
+              "holds_lookback": 12,
+              "close_breaks_lookback": 4,
+              "reclaims_lookback": 1,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 1,
+              "retest_events": [
+                "failed_breakdown_reclaim"
+              ],
+              "status": "tested"
+            },
+            {
+              "price": 62045.2,
+              "side": "support",
+              "timeframe": "1D",
+              "zone_low": 61820.37166667,
+              "zone_high": 62270.02833333,
+              "touches_lookback": 20,
+              "holds_lookback": 14,
+              "close_breaks_lookback": 4,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 1,
+              "failed_retests_lookback": 0,
+              "retest_events": [
+                "bearish_breakdown_retest"
+              ],
+              "status": "tested"
+            },
+            {
+              "price": 60960.95,
+              "side": "support",
+              "timeframe": "1D",
+              "zone_low": 60736.12166667,
+              "zone_high": 61185.77833333,
+              "touches_lookback": 0,
+              "holds_lookback": 0,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "active"
+            },
+            {
+              "price": 59909.0,
+              "side": "support",
+              "timeframe": "1D",
+              "zone_low": 59684.17166667,
+              "zone_high": 60133.82833333,
+              "touches_lookback": 0,
+              "holds_lookback": 0,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "active"
+            },
+            {
+              "price": 59078.4,
+              "side": "support",
+              "timeframe": "1D",
+              "zone_low": 58853.57166667,
+              "zone_high": 59303.22833333,
+              "touches_lookback": 0,
+              "holds_lookback": 0,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "active"
+            },
+            {
+              "price": 59909.0,
+              "side": "support",
+              "timeframe": "1W",
+              "zone_low": 59684.17166667,
+              "zone_high": 60133.82833333,
+              "touches_lookback": 0,
+              "holds_lookback": 0,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "active"
+            },
+            {
+              "price": 59001.65,
+              "side": "support",
+              "timeframe": "1W",
+              "zone_low": 58776.82166667,
+              "zone_high": 59226.47833333,
+              "touches_lookback": 0,
+              "holds_lookback": 0,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "active"
+            },
+            {
+              "price": 57750.0,
+              "side": "support",
+              "timeframe": "1W",
+              "zone_low": 57525.17166667,
+              "zone_high": 57974.82833333,
+              "touches_lookback": 0,
+              "holds_lookback": 0,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "active"
+            },
+            {
+              "price": 56528.8,
+              "side": "support",
+              "timeframe": "1W",
+              "zone_low": 56303.97166667,
+              "zone_high": 56753.62833333,
+              "touches_lookback": 0,
+              "holds_lookback": 0,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "active"
+            },
+            {
+              "price": 62348.95,
+              "side": "resistance",
+              "timeframe": "15m",
+              "zone_low": 62124.12166667,
+              "zone_high": 62573.77833333,
+              "touches_lookback": 21,
+              "holds_lookback": 13,
+              "close_breaks_lookback": 2,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 1,
+              "failed_retests_lookback": 0,
+              "retest_events": [
+                "bullish_breakout_retest"
+              ],
+              "status": "tested"
+            },
+            {
+              "price": 62631.23333333,
+              "side": "resistance",
+              "timeframe": "15m",
+              "zone_low": 62406.405,
+              "zone_high": 62856.06166666,
+              "touches_lookback": 18,
+              "holds_lookback": 12,
+              "close_breaks_lookback": 4,
+              "reclaims_lookback": 1,
+              "breakout_retests_lookback": 1,
+              "failed_retests_lookback": 1,
+              "retest_events": [
+                "bullish_breakout_retest",
+                "failed_breakout_rejection"
+              ],
+              "status": "tested"
+            },
+            {
+              "price": 62909.0,
+              "side": "resistance",
+              "timeframe": "15m",
+              "zone_low": 62684.17166667,
+              "zone_high": 63133.82833333,
+              "touches_lookback": 17,
+              "holds_lookback": 14,
+              "close_breaks_lookback": 2,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "tested"
+            },
+            {
+              "price": 63304.35,
+              "side": "resistance",
+              "timeframe": "15m",
+              "zone_low": 63079.52166667,
+              "zone_high": 63529.17833333,
+              "touches_lookback": 22,
+              "holds_lookback": 15,
+              "close_breaks_lookback": 2,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 1,
+              "failed_retests_lookback": 0,
+              "retest_events": [
+                "bullish_breakout_retest"
+              ],
+              "status": "tested"
+            },
+            {
+              "price": 62621.5,
+              "side": "resistance",
+              "timeframe": "1H",
+              "zone_low": 62396.67166667,
+              "zone_high": 62846.32833333,
+              "touches_lookback": 18,
+              "holds_lookback": 12,
+              "close_breaks_lookback": 4,
+              "reclaims_lookback": 1,
+              "breakout_retests_lookback": 1,
+              "failed_retests_lookback": 1,
+              "retest_events": [
+                "bullish_breakout_retest",
+                "failed_breakout_rejection"
+              ],
+              "status": "tested"
+            },
+            {
+              "price": 63277.5,
+              "side": "resistance",
+              "timeframe": "1H",
+              "zone_low": 63052.67166667,
+              "zone_high": 63502.32833333,
+              "touches_lookback": 20,
+              "holds_lookback": 14,
+              "close_breaks_lookback": 2,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "tested"
+            },
+            {
+              "price": 63733.3,
+              "side": "resistance",
+              "timeframe": "1H",
+              "zone_low": 63508.47166667,
+              "zone_high": 63958.12833333,
+              "touches_lookback": 23,
+              "holds_lookback": 18,
+              "close_breaks_lookback": 2,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 1,
+              "failed_retests_lookback": 0,
+              "retest_events": [
+                "bullish_breakout_retest"
+              ],
+              "status": "tested"
+            },
+            {
+              "price": 64054.0,
+              "side": "resistance",
+              "timeframe": "1H",
+              "zone_low": 63829.17166667,
+              "zone_high": 64278.82833333,
+              "touches_lookback": 26,
+              "holds_lookback": 21,
+              "close_breaks_lookback": 3,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 1,
+              "failed_retests_lookback": 0,
+              "retest_events": [
+                "bullish_breakout_retest"
+              ],
+              "status": "tested"
+            },
+            {
+              "price": 64054.0,
+              "side": "resistance",
+              "timeframe": "4H",
+              "zone_low": 63829.17166667,
+              "zone_high": 64278.82833333,
+              "touches_lookback": 26,
+              "holds_lookback": 21,
+              "close_breaks_lookback": 3,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 1,
+              "failed_retests_lookback": 0,
+              "retest_events": [
+                "bullish_breakout_retest"
+              ],
+              "status": "tested"
+            },
+            {
+              "price": 65538.55,
+              "side": "resistance",
+              "timeframe": "4H",
+              "zone_low": 65313.72166667,
+              "zone_high": 65763.37833333,
+              "touches_lookback": 1,
+              "holds_lookback": 1,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "tested"
+            },
+            {
+              "price": 66122.7,
+              "side": "resistance",
+              "timeframe": "4H",
+              "zone_low": 65897.87166667,
+              "zone_high": 66347.52833333,
+              "touches_lookback": 0,
+              "holds_lookback": 0,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "active"
+            },
+            {
+              "price": 70187.7,
+              "side": "resistance",
+              "timeframe": "4H",
+              "zone_low": 69962.87166667,
+              "zone_high": 70412.52833333,
+              "touches_lookback": 0,
+              "holds_lookback": 0,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "active"
+            },
+            {
+              "price": 65222.72222222,
+              "side": "resistance",
+              "timeframe": "1D",
+              "zone_low": 64997.89388889,
+              "zone_high": 65447.55055555,
+              "touches_lookback": 5,
+              "holds_lookback": 5,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "tested"
+            },
+            {
+              "price": 67105.95,
+              "side": "resistance",
+              "timeframe": "1D",
+              "zone_low": 66881.12166667,
+              "zone_high": 67330.77833333,
+              "touches_lookback": 0,
+              "holds_lookback": 0,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "active"
+            },
+            {
+              "price": 69000.8,
+              "side": "resistance",
+              "timeframe": "1D",
+              "zone_low": 68775.97166667,
+              "zone_high": 69225.62833333,
+              "touches_lookback": 0,
+              "holds_lookback": 0,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "active"
+            },
+            {
+              "price": 70509.95,
+              "side": "resistance",
+              "timeframe": "1D",
+              "zone_low": 70285.12166667,
+              "zone_high": 70734.77833333,
+              "touches_lookback": 0,
+              "holds_lookback": 0,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "active"
+            },
+            {
+              "price": 65098.5,
+              "side": "resistance",
+              "timeframe": "1W",
+              "zone_low": 64873.67166667,
+              "zone_high": 65323.32833333,
+              "touches_lookback": 8,
+              "holds_lookback": 8,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "tested"
+            },
+            {
+              "price": 66703.35,
+              "side": "resistance",
+              "timeframe": "1W",
+              "zone_low": 66478.52166667,
+              "zone_high": 66928.17833333,
+              "touches_lookback": 0,
+              "holds_lookback": 0,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "active"
+            },
+            {
+              "price": 70098.0,
+              "side": "resistance",
+              "timeframe": "1W",
+              "zone_low": 69873.17166667,
+              "zone_high": 70322.82833333,
+              "touches_lookback": 0,
+              "holds_lookback": 0,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "active"
+            },
+            {
+              "price": 72466.1,
+              "side": "resistance",
+              "timeframe": "1W",
+              "zone_low": 72241.27166667,
+              "zone_high": 72690.92833333,
+              "touches_lookback": 0,
+              "holds_lookback": 0,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "active"
+            }
+          ],
+          "summary": {
+            "active": 15,
+            "tested": 20,
+            "broken": 0,
+            "reclaimed": 4
+          }
+        }
+      },
+      "ETH": {
+        "price": 1761.35,
+        "forecasts": [
+          {
+            "horizon": "4h",
+            "hours": 4,
+            "analogue_count": 120,
+            "analogue_window": 120,
+            "up_frequency_pct": 45.8,
+            "median_return_pct": -0.1,
+            "range_10_90_pct": [
+              -1.8,
+              1.5
+            ],
+            "range_method": "Blended interval: 65% empirical 10th/90th quantiles of 120 nearest historical analogues + 35% rolling 168h volatility envelope (normal 10th/90th proxy); rounded to 0.1 percentage point. Recompute on completed candles; genuine regime changes can move the range.",
+            "rolling_168h_hourly_sigma_pct": 0.8016,
+            "volatility_blend_weight": 0.35,
+            "interpretation": "historical analogue frequency, not calibrated probability"
+          },
+          {
+            "horizon": "24h",
+            "hours": 24,
+            "analogue_count": 120,
+            "analogue_window": 120,
+            "up_frequency_pct": 32.5,
+            "median_return_pct": -0.7,
+            "range_10_90_pct": [
+              -4.7,
+              2.4
+            ],
+            "range_method": "Blended interval: 65% empirical 10th/90th quantiles of 120 nearest historical analogues + 35% rolling 168h volatility envelope (normal 10th/90th proxy); rounded to 0.1 percentage point. Recompute on completed candles; genuine regime changes can move the range.",
+            "rolling_168h_hourly_sigma_pct": 0.8016,
+            "volatility_blend_weight": 0.35,
+            "interpretation": "historical analogue frequency, not calibrated probability"
+          },
+          {
+            "horizon": "72h",
+            "hours": 72,
+            "analogue_count": 120,
+            "analogue_window": 120,
+            "up_frequency_pct": 17.5,
+            "median_return_pct": -4.7,
+            "range_10_90_pct": [
+              -9.4,
+              3.5
+            ],
+            "range_method": "Blended interval: 65% empirical 10th/90th quantiles of 120 nearest historical analogues + 35% rolling 168h volatility envelope (normal 10th/90th proxy); rounded to 0.1 percentage point. Recompute on completed candles; genuine regime changes can move the range.",
+            "rolling_168h_hourly_sigma_pct": 0.8016,
+            "volatility_blend_weight": 0.35,
+            "interpretation": "historical analogue frequency, not calibrated probability"
+          }
+        ],
+        "model": {
+          "regime": "DOWNTREND",
+          "vol_ratio": 1.436,
+          "layers": {
+            "structure": {
+              "score": -0.838478634194526,
+              "components": [
+                {
+                  "name": "trend",
+                  "score": -1.0,
+                  "weight": 0.5,
+                  "note": "daily close vs EMA20/50/200; EMA50 slope -6.93% over 10 days"
+                },
+                {
+                  "name": "momentum",
+                  "score": -1,
+                  "weight": 0.3,
+                  "note": "daily RSI14 12.9"
+                },
+                {
+                  "name": "relative_strength_vs_BTC_30d",
+                  "score": -0.192,
+                  "weight": 0.2,
+                  "note": "-2.9% vs BTC over 30d"
+                }
+              ]
+            },
+            "derivs": {
+              "score": -0.14674704650906864,
+              "components": [
+                {
+                  "name": "funding_crowding",
+                  "score": 0.064,
+                  "weight": 0.375,
+                  "note": "funding 0.0016% (42th percentile of available history)"
+                },
+                {
+                  "name": "long_short_ratio",
+                  "score": -0.566,
+                  "weight": 0.188,
+                  "note": "account long/short ratio 3.100; historical percentile unavailable"
+                },
+                {
+                  "name": "price_vs_oi",
+                  "score": -0.2,
+                  "weight": 0.375,
+                  "note": "price -3.3%, OI -6.8% over 24h"
+                },
+                {
+                  "name": "perp_basis",
+                  "score": 0.165,
+                  "weight": 0.063,
+                  "note": "perpetual basis -5.5 bps"
+                }
+              ]
+            },
+            "liquidity": {
+              "score": -0.020849223014468836,
+              "components": [
+                {
+                  "name": "taker_cvd_24h",
+                  "score": -0.145,
+                  "weight": 0.4,
+                  "note": "24h taker CVD -1.4% of volume"
+                },
+                {
+                  "name": "liquidation_magnet",
+                  "score": 0.391,
+                  "weight": 0.3,
+                  "note": "estimated liquidation fuel above vs below; OI-delta weighted"
+                },
+                {
+                  "name": "recent_liquidation_flow",
+                  "score": -0.3,
+                  "weight": 0.2,
+                  "note": "liquidated longs $0.0M vs shorts $0.3M"
+                },
+                {
+                  "name": "book_imbalance",
+                  "score": -0.204,
+                  "weight": 0.1,
+                  "note": "top-400-level notional imbalance -0.10"
+                }
+              ]
+            },
+            "onchain": {
+              "score": -0.7863272727272727,
+              "components": [
+                {
+                  "name": "stablecoin_supply_30d",
+                  "score": -1,
+                  "weight": 0.364,
+                  "note": "global stablecoin supply -5.88% over 30d"
+                },
+                {
+                  "name": "chain_tvl_30d",
+                  "score": -1,
+                  "weight": 0.273,
+                  "note": "Ethereum TVL -23.2% over 30d"
+                },
+                {
+                  "name": "spot_etf_flow_5d",
+                  "score": -0.412,
+                  "weight": 0.364,
+                  "note": "automatically sourced 5-session spot ETF flow $-206M"
+                }
+              ]
+            },
+            "news": {
+              "score": 0.4832000000000001,
+              "components": [
+                {
+                  "name": "headline_sentiment",
+                  "score": 0.4,
+                  "weight": 0.6,
+                  "note": "2 matching keyword-scored headlines; not semantic sentiment"
+                },
+                {
+                  "name": "fear_greed",
+                  "score": 0.608,
+                  "weight": 0.4,
+                  "note": "Fear & Greed 12; contrarian at extremes"
+                }
+              ]
+            }
+          },
+          "horizons": {
+            "4h": {
+              "composite": -0.17,
+              "p_up": 0.434,
+              "coverage": 1.0,
+              "bias": "Bearish",
+              "range": [
+                1739.7692076,
+                1783.19848917
+              ]
+            },
+            "24h": {
+              "composite": -0.21,
+              "p_up": 0.421,
+              "coverage": 1.0,
+              "bias": "Bearish",
+              "range": [
+                1708.95661454,
+                1815.34966781
+              ]
+            },
+            "72h": {
+              "composite": -0.304,
+              "p_up": 0.392,
+              "coverage": 1.0,
+              "bias": "Bearish",
+              "range": [
+                1671.592695,
+                1855.92688445
+              ]
+            },
+            "1w": {
+              "composite": -0.365,
+              "p_up": 0.375,
+              "coverage": 1.0,
+              "bias": "Bearish",
+              "range": [
+                1626.10140058,
+                1907.84770335
+              ]
+            },
+            "1m": {
+              "composite": -0.468,
+              "p_up": 0.353,
+              "coverage": 1.0,
+              "bias": "Bearish",
+              "range": [
+                1492.84217795,
+                2078.15257924
+              ]
+            }
+          },
+          "patterns": [],
+          "levels": {
+            "liq_above": [
+              {
+                "price": 1906.661375,
+                "strength": 1.0,
+                "dist_pct": 8.250000000000002
+              },
+              {
+                "price": 1884.6444999999999,
+                "strength": 0.935274805126404,
+                "dist_pct": 7.000000000000006
+              },
+              {
+                "price": 1915.4681249999999,
+                "strength": 0.8785704265541578,
+                "dist_pct": 8.749999999999991
+              }
+            ],
+            "liq_below": [
+              {
+                "price": 1633.6521249999998,
+                "strength": 0.9743840414516489,
+                "dist_pct": -7.250000000000001
+              },
+              {
+                "price": 1646.86225,
+                "strength": 0.8473278728195847,
+                "dist_pct": -6.500000000000005
+              },
+              {
+                "price": 1651.2656249999998,
+                "strength": 0.829439239840345,
+                "dist_pct": -6.250000000000011
+              }
+            ],
+            "liq_method": "OI-delta weighted"
+          },
+          "confidence": {
+            "value": 0.17,
+            "label": "Low",
+            "event_adjustment": 1.0,
+            "notes": [
+              "layers disagree"
+            ]
+          },
+          "data_quality": {
+            "missing": []
+          },
+          "method": "five-layer weighted model; missing components excluded and weights renormalized; probabilities remain experimental until out-of-sample calibration is sufficient"
+        },
+        "pre_move": {
+          "action": "WAIT",
+          "stage": "CONFLICTING_EVIDENCE",
+          "confidence": "low",
+          "coverage_pct": 39.5,
+          "score_long": 0.0,
+          "score_short": 39.5,
+          "edge": -34.0,
+          "entry_reference": null,
+          "stop_reference": null,
+          "target_reference": null,
+          "invalidation": null,
+          "trigger": {
+            "long_close_above": 1758.88,
+            "short_close_below": 1717.0,
+            "volume_confirmed": false,
+            "volume_ratio_last_hour": 0.56
+          },
+          "evidence": [
+            {
+              "name": "five_layer_model",
+              "bias": "bearish",
+              "weight": 22,
+              "detail": "24h model P(up)=0.421"
+            },
+            {
+              "name": "historical_analogue",
+              "bias": "bearish",
+              "weight": 12,
+              "detail": "24h analogue up-frequency=32.5%"
+            }
+          ],
+          "missing": [],
+          "market_phase": "CAPITULATION_WATCH",
+          "metrics": {
+            "return_4h_pct": 0.27,
+            "return_12h_pct": 0.258,
+            "oi_change_24h_pct": -6.81,
+            "taker_cvd_24h": -0.014471143518371778,
+            "volume_ratio_24h": 1.27
+          },
+          "disclaimer": "Early watch is not an entry. Confirmed trigger requires a completed hourly close beyond the recent 6-hour range and at least 1.15x hourly volume. Experimental, uncalibrated decision support; false signals and gaps are possible."
+        },
+        "market_phase": {
+          "phase": "CAPITULATION_WATCH",
+          "capitulation_score": 50,
+          "distribution_score": 0,
+          "confidence": "low",
+          "evidence": {
+            "capitulation": [
+              "open interest down >=3% in 24h",
+              "extreme-fear sentiment",
+              "price in bottom 18% of 7-day range"
+            ],
+            "distribution": []
+          },
+          "metrics": {
+            "return_24h_pct": -3.345,
+            "return_72h_pct": -3.64,
+            "volume_ratio_vs_baseline": 1.571,
+            "position_in_7d_range_pct": 13.0,
+            "oi_change_24h_pct": -6.81,
+            "taker_cvd_24h": -0.014,
+            "long_liquidations_usd": 0.0,
+            "short_liquidations_usd": 251632.03482000003,
+            "fear_greed": 12.0
+          },
+          "missing": [],
+          "disclaimer": "Heuristic market-stress/distribution proxy, not proof of whale selling, a bottom/top, or a trade signal."
+        },
+        "level_validation": {
+          "lookback_hours": 72,
+          "levels": [
+            {
+              "price": 1754.37,
+              "side": "support",
+              "timeframe": "15m",
+              "zone_low": 1746.68560417,
+              "zone_high": 1762.05439583,
+              "touches_lookback": 24,
+              "holds_lookback": 20,
+              "close_breaks_lookback": 4,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "tested"
+            },
+            {
+              "price": 1749.35285714,
+              "side": "support",
+              "timeframe": "15m",
+              "zone_low": 1741.66846131,
+              "zone_high": 1757.03725297,
+              "touches_lookback": 24,
+              "holds_lookback": 20,
+              "close_breaks_lookback": 3,
+              "reclaims_lookback": 1,
+              "breakout_retests_lookback": 1,
+              "failed_retests_lookback": 1,
+              "retest_events": [
+                "failed_breakdown_reclaim",
+                "bearish_breakdown_retest"
+              ],
+              "status": "tested"
+            },
+            {
+              "price": 1740.22,
+              "side": "support",
+              "timeframe": "15m",
+              "zone_low": 1732.53560417,
+              "zone_high": 1747.90439583,
+              "touches_lookback": 15,
+              "holds_lookback": 14,
+              "close_breaks_lookback": 1,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "tested"
+            },
+            {
+              "price": 1733.32,
+              "side": "support",
+              "timeframe": "15m",
+              "zone_low": 1725.63560417,
+              "zone_high": 1741.00439583,
+              "touches_lookback": 10,
+              "holds_lookback": 10,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "tested"
+            },
+            {
+              "price": 1748.78666667,
+              "side": "support",
+              "timeframe": "1H",
+              "zone_low": 1741.10227084,
+              "zone_high": 1756.4710625,
+              "touches_lookback": 23,
+              "holds_lookback": 19,
+              "close_breaks_lookback": 3,
+              "reclaims_lookback": 1,
+              "breakout_retests_lookback": 1,
+              "failed_retests_lookback": 1,
+              "retest_events": [
+                "failed_breakdown_reclaim",
+                "bearish_breakdown_retest"
+              ],
+              "status": "tested"
+            },
+            {
+              "price": 1731.49,
+              "side": "support",
+              "timeframe": "1H",
+              "zone_low": 1723.80560417,
+              "zone_high": 1739.17439583,
+              "touches_lookback": 10,
+              "holds_lookback": 10,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "tested"
+            },
+            {
+              "price": 1716.03333333,
+              "side": "support",
+              "timeframe": "1H",
+              "zone_low": 1708.3489375,
+              "zone_high": 1723.71772916,
+              "touches_lookback": 3,
+              "holds_lookback": 3,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "tested"
+            },
+            {
+              "price": 1750.05,
+              "side": "support",
+              "timeframe": "4H",
+              "zone_low": 1742.36560417,
+              "zone_high": 1757.73439583,
+              "touches_lookback": 23,
+              "holds_lookback": 20,
+              "close_breaks_lookback": 3,
+              "reclaims_lookback": 1,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 1,
+              "retest_events": [
+                "failed_breakdown_reclaim"
+              ],
+              "status": "tested"
+            },
+            {
+              "price": 1731.53,
+              "side": "support",
+              "timeframe": "4H",
+              "zone_low": 1723.84560417,
+              "zone_high": 1739.21439583,
+              "touches_lookback": 10,
+              "holds_lookback": 10,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "tested"
+            },
+            {
+              "price": 1709.08,
+              "side": "support",
+              "timeframe": "4H",
+              "zone_low": 1701.39560417,
+              "zone_high": 1716.76439583,
+              "touches_lookback": 0,
+              "holds_lookback": 0,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "active"
+            },
+            {
+              "price": 1743.5,
+              "side": "support",
+              "timeframe": "1D",
+              "zone_low": 1735.81560417,
+              "zone_high": 1751.18439583,
+              "touches_lookback": 20,
+              "holds_lookback": 18,
+              "close_breaks_lookback": 2,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "tested"
+            },
+            {
+              "price": 1710.7,
+              "side": "support",
+              "timeframe": "1D",
+              "zone_low": 1703.01560417,
+              "zone_high": 1718.38439583,
+              "touches_lookback": 1,
+              "holds_lookback": 1,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "tested"
+            },
+            {
+              "price": 1670.38,
+              "side": "support",
+              "timeframe": "1D",
+              "zone_low": 1662.69560417,
+              "zone_high": 1678.06439583,
+              "touches_lookback": 0,
+              "holds_lookback": 0,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "active"
+            },
+            {
+              "price": 1601.29,
+              "side": "support",
+              "timeframe": "1D",
+              "zone_low": 1593.60560417,
+              "zone_high": 1608.97439583,
+              "touches_lookback": 0,
+              "holds_lookback": 0,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "active"
+            },
+            {
+              "price": 1742.67,
+              "side": "support",
+              "timeframe": "1W",
+              "zone_low": 1734.98560417,
+              "zone_high": 1750.35439583,
+              "touches_lookback": 19,
+              "holds_lookback": 17,
+              "close_breaks_lookback": 2,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "tested"
+            },
+            {
+              "price": 1623.19,
+              "side": "support",
+              "timeframe": "1W",
+              "zone_low": 1615.50560417,
+              "zone_high": 1630.87439583,
+              "touches_lookback": 0,
+              "holds_lookback": 0,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "active"
+            },
+            {
+              "price": 1530.56,
+              "side": "support",
+              "timeframe": "1W",
+              "zone_low": 1522.87560417,
+              "zone_high": 1538.24439583,
+              "touches_lookback": 0,
+              "holds_lookback": 0,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "active"
+            },
+            {
+              "price": 1510.23666667,
+              "side": "support",
+              "timeframe": "1W",
+              "zone_low": 1502.55227084,
+              "zone_high": 1517.9210625,
+              "touches_lookback": 0,
+              "holds_lookback": 0,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "active"
+            },
+            {
+              "price": 1765.39333333,
+              "side": "resistance",
+              "timeframe": "15m",
+              "zone_low": 1757.7089375,
+              "zone_high": 1773.07772916,
+              "touches_lookback": 29,
+              "holds_lookback": 19,
+              "close_breaks_lookback": 3,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 1,
+              "failed_retests_lookback": 0,
+              "retest_events": [
+                "bullish_breakout_retest"
+              ],
+              "status": "tested"
+            },
+            {
+              "price": 1771.9,
+              "side": "resistance",
+              "timeframe": "15m",
+              "zone_low": 1764.21560417,
+              "zone_high": 1779.58439583,
+              "touches_lookback": 24,
+              "holds_lookback": 19,
+              "close_breaks_lookback": 3,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "tested"
+            },
+            {
+              "price": 1787.59166667,
+              "side": "resistance",
+              "timeframe": "15m",
+              "zone_low": 1779.90727084,
+              "zone_high": 1795.2760625,
+              "touches_lookback": 27,
+              "holds_lookback": 20,
+              "close_breaks_lookback": 3,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 1,
+              "failed_retests_lookback": 0,
+              "retest_events": [
+                "bullish_breakout_retest"
+              ],
+              "status": "tested"
+            },
+            {
+              "price": 1797.16,
+              "side": "resistance",
+              "timeframe": "15m",
+              "zone_low": 1789.47560417,
+              "zone_high": 1804.84439583,
+              "touches_lookback": 35,
+              "holds_lookback": 24,
+              "close_breaks_lookback": 6,
+              "reclaims_lookback": 1,
+              "breakout_retests_lookback": 3,
+              "failed_retests_lookback": 1,
+              "retest_events": [
+                "bullish_breakout_retest",
+                "bullish_breakout_retest",
+                "bullish_breakout_retest"
+              ],
+              "status": "tested"
+            },
+            {
+              "price": 1769.92,
+              "side": "resistance",
+              "timeframe": "1H",
+              "zone_low": 1762.23560417,
+              "zone_high": 1777.60439583,
+              "touches_lookback": 25,
+              "holds_lookback": 19,
+              "close_breaks_lookback": 3,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 1,
+              "failed_retests_lookback": 0,
+              "retest_events": [
+                "bullish_breakout_retest"
+              ],
+              "status": "tested"
+            },
+            {
+              "price": 1788.815,
+              "side": "resistance",
+              "timeframe": "1H",
+              "zone_low": 1781.13060417,
+              "zone_high": 1796.49939583,
+              "touches_lookback": 30,
+              "holds_lookback": 20,
+              "close_breaks_lookback": 3,
+              "reclaims_lookback": 1,
+              "breakout_retests_lookback": 2,
+              "failed_retests_lookback": 0,
+              "retest_events": [
+                "bullish_breakout_retest",
+                "bullish_breakout_retest"
+              ],
+              "status": "tested"
+            },
+            {
+              "price": 1813.07333333,
+              "side": "resistance",
+              "timeframe": "1H",
+              "zone_low": 1805.3889375,
+              "zone_high": 1820.75772916,
+              "touches_lookback": 32,
+              "holds_lookback": 28,
+              "close_breaks_lookback": 2,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 1,
+              "failed_retests_lookback": 0,
+              "retest_events": [
+                "bullish_breakout_retest"
+              ],
+              "status": "tested"
+            },
+            {
+              "price": 1838.34888889,
+              "side": "resistance",
+              "timeframe": "1H",
+              "zone_low": 1830.66449306,
+              "zone_high": 1846.03328472,
+              "touches_lookback": 2,
+              "holds_lookback": 2,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "tested"
+            },
+            {
+              "price": 1816.82,
+              "side": "resistance",
+              "timeframe": "4H",
+              "zone_low": 1809.13560417,
+              "zone_high": 1824.50439583,
+              "touches_lookback": 26,
+              "holds_lookback": 25,
+              "close_breaks_lookback": 1,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "tested"
+            },
+            {
+              "price": 1841.59,
+              "side": "resistance",
+              "timeframe": "4H",
+              "zone_low": 1833.90560417,
+              "zone_high": 1849.27439583,
+              "touches_lookback": 1,
+              "holds_lookback": 1,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "tested"
+            },
+            {
+              "price": 1866.83,
+              "side": "resistance",
+              "timeframe": "4H",
+              "zone_low": 1859.14560417,
+              "zone_high": 1874.51439583,
+              "touches_lookback": 0,
+              "holds_lookback": 0,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "active"
+            },
+            {
+              "price": 1988.29,
+              "side": "resistance",
+              "timeframe": "4H",
+              "zone_low": 1980.60560417,
+              "zone_high": 1995.97439583,
+              "touches_lookback": 0,
+              "holds_lookback": 0,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "active"
+            },
+            {
+              "price": 1779.41,
+              "side": "resistance",
+              "timeframe": "1D",
+              "zone_low": 1771.72560417,
+              "zone_high": 1787.09439583,
+              "touches_lookback": 21,
+              "holds_lookback": 16,
+              "close_breaks_lookback": 2,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 1,
+              "failed_retests_lookback": 0,
+              "retest_events": [
+                "bullish_breakout_retest"
+              ],
+              "status": "tested"
+            },
+            {
+              "price": 1841.325,
+              "side": "resistance",
+              "timeframe": "1D",
+              "zone_low": 1833.64060417,
+              "zone_high": 1849.00939583,
+              "touches_lookback": 1,
+              "holds_lookback": 1,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "tested"
+            },
+            {
+              "price": 1898.0,
+              "side": "resistance",
+              "timeframe": "1D",
+              "zone_low": 1890.31560417,
+              "zone_high": 1905.68439583,
+              "touches_lookback": 0,
+              "holds_lookback": 0,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "active"
+            },
+            {
+              "price": 1946.1925,
+              "side": "resistance",
+              "timeframe": "1D",
+              "zone_low": 1938.50810417,
+              "zone_high": 1953.87689583,
+              "touches_lookback": 0,
+              "holds_lookback": 0,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "active"
+            },
+            {
+              "price": 1785.54,
+              "side": "resistance",
+              "timeframe": "1W",
+              "zone_low": 1777.85560417,
+              "zone_high": 1793.22439583,
+              "touches_lookback": 25,
+              "holds_lookback": 20,
+              "close_breaks_lookback": 3,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "tested"
+            },
+            {
+              "price": 1935.0,
+              "side": "resistance",
+              "timeframe": "1W",
+              "zone_low": 1927.31560417,
+              "zone_high": 1942.68439583,
+              "touches_lookback": 0,
+              "holds_lookback": 0,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "active"
+            },
+            {
+              "price": 1982.29,
+              "side": "resistance",
+              "timeframe": "1W",
+              "zone_low": 1974.60560417,
+              "zone_high": 1989.97439583,
+              "touches_lookback": 0,
+              "holds_lookback": 0,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "active"
+            },
+            {
+              "price": 2030.0,
+              "side": "resistance",
+              "timeframe": "1W",
+              "zone_low": 2022.31560417,
+              "zone_high": 2037.68439583,
+              "touches_lookback": 0,
+              "holds_lookback": 0,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "active"
+            }
+          ],
+          "summary": {
+            "active": 13,
+            "tested": 25,
+            "broken": 0,
+            "reclaimed": 5
+          }
+        }
+      },
+      "XRP": {
+        "price": 0.9666,
+        "forecasts": [
+          {
+            "horizon": "4h",
+            "hours": 4,
+            "analogue_count": 120,
+            "analogue_window": 120,
+            "up_frequency_pct": 40.8,
+            "median_return_pct": -0.2,
+            "range_10_90_pct": [
+              -1.8,
+              1.5
+            ],
+            "range_method": "Blended interval: 65% empirical 10th/90th quantiles of 120 nearest historical analogues + 35% rolling 168h volatility envelope (normal 10th/90th proxy); rounded to 0.1 percentage point. Recompute on completed candles; genuine regime changes can move the range.",
+            "rolling_168h_hourly_sigma_pct": 0.8312,
+            "volatility_blend_weight": 0.35,
+            "interpretation": "historical analogue frequency, not calibrated probability"
+          },
+          {
+            "horizon": "24h",
+            "hours": 24,
+            "analogue_count": 120,
+            "analogue_window": 120,
+            "up_frequency_pct": 28.3,
+            "median_return_pct": -1.4,
+            "range_10_90_pct": [
+              -4.9,
+              2.8
+            ],
+            "range_method": "Blended interval: 65% empirical 10th/90th quantiles of 120 nearest historical analogues + 35% rolling 168h volatility envelope (normal 10th/90th proxy); rounded to 0.1 percentage point. Recompute on completed candles; genuine regime changes can move the range.",
+            "rolling_168h_hourly_sigma_pct": 0.8312,
+            "volatility_blend_weight": 0.35,
+            "interpretation": "historical analogue frequency, not calibrated probability"
+          },
+          {
+            "horizon": "72h",
+            "hours": 72,
+            "analogue_count": 120,
+            "analogue_window": 120,
+            "up_frequency_pct": 21.7,
+            "median_return_pct": -5.6,
+            "range_10_90_pct": [
+              -8.9,
+              3.6
+            ],
+            "range_method": "Blended interval: 65% empirical 10th/90th quantiles of 120 nearest historical analogues + 35% rolling 168h volatility envelope (normal 10th/90th proxy); rounded to 0.1 percentage point. Recompute on completed candles; genuine regime changes can move the range.",
+            "rolling_168h_hourly_sigma_pct": 0.8312,
+            "volatility_blend_weight": 0.35,
+            "interpretation": "historical analogue frequency, not calibrated probability"
+          }
+        ],
+        "model": {
+          "regime": "DOWNTREND",
+          "vol_ratio": 1.468,
+          "layers": {
+            "structure": {
+              "score": -0.8369657639857302,
+              "components": [
+                {
+                  "name": "trend",
+                  "score": -1.0,
+                  "weight": 0.5,
+                  "note": "daily close vs EMA20/50/200; EMA50 slope -7.96% over 10 days"
+                },
+                {
+                  "name": "momentum",
+                  "score": -1,
+                  "weight": 0.3,
+                  "note": "daily RSI14 20.8"
+                },
+                {
+                  "name": "relative_strength_vs_BTC_30d",
+                  "score": -0.185,
+                  "weight": 0.2,
+                  "note": "-2.8% vs BTC over 30d"
+                }
+              ]
+            },
+            "derivs": {
+              "score": -0.022618043772348842,
+              "components": [
+                {
+                  "name": "funding_crowding",
+                  "score": 0.288,
+                  "weight": 0.375,
+                  "note": "funding -0.0034% (14th percentile of available history)"
+                },
+                {
+                  "name": "long_short_ratio",
+                  "score": -0.39,
+                  "weight": 0.188,
+                  "note": "account long/short ratio 2.180; historical percentile unavailable"
+                },
+                {
+                  "name": "price_vs_oi",
+                  "score": -0.2,
+                  "weight": 0.375,
+                  "note": "price -3.1%, OI -7.8% over 24h"
+                },
+                {
+                  "name": "perp_basis",
+                  "score": 0.279,
+                  "weight": 0.063,
+                  "note": "perpetual basis -9.3 bps"
+                }
+              ]
+            },
+            "liquidity": {
+              "score": -0.11778914954738938,
+              "components": [
+                {
+                  "name": "taker_cvd_24h",
+                  "score": -0.19,
+                  "weight": 0.4,
+                  "note": "24h taker CVD -1.9% of volume"
+                },
+                {
+                  "name": "liquidation_magnet",
+                  "score": -0.205,
+                  "weight": 0.3,
+                  "note": "estimated liquidation fuel above vs below; OI-delta weighted"
+                },
+                {
+                  "name": "recent_liquidation_flow",
+                  "score": 0.066,
+                  "weight": 0.2,
+                  "note": "liquidated longs $0.2M vs shorts $0.1M"
+                },
+                {
+                  "name": "book_imbalance",
+                  "score": 0.067,
+                  "weight": 0.1,
+                  "note": "top-400-level notional imbalance +0.03"
+                }
+              ]
+            },
+            "onchain": {
+              "score": -0.50841081,
+              "components": [
+                {
+                  "name": "stablecoin_supply_30d",
+                  "score": -1,
+                  "weight": 0.5,
+                  "note": "global stablecoin supply -5.88% over 30d"
+                },
+                {
+                  "name": "spot_etf_flow_5d",
+                  "score": -0.017,
+                  "weight": 0.5,
+                  "note": "automatically sourced 5-session spot ETF flow $-2M"
+                }
+              ]
+            },
+            "news": {
+              "score": 0.6080000000000001,
+              "components": [
+                {
+                  "name": "fear_greed",
+                  "score": 0.608,
+                  "weight": 1.0,
+                  "note": "Fear & Greed 12; contrarian at extremes"
+                }
+              ]
+            }
+          },
+          "horizons": {
+            "4h": {
+              "composite": -0.124,
+              "p_up": 0.451,
+              "coverage": 1.0,
+              "bias": "Neutral",
+              "range": [
+                0.95370947,
+                0.97966476
+              ]
+            },
+            "24h": {
+              "composite": -0.17,
+              "p_up": 0.434,
+              "coverage": 1.0,
+              "bias": "Bearish",
+              "range": [
+                0.93532934,
+                0.99891612
+              ]
+            },
+            "72h": {
+              "composite": -0.239,
+              "p_up": 0.411,
+              "coverage": 1.0,
+              "bias": "Bearish",
+              "range": [
+                0.91308086,
+                1.0232561
+              ]
+            },
+            "1w": {
+              "composite": -0.292,
+              "p_up": 0.395,
+              "coverage": 1.0,
+              "bias": "Bearish",
+              "range": [
+                0.88605271,
+                1.0544695
+              ]
+            },
+            "1m": {
+              "composite": -0.345,
+              "p_up": 0.38,
+              "coverage": 1.0,
+              "bias": "Bearish",
+              "range": [
+                0.80727181,
+                1.1573742
+              ]
+            }
+          },
+          "patterns": [],
+          "levels": {
+            "liq_above": [
+              {
+                "price": 1.010097,
+                "strength": 1.0,
+                "dist_pct": 4.499999999999993
+              },
+              {
+                "price": 1.0560105000000002,
+                "strength": 0.8374359562242565,
+                "dist_pct": 9.250000000000025
+              },
+              {
+                "price": 1.0511775,
+                "strength": 0.7632632487882048,
+                "dist_pct": 8.750000000000014
+              }
+            ],
+            "liq_below": [
+              {
+                "price": 0.9158535000000001,
+                "strength": 0.9537455356585512,
+                "dist_pct": -5.249999999999988
+              },
+              {
+                "price": 0.8820225,
+                "strength": 0.9424314927718683,
+                "dist_pct": -8.750000000000002
+              },
+              {
+                "price": 0.9206865000000001,
+                "strength": 0.8810857131271886,
+                "dist_pct": -4.749999999999998
+              }
+            ],
+            "liq_method": "OI-delta weighted"
+          },
+          "confidence": {
+            "value": 0.19,
+            "label": "Low",
+            "event_adjustment": 1.0,
+            "notes": [
+              "layers disagree"
+            ]
+          },
+          "data_quality": {
+            "missing": []
+          },
+          "method": "five-layer weighted model; missing components excluded and weights renormalized; probabilities remain experimental until out-of-sample calibration is sufficient"
+        },
+        "pre_move": {
+          "action": "SHORT",
+          "stage": "EARLY_WATCH",
+          "confidence": "medium",
+          "coverage_pct": 58.1,
+          "score_long": 0.0,
+          "score_short": 58.1,
+          "edge": -50.0,
+          "entry_reference": 0.9497,
+          "stop_reference": 0.96873714,
+          "target_reference": 0.91162572,
+          "invalidation": "Hourly close above 0.96873714",
+          "trigger": {
+            "long_close_above": 0.9726,
+            "short_close_below": 0.9497,
+            "volume_confirmed": false,
+            "volume_ratio_last_hour": 0.61
+          },
+          "evidence": [
+            {
+              "name": "five_layer_model",
+              "bias": "bearish",
+              "weight": 22,
+              "detail": "24h model P(up)=0.434"
+            },
+            {
+              "name": "historical_analogue",
+              "bias": "bearish",
+              "weight": 12,
+              "detail": "24h analogue up-frequency=28.3%"
+            },
+            {
+              "name": "hourly_trend",
+              "bias": "bearish",
+              "weight": 16,
+              "detail": "4h return -1.47%; 12h +0.24%; price vs MA6/MA24"
+            }
+          ],
+          "missing": [],
+          "market_phase": "NO_CONFIRMED_PATTERN",
+          "metrics": {
+            "return_4h_pct": -1.475,
+            "return_12h_pct": 0.241,
+            "oi_change_24h_pct": -7.84,
+            "taker_cvd_24h": -0.01901695613365719,
+            "volume_ratio_24h": 1.04
+          },
+          "disclaimer": "Early watch is not an entry. Confirmed trigger requires a completed hourly close beyond the recent 6-hour range and at least 1.15x hourly volume. Experimental, uncalibrated decision support; false signals and gaps are possible."
+        },
+        "market_phase": {
+          "phase": "NO_CONFIRMED_PATTERN",
+          "capitulation_score": 33,
+          "distribution_score": 0,
+          "confidence": "low",
+          "evidence": {
+            "capitulation": [
+              "open interest down >=3% in 24h",
+              "extreme-fear sentiment"
+            ],
+            "distribution": []
+          },
+          "metrics": {
+            "return_24h_pct": -3.064,
+            "return_72h_pct": -0.438,
+            "volume_ratio_vs_baseline": 1.14,
+            "position_in_7d_range_pct": 41.8,
+            "oi_change_24h_pct": -7.84,
+            "taker_cvd_24h": -0.019,
+            "long_liquidations_usd": 174972.67940000002,
+            "short_liquidations_usd": 111831.30909999997,
+            "fear_greed": 12.0
+          },
+          "missing": [],
+          "disclaimer": "Heuristic market-stress/distribution proxy, not proof of whale selling, a bottom/top, or a trade signal."
+        },
+        "level_validation": {
+          "lookback_hours": 72,
+          "levels": [
+            {
+              "price": 0.96276,
+              "side": "support",
+              "timeframe": "15m",
+              "zone_low": 0.95849292,
+              "zone_high": 0.96702708,
+              "touches_lookback": 39,
+              "holds_lookback": 32,
+              "close_breaks_lookback": 4,
+              "reclaims_lookback": 1,
+              "breakout_retests_lookback": 1,
+              "failed_retests_lookback": 0,
+              "retest_events": [
+                "bearish_breakdown_retest"
+              ],
+              "status": "tested"
+            },
+            {
+              "price": 0.95912,
+              "side": "support",
+              "timeframe": "15m",
+              "zone_low": 0.95485292,
+              "zone_high": 0.96338708,
+              "touches_lookback": 30,
+              "holds_lookback": 28,
+              "close_breaks_lookback": 2,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "tested"
+            },
+            {
+              "price": 0.95442857,
+              "side": "support",
+              "timeframe": "15m",
+              "zone_low": 0.95016149,
+              "zone_high": 0.95869565,
+              "touches_lookback": 20,
+              "holds_lookback": 20,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "tested"
+            },
+            {
+              "price": 0.947,
+              "side": "support",
+              "timeframe": "15m",
+              "zone_low": 0.94273292,
+              "zone_high": 0.95126708,
+              "touches_lookback": 4,
+              "holds_lookback": 4,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "tested"
+            },
+            {
+              "price": 0.9611,
+              "side": "support",
+              "timeframe": "1H",
+              "zone_low": 0.95683292,
+              "zone_high": 0.96536708,
+              "touches_lookback": 33,
+              "holds_lookback": 28,
+              "close_breaks_lookback": 4,
+              "reclaims_lookback": 1,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "tested"
+            },
+            {
+              "price": 0.9527375,
+              "side": "support",
+              "timeframe": "1H",
+              "zone_low": 0.94847042,
+              "zone_high": 0.95700458,
+              "touches_lookback": 18,
+              "holds_lookback": 18,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "tested"
+            },
+            {
+              "price": 0.9444125,
+              "side": "support",
+              "timeframe": "1H",
+              "zone_low": 0.94014542,
+              "zone_high": 0.94867958,
+              "touches_lookback": 2,
+              "holds_lookback": 2,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "tested"
+            },
+            {
+              "price": 0.8922,
+              "side": "support",
+              "timeframe": "1H",
+              "zone_low": 0.88793292,
+              "zone_high": 0.89646708,
+              "touches_lookback": 0,
+              "holds_lookback": 0,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "active"
+            },
+            {
+              "price": 0.9539,
+              "side": "support",
+              "timeframe": "4H",
+              "zone_low": 0.94963292,
+              "zone_high": 0.95816708,
+              "touches_lookback": 20,
+              "holds_lookback": 20,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "tested"
+            },
+            {
+              "price": 0.9435,
+              "side": "support",
+              "timeframe": "4H",
+              "zone_low": 0.93923292,
+              "zone_high": 0.94776708,
+              "touches_lookback": 2,
+              "holds_lookback": 2,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "tested"
+            },
+            {
+              "price": 0.8922,
+              "side": "support",
+              "timeframe": "4H",
+              "zone_low": 0.88793292,
+              "zone_high": 0.89646708,
+              "touches_lookback": 0,
+              "holds_lookback": 0,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "active"
+            },
+            {
+              "price": 0.8922,
+              "side": "support",
+              "timeframe": "1D",
+              "zone_low": 0.88793292,
+              "zone_high": 0.89646708,
+              "touches_lookback": 0,
+              "holds_lookback": 0,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "active"
+            },
+            {
+              "price": 0.5719,
+              "side": "support",
+              "timeframe": "1W",
+              "zone_low": 0.56763292,
+              "zone_high": 0.57616708,
+              "touches_lookback": 0,
+              "holds_lookback": 0,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "active"
+            },
+            {
+              "price": 0.50465,
+              "side": "support",
+              "timeframe": "1W",
+              "zone_low": 0.5006128,
+              "zone_high": 0.5086872,
+              "touches_lookback": 0,
+              "holds_lookback": 0,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "active"
+            },
+            {
+              "price": 0.485,
+              "side": "support",
+              "timeframe": "1W",
+              "zone_low": 0.48112,
+              "zone_high": 0.48888,
+              "touches_lookback": 0,
+              "holds_lookback": 0,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "active"
+            },
+            {
+              "price": 0.47294,
+              "side": "support",
+              "timeframe": "1W",
+              "zone_low": 0.46915648,
+              "zone_high": 0.47672352,
+              "touches_lookback": 0,
+              "holds_lookback": 0,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "active"
+            },
+            {
+              "price": 0.9688,
+              "side": "resistance",
+              "timeframe": "15m",
+              "zone_low": 0.96453292,
+              "zone_high": 0.97306708,
+              "touches_lookback": 38,
+              "holds_lookback": 29,
+              "close_breaks_lookback": 5,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 2,
+              "failed_retests_lookback": 0,
+              "retest_events": [
+                "bullish_breakout_retest",
+                "bullish_breakout_retest"
+              ],
+              "status": "tested"
+            },
+            {
+              "price": 0.9729,
+              "side": "resistance",
+              "timeframe": "15m",
+              "zone_low": 0.96863292,
+              "zone_high": 0.97716708,
+              "touches_lookback": 38,
+              "holds_lookback": 31,
+              "close_breaks_lookback": 4,
+              "reclaims_lookback": 1,
+              "breakout_retests_lookback": 2,
+              "failed_retests_lookback": 0,
+              "retest_events": [
+                "bullish_breakout_retest",
+                "bullish_breakout_retest"
+              ],
+              "status": "tested"
+            },
+            {
+              "price": 0.97888333,
+              "side": "resistance",
+              "timeframe": "15m",
+              "zone_low": 0.97461625,
+              "zone_high": 0.98315041,
+              "touches_lookback": 33,
+              "holds_lookback": 24,
+              "close_breaks_lookback": 5,
+              "reclaims_lookback": 1,
+              "breakout_retests_lookback": 4,
+              "failed_retests_lookback": 0,
+              "retest_events": [
+                "bullish_breakout_retest",
+                "bullish_breakout_retest",
+                "bullish_breakout_retest"
+              ],
+              "status": "tested"
+            },
+            {
+              "price": 0.9821,
+              "side": "resistance",
+              "timeframe": "15m",
+              "zone_low": 0.97783292,
+              "zone_high": 0.98636708,
+              "touches_lookback": 32,
+              "holds_lookback": 25,
+              "close_breaks_lookback": 3,
+              "reclaims_lookback": 1,
+              "breakout_retests_lookback": 2,
+              "failed_retests_lookback": 0,
+              "retest_events": [
+                "bullish_breakout_retest",
+                "bullish_breakout_retest"
+              ],
+              "status": "tested"
+            },
+            {
+              "price": 0.9709,
+              "side": "resistance",
+              "timeframe": "1H",
+              "zone_low": 0.96663292,
+              "zone_high": 0.97516708,
+              "touches_lookback": 40,
+              "holds_lookback": 32,
+              "close_breaks_lookback": 6,
+              "reclaims_lookback": 1,
+              "breakout_retests_lookback": 1,
+              "failed_retests_lookback": 1,
+              "retest_events": [
+                "bullish_breakout_retest",
+                "failed_breakout_rejection"
+              ],
+              "status": "tested"
+            },
+            {
+              "price": 0.97834286,
+              "side": "resistance",
+              "timeframe": "1H",
+              "zone_low": 0.97407578,
+              "zone_high": 0.98260994,
+              "touches_lookback": 35,
+              "holds_lookback": 25,
+              "close_breaks_lookback": 6,
+              "reclaims_lookback": 1,
+              "breakout_retests_lookback": 4,
+              "failed_retests_lookback": 0,
+              "retest_events": [
+                "bullish_breakout_retest",
+                "bullish_breakout_retest",
+                "bullish_breakout_retest"
+              ],
+              "status": "tested"
+            },
+            {
+              "price": 0.99596,
+              "side": "resistance",
+              "timeframe": "1H",
+              "zone_low": 0.99169292,
+              "zone_high": 1.00022708,
+              "touches_lookback": 10,
+              "holds_lookback": 9,
+              "close_breaks_lookback": 1,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "tested"
+            },
+            {
+              "price": 1.0074,
+              "side": "resistance",
+              "timeframe": "1H",
+              "zone_low": 1.00313292,
+              "zone_high": 1.01166708,
+              "touches_lookback": 3,
+              "holds_lookback": 3,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "tested"
+            },
+            {
+              "price": 0.9777,
+              "side": "resistance",
+              "timeframe": "4H",
+              "zone_low": 0.97343292,
+              "zone_high": 0.98196708,
+              "touches_lookback": 34,
+              "holds_lookback": 24,
+              "close_breaks_lookback": 4,
+              "reclaims_lookback": 1,
+              "breakout_retests_lookback": 3,
+              "failed_retests_lookback": 0,
+              "retest_events": [
+                "bullish_breakout_retest",
+                "bullish_breakout_retest",
+                "bullish_breakout_retest"
+              ],
+              "status": "tested"
+            },
+            {
+              "price": 0.9973,
+              "side": "resistance",
+              "timeframe": "4H",
+              "zone_low": 0.99303292,
+              "zone_high": 1.00156708,
+              "touches_lookback": 10,
+              "holds_lookback": 10,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "tested"
+            },
+            {
+              "price": 1.0074,
+              "side": "resistance",
+              "timeframe": "4H",
+              "zone_low": 1.00313292,
+              "zone_high": 1.01166708,
+              "touches_lookback": 3,
+              "holds_lookback": 3,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "tested"
+            },
+            {
+              "price": 1.04355,
+              "side": "resistance",
+              "timeframe": "4H",
+              "zone_low": 1.03928292,
+              "zone_high": 1.04781708,
+              "touches_lookback": 0,
+              "holds_lookback": 0,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "active"
+            },
+            {
+              "price": 1.0766,
+              "side": "resistance",
+              "timeframe": "1D",
+              "zone_low": 1.07233292,
+              "zone_high": 1.08086708,
+              "touches_lookback": 0,
+              "holds_lookback": 0,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "active"
+            },
+            {
+              "price": 1.093,
+              "side": "resistance",
+              "timeframe": "1D",
+              "zone_low": 1.08873292,
+              "zone_high": 1.09726708,
+              "touches_lookback": 0,
+              "holds_lookback": 0,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "active"
+            },
+            {
+              "price": 1.12156667,
+              "side": "resistance",
+              "timeframe": "1D",
+              "zone_low": 1.11729959,
+              "zone_high": 1.12583375,
+              "touches_lookback": 0,
+              "holds_lookback": 0,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "active"
+            },
+            {
+              "price": 1.16355,
+              "side": "resistance",
+              "timeframe": "1D",
+              "zone_low": 1.15928292,
+              "zone_high": 1.16781708,
+              "touches_lookback": 0,
+              "holds_lookback": 0,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "active"
+            },
+            {
+              "price": 1.509,
+              "side": "resistance",
+              "timeframe": "1W",
+              "zone_low": 1.50473292,
+              "zone_high": 1.51326708,
+              "touches_lookback": 0,
+              "holds_lookback": 0,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "active"
+            },
+            {
+              "price": 1.549,
+              "side": "resistance",
+              "timeframe": "1W",
+              "zone_low": 1.54473292,
+              "zone_high": 1.55326708,
+              "touches_lookback": 0,
+              "holds_lookback": 0,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "active"
+            },
+            {
+              "price": 1.6067,
+              "side": "resistance",
+              "timeframe": "1W",
+              "zone_low": 1.60243292,
+              "zone_high": 1.61096708,
+              "touches_lookback": 0,
+              "holds_lookback": 0,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "active"
+            },
+            {
+              "price": 1.6584,
+              "side": "resistance",
+              "timeframe": "1W",
+              "zone_low": 1.65413292,
+              "zone_high": 1.66266708,
+              "touches_lookback": 0,
+              "holds_lookback": 0,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "active"
+            }
+          ],
+          "summary": {
+            "active": 16,
+            "tested": 20,
+            "broken": 0,
+            "reclaimed": 8
+          }
+        }
+      },
+      "SOL": {
+        "price": 72.69,
+        "forecasts": [
+          {
+            "horizon": "4h",
+            "hours": 4,
+            "analogue_count": 120,
+            "analogue_window": 120,
+            "up_frequency_pct": 45.8,
+            "median_return_pct": -0.1,
+            "range_10_90_pct": [
+              -2.0,
+              1.4
+            ],
+            "range_method": "Blended interval: 65% empirical 10th/90th quantiles of 120 nearest historical analogues + 35% rolling 168h volatility envelope (normal 10th/90th proxy); rounded to 0.1 percentage point. Recompute on completed candles; genuine regime changes can move the range.",
+            "rolling_168h_hourly_sigma_pct": 0.8935,
+            "volatility_blend_weight": 0.35,
+            "interpretation": "historical analogue frequency, not calibrated probability"
+          },
+          {
+            "horizon": "24h",
+            "hours": 24,
+            "analogue_count": 120,
+            "analogue_window": 120,
+            "up_frequency_pct": 35.0,
+            "median_return_pct": -1.3,
+            "range_10_90_pct": [
+              -5.1,
+              3.3
+            ],
+            "range_method": "Blended interval: 65% empirical 10th/90th quantiles of 120 nearest historical analogues + 35% rolling 168h volatility envelope (normal 10th/90th proxy); rounded to 0.1 percentage point. Recompute on completed candles; genuine regime changes can move the range.",
+            "rolling_168h_hourly_sigma_pct": 0.8935,
+            "volatility_blend_weight": 0.35,
+            "interpretation": "historical analogue frequency, not calibrated probability"
+          },
+          {
+            "horizon": "72h",
+            "hours": 72,
+            "analogue_count": 120,
+            "analogue_window": 120,
+            "up_frequency_pct": 20.0,
+            "median_return_pct": -4.2,
+            "range_10_90_pct": [
+              -11.0,
+              4.9
+            ],
+            "range_method": "Blended interval: 65% empirical 10th/90th quantiles of 120 nearest historical analogues + 35% rolling 168h volatility envelope (normal 10th/90th proxy); rounded to 0.1 percentage point. Recompute on completed candles; genuine regime changes can move the range.",
+            "rolling_168h_hourly_sigma_pct": 0.8935,
+            "volatility_blend_weight": 0.35,
+            "interpretation": "historical analogue frequency, not calibrated probability"
+          }
+        ],
+        "model": {
+          "regime": "DOWNTREND",
+          "vol_ratio": 1.523,
+          "layers": {
+            "structure": {
+              "score": -0.8797890746658752,
+              "components": [
+                {
+                  "name": "trend",
+                  "score": -1.0,
+                  "weight": 0.5,
+                  "note": "daily close vs EMA20/50/200; EMA50 slope -8.03% over 10 days"
+                },
+                {
+                  "name": "momentum",
+                  "score": -1,
+                  "weight": 0.3,
+                  "note": "daily RSI14 23.3"
+                },
+                {
+                  "name": "relative_strength_vs_BTC_30d",
+                  "score": -0.399,
+                  "weight": 0.2,
+                  "note": "-6.0% vs BTC over 30d"
+                }
+              ]
+            },
+            "derivs": {
+              "score": -0.08940922275588867,
+              "components": [
+                {
+                  "name": "funding_crowding",
+                  "score": 0.168,
+                  "weight": 0.375,
+                  "note": "funding 0.0005% (29th percentile of available history)"
+                },
+                {
+                  "name": "long_short_ratio",
+                  "score": -0.482,
+                  "weight": 0.188,
+                  "note": "account long/short ratio 2.620; historical percentile unavailable"
+                },
+                {
+                  "name": "price_vs_oi",
+                  "score": -0.2,
+                  "weight": 0.375,
+                  "note": "price -3.4%, OI -5.1% over 24h"
+                },
+                {
+                  "name": "perp_basis",
+                  "score": 0.206,
+                  "weight": 0.063,
+                  "note": "perpetual basis -6.9 bps"
+                }
+              ]
+            },
+            "liquidity": {
+              "score": 0.14700711023611576,
+              "components": [
+                {
+                  "name": "taker_cvd_24h",
+                  "score": 0.235,
+                  "weight": 0.4,
+                  "note": "24h taker CVD +2.3% of volume"
+                },
+                {
+                  "name": "liquidation_magnet",
+                  "score": 0.022,
+                  "weight": 0.3,
+                  "note": "estimated liquidation fuel above vs below; OI-delta weighted"
+                },
+                {
+                  "name": "recent_liquidation_flow",
+                  "score": 0.206,
+                  "weight": 0.2,
+                  "note": "liquidated longs $0.3M vs shorts $0.1M"
+                },
+                {
+                  "name": "book_imbalance",
+                  "score": 0.052,
+                  "weight": 0.1,
+                  "note": "top-400-level notional imbalance +0.03"
+                }
+              ]
+            },
+            "onchain": {
+              "score": -0.6090909090909091,
+              "components": [
+                {
+                  "name": "stablecoin_supply_30d",
+                  "score": -1,
+                  "weight": 0.364,
+                  "note": "global stablecoin supply -5.88% over 30d"
+                },
+                {
+                  "name": "chain_tvl_30d",
+                  "score": -1,
+                  "weight": 0.273,
+                  "note": "Solana TVL -21.1% over 30d"
+                },
+                {
+                  "name": "spot_etf_flow_5d",
+                  "score": 0.075,
+                  "weight": 0.364,
+                  "note": "automatically sourced 5-session spot ETF flow $+8M"
+                }
+              ]
+            },
+            "news": {
+              "score": 0.6080000000000001,
+              "components": [
+                {
+                  "name": "fear_greed",
+                  "score": 0.608,
+                  "weight": 1.0,
+                  "note": "Fear & Greed 12; contrarian at extremes"
+                }
+              ]
+            }
+          },
+          "horizons": {
+            "4h": {
+              "composite": -0.082,
+              "p_up": 0.467,
+              "coverage": 1.0,
+              "bias": "Neutral",
+              "range": [
+                71.77339941,
+                73.61830627
+              ]
+            },
+            "24h": {
+              "composite": -0.128,
+              "p_up": 0.45,
+              "coverage": 1.0,
+              "bias": "Neutral",
+              "range": [
+                70.46527596,
+                74.98496285
+              ]
+            },
+            "72h": {
+              "composite": -0.23,
+              "p_up": 0.414,
+              "coverage": 1.0,
+              "bias": "Bearish",
+              "range": [
+                68.87995085,
+                76.71079951
+              ]
+            },
+            "1w": {
+              "composite": -0.299,
+              "p_up": 0.393,
+              "coverage": 1.0,
+              "bias": "Bearish",
+              "range": [
+                66.95119265,
+                78.92071658
+              ]
+            },
+            "1m": {
+              "composite": -0.387,
+              "p_up": 0.37,
+              "coverage": 1.0,
+              "bias": "Bearish",
+              "range": [
+                61.31049149,
+                86.1815975
+              ]
+            }
+          },
+          "patterns": [],
+          "levels": {
+            "liq_above": [
+              {
+                "price": 78.323475,
+                "strength": 0.9182770314964666,
+                "dist_pct": 7.750000000000012
+              },
+              {
+                "price": 76.142775,
+                "strength": 0.6828161479711224,
+                "dist_pct": 4.75000000000001
+              },
+              {
+                "price": 75.96105,
+                "strength": 0.6432980805509305,
+                "dist_pct": 4.499999999999993
+              }
+            ],
+            "liq_below": [
+              {
+                "price": 68.3286,
+                "strength": 1.0,
+                "dist_pct": -6.000000000000005
+              },
+              {
+                "price": 64.6941,
+                "strength": 0.9020303977272459,
+                "dist_pct": -10.999999999999988
+              },
+              {
+                "price": 68.510325,
+                "strength": 0.5296826855363975,
+                "dist_pct": -5.75
+              }
+            ],
+            "liq_method": "OI-delta weighted"
+          },
+          "confidence": {
+            "value": 0.12,
+            "label": "Low",
+            "event_adjustment": 1.0,
+            "notes": [
+              "layers disagree"
+            ]
+          },
+          "data_quality": {
+            "missing": []
+          },
+          "method": "five-layer weighted model; missing components excluded and weights renormalized; probabilities remain experimental until out-of-sample calibration is sufficient"
+        },
+        "pre_move": {
+          "action": "SHORT",
+          "stage": "EARLY_WATCH",
+          "confidence": "medium",
+          "coverage_pct": 58.1,
+          "score_long": 0.0,
+          "score_short": 58.1,
+          "edge": -50.0,
+          "entry_reference": 71.83,
+          "stop_reference": 73.068,
+          "target_reference": 69.354,
+          "invalidation": "Hourly close above 73.068",
+          "trigger": {
+            "long_close_above": 73.16,
+            "short_close_below": 71.83,
+            "volume_confirmed": false,
+            "volume_ratio_last_hour": 0.69
+          },
+          "evidence": [
+            {
+              "name": "five_layer_model",
+              "bias": "bearish",
+              "weight": 22,
+              "detail": "24h model P(up)=0.450"
+            },
+            {
+              "name": "historical_analogue",
+              "bias": "bearish",
+              "weight": 12,
+              "detail": "24h analogue up-frequency=35.0%"
+            },
+            {
+              "name": "hourly_trend",
+              "bias": "bearish",
+              "weight": 16,
+              "detail": "4h return -0.96%; 12h -0.30%; price vs MA6/MA24"
+            }
+          ],
+          "missing": [],
+          "market_phase": "CAPITULATION_WATCH",
+          "metrics": {
+            "return_4h_pct": -0.963,
+            "return_12h_pct": -0.305,
+            "oi_change_24h_pct": -5.07,
+            "taker_cvd_24h": 0.023494679858923236,
+            "volume_ratio_24h": 1.25
+          },
+          "disclaimer": "Early watch is not an entry. Confirmed trigger requires a completed hourly close beyond the recent 6-hour range and at least 1.15x hourly volume. Experimental, uncalibrated decision support; false signals and gaps are possible."
+        },
+        "market_phase": {
+          "phase": "CAPITULATION_WATCH",
+          "capitulation_score": 50,
+          "distribution_score": 0,
+          "confidence": "low",
+          "evidence": {
+            "capitulation": [
+              "open interest down >=3% in 24h",
+              "long liquidations materially exceed short liquidations",
+              "extreme-fear sentiment"
+            ],
+            "distribution": []
+          },
+          "metrics": {
+            "return_24h_pct": -3.409,
+            "return_72h_pct": -0.991,
+            "volume_ratio_vs_baseline": 1.049,
+            "position_in_7d_range_pct": 30.9,
+            "oi_change_24h_pct": -5.07,
+            "taker_cvd_24h": 0.023,
+            "long_liquidations_usd": 323108.67040000006,
+            "short_liquidations_usd": 59661.63990000001,
+            "fear_greed": 12.0
+          },
+          "missing": [],
+          "disclaimer": "Heuristic market-stress/distribution proxy, not proof of whale selling, a bottom/top, or a trade signal."
+        },
+        "level_validation": {
+          "lookback_hours": 72,
+          "levels": [
+            {
+              "price": 72.61,
+              "side": "support",
+              "timeframe": "15m",
+              "zone_low": 72.27997917,
+              "zone_high": 72.94002083,
+              "touches_lookback": 33,
+              "holds_lookback": 27,
+              "close_breaks_lookback": 5,
+              "reclaims_lookback": 2,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 1,
+              "retest_events": [
+                "failed_breakdown_reclaim"
+              ],
+              "status": "tested"
+            },
+            {
+              "price": 72.235,
+              "side": "support",
+              "timeframe": "15m",
+              "zone_low": 71.90497917,
+              "zone_high": 72.56502083,
+              "touches_lookback": 22,
+              "holds_lookback": 22,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "tested"
+            },
+            {
+              "price": 71.94333333,
+              "side": "support",
+              "timeframe": "15m",
+              "zone_low": 71.6133125,
+              "zone_high": 72.27335416,
+              "touches_lookback": 17,
+              "holds_lookback": 17,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "tested"
+            },
+            {
+              "price": 71.54,
+              "side": "support",
+              "timeframe": "15m",
+              "zone_low": 71.20997917,
+              "zone_high": 71.87002083,
+              "touches_lookback": 7,
+              "holds_lookback": 7,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "tested"
+            },
+            {
+              "price": 72.61,
+              "side": "support",
+              "timeframe": "1H",
+              "zone_low": 72.27997917,
+              "zone_high": 72.94002083,
+              "touches_lookback": 33,
+              "holds_lookback": 27,
+              "close_breaks_lookback": 5,
+              "reclaims_lookback": 2,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 1,
+              "retest_events": [
+                "failed_breakdown_reclaim"
+              ],
+              "status": "tested"
+            },
+            {
+              "price": 71.96375,
+              "side": "support",
+              "timeframe": "1H",
+              "zone_low": 71.63372917,
+              "zone_high": 72.29377083,
+              "touches_lookback": 17,
+              "holds_lookback": 17,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "tested"
+            },
+            {
+              "price": 70.985,
+              "side": "support",
+              "timeframe": "1H",
+              "zone_low": 70.65497917,
+              "zone_high": 71.31502083,
+              "touches_lookback": 1,
+              "holds_lookback": 1,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "tested"
+            },
+            {
+              "price": 70.48333333,
+              "side": "support",
+              "timeframe": "1H",
+              "zone_low": 70.1533125,
+              "zone_high": 70.81335416,
+              "touches_lookback": 0,
+              "holds_lookback": 0,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "active"
+            },
+            {
+              "price": 72.16,
+              "side": "support",
+              "timeframe": "4H",
+              "zone_low": 71.82997917,
+              "zone_high": 72.49002083,
+              "touches_lookback": 20,
+              "holds_lookback": 20,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "tested"
+            },
+            {
+              "price": 71.0,
+              "side": "support",
+              "timeframe": "4H",
+              "zone_low": 70.66997917,
+              "zone_high": 71.33002083,
+              "touches_lookback": 1,
+              "holds_lookback": 1,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "tested"
+            },
+            {
+              "price": 69.87,
+              "side": "support",
+              "timeframe": "4H",
+              "zone_low": 69.53997917,
+              "zone_high": 70.20002083,
+              "touches_lookback": 0,
+              "holds_lookback": 0,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "active"
+            },
+            {
+              "price": 67.33,
+              "side": "support",
+              "timeframe": "4H",
+              "zone_low": 66.99997917,
+              "zone_high": 67.66002083,
+              "touches_lookback": 0,
+              "holds_lookback": 0,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "active"
+            },
+            {
+              "price": 72.27,
+              "side": "support",
+              "timeframe": "1D",
+              "zone_low": 71.93997917,
+              "zone_high": 72.60002083,
+              "touches_lookback": 22,
+              "holds_lookback": 22,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "tested"
+            },
+            {
+              "price": 70.095,
+              "side": "support",
+              "timeframe": "1D",
+              "zone_low": 69.76497917,
+              "zone_high": 70.42502083,
+              "touches_lookback": 0,
+              "holds_lookback": 0,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "active"
+            },
+            {
+              "price": 67.44666667,
+              "side": "support",
+              "timeframe": "1D",
+              "zone_low": 67.11664584,
+              "zone_high": 67.7766875,
+              "touches_lookback": 0,
+              "holds_lookback": 0,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "active"
+            },
+            {
+              "price": 63.98,
+              "side": "support",
+              "timeframe": "1D",
+              "zone_low": 63.64997917,
+              "zone_high": 64.31002083,
+              "touches_lookback": 0,
+              "holds_lookback": 0,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "active"
+            },
+            {
+              "price": 70.51,
+              "side": "support",
+              "timeframe": "1W",
+              "zone_low": 70.17997917,
+              "zone_high": 70.84002083,
+              "touches_lookback": 0,
+              "holds_lookback": 0,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "active"
+            },
+            {
+              "price": 67.21,
+              "side": "support",
+              "timeframe": "1W",
+              "zone_low": 66.87997917,
+              "zone_high": 67.54002083,
+              "touches_lookback": 0,
+              "holds_lookback": 0,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "active"
+            },
+            {
+              "price": 60.02,
+              "side": "support",
+              "timeframe": "1W",
+              "zone_low": 59.68997917,
+              "zone_high": 60.35002083,
+              "touches_lookback": 0,
+              "holds_lookback": 0,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "active"
+            },
+            {
+              "price": 19.667,
+              "side": "support",
+              "timeframe": "1W",
+              "zone_low": 19.509664,
+              "zone_high": 19.824336,
+              "touches_lookback": 0,
+              "holds_lookback": 0,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "active"
+            },
+            {
+              "price": 72.855,
+              "side": "resistance",
+              "timeframe": "15m",
+              "zone_low": 72.52497917,
+              "zone_high": 73.18502083,
+              "touches_lookback": 38,
+              "holds_lookback": 26,
+              "close_breaks_lookback": 7,
+              "reclaims_lookback": 1,
+              "breakout_retests_lookback": 3,
+              "failed_retests_lookback": 0,
+              "retest_events": [
+                "bullish_breakout_retest",
+                "bullish_breakout_retest",
+                "bullish_breakout_retest"
+              ],
+              "status": "tested"
+            },
+            {
+              "price": 73.19,
+              "side": "resistance",
+              "timeframe": "15m",
+              "zone_low": 72.85997917,
+              "zone_high": 73.52002083,
+              "touches_lookback": 41,
+              "holds_lookback": 30,
+              "close_breaks_lookback": 6,
+              "reclaims_lookback": 1,
+              "breakout_retests_lookback": 3,
+              "failed_retests_lookback": 0,
+              "retest_events": [
+                "bullish_breakout_retest",
+                "bullish_breakout_retest",
+                "bullish_breakout_retest"
+              ],
+              "status": "tested"
+            },
+            {
+              "price": 73.51666667,
+              "side": "resistance",
+              "timeframe": "15m",
+              "zone_low": 73.18664584,
+              "zone_high": 73.8466875,
+              "touches_lookback": 31,
+              "holds_lookback": 26,
+              "close_breaks_lookback": 4,
+              "reclaims_lookback": 1,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 1,
+              "retest_events": [
+                "failed_breakout_rejection"
+              ],
+              "status": "tested"
+            },
+            {
+              "price": 73.96,
+              "side": "resistance",
+              "timeframe": "15m",
+              "zone_low": 73.62997917,
+              "zone_high": 74.29002083,
+              "touches_lookback": 30,
+              "holds_lookback": 23,
+              "close_breaks_lookback": 3,
+              "reclaims_lookback": 1,
+              "breakout_retests_lookback": 1,
+              "failed_retests_lookback": 0,
+              "retest_events": [
+                "bullish_breakout_retest"
+              ],
+              "status": "tested"
+            },
+            {
+              "price": 73.07,
+              "side": "resistance",
+              "timeframe": "1H",
+              "zone_low": 72.73997917,
+              "zone_high": 73.40002083,
+              "touches_lookback": 41,
+              "holds_lookback": 26,
+              "close_breaks_lookback": 6,
+              "reclaims_lookback": 1,
+              "breakout_retests_lookback": 4,
+              "failed_retests_lookback": 0,
+              "retest_events": [
+                "bullish_breakout_retest",
+                "bullish_breakout_retest",
+                "bullish_breakout_retest"
+              ],
+              "status": "tested"
+            },
+            {
+              "price": 73.73,
+              "side": "resistance",
+              "timeframe": "1H",
+              "zone_low": 73.39997917,
+              "zone_high": 74.06002083,
+              "touches_lookback": 30,
+              "holds_lookback": 24,
+              "close_breaks_lookback": 2,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 1,
+              "failed_retests_lookback": 0,
+              "retest_events": [
+                "bullish_breakout_retest"
+              ],
+              "status": "tested"
+            },
+            {
+              "price": 74.475,
+              "side": "resistance",
+              "timeframe": "1H",
+              "zone_low": 74.14497917,
+              "zone_high": 74.80502083,
+              "touches_lookback": 34,
+              "holds_lookback": 24,
+              "close_breaks_lookback": 7,
+              "reclaims_lookback": 1,
+              "breakout_retests_lookback": 3,
+              "failed_retests_lookback": 0,
+              "retest_events": [
+                "bullish_breakout_retest",
+                "bullish_breakout_retest",
+                "bullish_breakout_retest"
+              ],
+              "status": "tested"
+            },
+            {
+              "price": 75.17,
+              "side": "resistance",
+              "timeframe": "1H",
+              "zone_low": 74.83997917,
+              "zone_high": 75.50002083,
+              "touches_lookback": 21,
+              "holds_lookback": 21,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "tested"
+            },
+            {
+              "price": 73.065,
+              "side": "resistance",
+              "timeframe": "4H",
+              "zone_low": 72.73497917,
+              "zone_high": 73.39502083,
+              "touches_lookback": 41,
+              "holds_lookback": 26,
+              "close_breaks_lookback": 6,
+              "reclaims_lookback": 1,
+              "breakout_retests_lookback": 4,
+              "failed_retests_lookback": 0,
+              "retest_events": [
+                "bullish_breakout_retest",
+                "bullish_breakout_retest",
+                "bullish_breakout_retest"
+              ],
+              "status": "tested"
+            },
+            {
+              "price": 75.69,
+              "side": "resistance",
+              "timeframe": "4H",
+              "zone_low": 75.35997917,
+              "zone_high": 76.02002083,
+              "touches_lookback": 5,
+              "holds_lookback": 5,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "tested"
+            },
+            {
+              "price": 82.36,
+              "side": "resistance",
+              "timeframe": "4H",
+              "zone_low": 82.02997917,
+              "zone_high": 82.69002083,
+              "touches_lookback": 0,
+              "holds_lookback": 0,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "active"
+            },
+            {
+              "price": 85.79,
+              "side": "resistance",
+              "timeframe": "4H",
+              "zone_low": 85.45997917,
+              "zone_high": 86.12002083,
+              "touches_lookback": 0,
+              "holds_lookback": 0,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "active"
+            },
+            {
+              "price": 75.135,
+              "side": "resistance",
+              "timeframe": "1D",
+              "zone_low": 74.80497917,
+              "zone_high": 75.46502083,
+              "touches_lookback": 22,
+              "holds_lookback": 22,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "tested"
+            },
+            {
+              "price": 76.05,
+              "side": "resistance",
+              "timeframe": "1D",
+              "zone_low": 75.71997917,
+              "zone_high": 76.38002083,
+              "touches_lookback": 1,
+              "holds_lookback": 1,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "tested"
+            },
+            {
+              "price": 77.655,
+              "side": "resistance",
+              "timeframe": "1D",
+              "zone_low": 77.32497917,
+              "zone_high": 77.98502083,
+              "touches_lookback": 0,
+              "holds_lookback": 0,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "active"
+            },
+            {
+              "price": 78.92,
+              "side": "resistance",
+              "timeframe": "1D",
+              "zone_low": 78.58997917,
+              "zone_high": 79.25002083,
+              "touches_lookback": 0,
+              "holds_lookback": 0,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "active"
+            },
+            {
+              "price": 83.95,
+              "side": "resistance",
+              "timeframe": "1W",
+              "zone_low": 83.61997917,
+              "zone_high": 84.28002083,
+              "touches_lookback": 0,
+              "holds_lookback": 0,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "active"
+            },
+            {
+              "price": 90.74,
+              "side": "resistance",
+              "timeframe": "1W",
+              "zone_low": 90.40997917,
+              "zone_high": 91.07002083,
+              "touches_lookback": 0,
+              "holds_lookback": 0,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "active"
+            },
+            {
+              "price": 97.995,
+              "side": "resistance",
+              "timeframe": "1W",
+              "zone_low": 97.66497917,
+              "zone_high": 98.32502083,
+              "touches_lookback": 0,
+              "holds_lookback": 0,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "active"
+            },
+            {
+              "price": 110.64,
+              "side": "resistance",
+              "timeframe": "1W",
+              "zone_low": 110.30997917,
+              "zone_high": 110.97002083,
+              "touches_lookback": 0,
+              "holds_lookback": 0,
+              "close_breaks_lookback": 0,
+              "reclaims_lookback": 0,
+              "breakout_retests_lookback": 0,
+              "failed_retests_lookback": 0,
+              "retest_events": [],
+              "status": "active"
+            }
+          ],
+          "summary": {
+            "active": 18,
+            "tested": 22,
+            "broken": 0,
+            "reclaimed": 9
+          }
+        }
+      }
+    }
   }
 ]
