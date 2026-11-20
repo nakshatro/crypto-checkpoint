@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-20T10:45:26.952992+00:00",
+  "updated_at": "2026-11-20T18:55:34.697285+00:00",
   "note": "Calibration requires future hourly observations; treat early samples cautiously. n>=100 per horizon is preferred.",
   "horizons": {
     "4h": {
@@ -93,26 +93,26 @@
       ]
     },
     "72h": {
-      "n": 32,
+      "n": 36,
       "sampling": "non-overlapping forecast origins; at least one horizon apart per coin",
-      "brier": 0.18583,
-      "base_rate_brier": 0.16712,
-      "skill_vs_coinflip": 0.2567,
-      "skill_vs_past_base_rate": -0.112,
-      "hit_rate": 0.844,
-      "base_rate_up": 0.125,
+      "brier": 0.18191,
+      "base_rate_brier": 0.15355,
+      "skill_vs_coinflip": 0.2723,
+      "skill_vs_past_base_rate": -0.1847,
+      "hit_rate": 0.861,
+      "base_rate_up": 0.111,
       "bins": [
         {
           "range": "0.00-0.40",
-          "n": 16,
-          "mean_p": 0.377,
-          "freq_up": 0.062
+          "n": 18,
+          "mean_p": 0.375,
+          "freq_up": 0.056
         },
         {
           "range": "0.40-0.45",
-          "n": 10,
+          "n": 12,
           "mean_p": 0.413,
-          "freq_up": 0.1
+          "freq_up": 0.083
         },
         {
           "range": "0.45-0.50",
@@ -171,12 +171,34 @@
       ]
     },
     "1m": {
-      "n": 0,
-      "sampling": "non-overlapping forecast origins",
-      "brier": null,
-      "base_rate_brier": null,
-      "skill_vs_coinflip": null,
-      "skill_vs_past_base_rate": null
+      "n": 4,
+      "sampling": "non-overlapping forecast origins; at least one horizon apart per coin",
+      "brier": 0.22857,
+      "base_rate_brier": 0.25,
+      "skill_vs_coinflip": 0.0857,
+      "skill_vs_past_base_rate": 0.0857,
+      "hit_rate": 0.75,
+      "base_rate_up": 0.0,
+      "bins": [
+        {
+          "range": "0.40-0.45",
+          "n": 2,
+          "mean_p": 0.425,
+          "freq_up": 0.0
+        },
+        {
+          "range": "0.45-0.50",
+          "n": 1,
+          "mean_p": 0.467,
+          "freq_up": 0.0
+        },
+        {
+          "range": "0.55-0.60",
+          "n": 1,
+          "mean_p": 0.578,
+          "freq_up": 0.0
+        }
+      ]
     }
   }
 }
