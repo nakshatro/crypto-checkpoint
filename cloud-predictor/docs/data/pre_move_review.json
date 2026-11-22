@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-21T21:22:10.954444+00:00",
+  "updated_at": "2026-11-22T01:28:43.777790+00:00",
   "method": "Strict forward-only evaluation: each archived LONG/SHORT signal is compared with the first later snapshot at or after 4h/24h/72h (maximum 2h observation lag). Directional hit means return was positive for LONG or negative for SHORT. No signal is evaluated until its future window matures. Small samples are descriptive, not predictive accuracy.",
   "horizons": {
     "4h": {
@@ -157,22 +157,22 @@
     },
     "72h": {
       "all": {
-        "n": 1,
+        "n": 5,
         "hit_rate_pct": 100.0,
-        "mean_directional_return_pct": 4.978,
-        "mean_underlying_return_pct": -4.978
+        "mean_directional_return_pct": 4.3183,
+        "mean_underlying_return_pct": -4.3183
       },
       "early_watch": {
-        "n": 0,
-        "hit_rate_pct": null,
-        "mean_directional_return_pct": null,
-        "mean_underlying_return_pct": null
+        "n": 3,
+        "hit_rate_pct": 100.0,
+        "mean_directional_return_pct": 4.3082,
+        "mean_underlying_return_pct": -4.3082
       },
       "confirmed_trigger": {
-        "n": 1,
+        "n": 2,
         "hit_rate_pct": 100.0,
-        "mean_directional_return_pct": 4.978,
-        "mean_underlying_return_pct": -4.978
+        "mean_directional_return_pct": 4.3333,
+        "mean_underlying_return_pct": -4.3333
       },
       "samples": [
         {
@@ -183,6 +183,46 @@
           "observed_time": "2026-11-21T15:49:19.416558+00:00",
           "return_pct": -4.978,
           "directional_return_pct": 4.978,
+          "correct": true
+        },
+        {
+          "coin": "BTC",
+          "side": "SHORT",
+          "stage": "EARLY_WATCH",
+          "signal_time": "2026-11-18T23:28:30.272783+00:00",
+          "observed_time": "2026-11-22T01:28:21.390107+00:00",
+          "return_pct": -4.0065,
+          "directional_return_pct": 4.0065,
+          "correct": true
+        },
+        {
+          "coin": "ETH",
+          "side": "SHORT",
+          "stage": "EARLY_WATCH",
+          "signal_time": "2026-11-18T23:28:30.272783+00:00",
+          "observed_time": "2026-11-22T01:28:21.390107+00:00",
+          "return_pct": -4.7965,
+          "directional_return_pct": 4.7965,
+          "correct": true
+        },
+        {
+          "coin": "XRP",
+          "side": "SHORT",
+          "stage": "CONFIRMED_TRIGGER",
+          "signal_time": "2026-11-18T23:28:30.272783+00:00",
+          "observed_time": "2026-11-22T01:28:21.390107+00:00",
+          "return_pct": -3.6887,
+          "directional_return_pct": 3.6887,
+          "correct": true
+        },
+        {
+          "coin": "SOL",
+          "side": "SHORT",
+          "stage": "EARLY_WATCH",
+          "signal_time": "2026-11-18T23:28:30.272783+00:00",
+          "observed_time": "2026-11-22T01:28:21.390107+00:00",
+          "return_pct": -4.1217,
+          "directional_return_pct": 4.1217,
           "correct": true
         }
       ]
