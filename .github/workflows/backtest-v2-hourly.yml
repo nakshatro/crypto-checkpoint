@@ -1,0 +1,54 @@
+name: Backfill hourly history and run Backtest V2
+
+on:
+  workflow_dispatch:
+    inputs:
+      days:
+        description: "Hourly history length (default 730 = 24 months)"
+        required: true
+        default: "730"
+        type: string
+  schedule:
+    - cron: "17 2 * * 0"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: crypto-checkpoint-backtest-v2
+  cancel-in-progress: false
+
+jobs:
+  backfill-and-backtest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Checkout research branch
+        uses: actions/checkout@v4
+        with:
+          ref: research/backtest-v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Backfill 1h spot and futures candles
+        run: |
+          python scripts/backfill_ohlcv_1h.py --days "${{ inputs.days || '730' }}" --minimum-coverage 99.5
+
+      - name: Run Backtest V2
+        run: |
+          python scripts/backtest_v2.py
+
+      - name: Upload backtest data and reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: crypto-checkpoint-backtest-v2-${{ github.run_number }}
+          path: |
+            data/historical/*_spot_1h.csv.gz
+            data/historical/*_linear_1h.csv.gz
+            data/historical/backtest/*.json
+          if-no-files-found: warn
+          retention-days: 30
