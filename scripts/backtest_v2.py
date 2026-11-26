@@ -122,7 +122,7 @@ def run_portfolio(data, funding, mode, strategy):
                 valid_price=(bar["o"]>pos["stop"]) if side==1 else (bar["o"]<pos["stop"])
                 if confirmed==side and valid_price:
                     add_notional=pos["target_notional"]-pos["notional"]
-                    add_px=bar["o"]*(1+slip if side==1 else 1-slip)
+                    add_px=bar["o"]
                     old_value=pos["entry_avg"]*pos["notional"]
                     pos["entry_avg"]=(old_value+add_px*add_notional)/(pos["notional"]+add_notional)
                     pos["notional"]+=add_notional
@@ -162,7 +162,7 @@ def run_portfolio(data, funding, mode, strategy):
             side,a=signal(hist,strategy)
             if mode=="spot" and side<0: continue
             if not side or not a: continue
-            entry=rows[i]["o"]*(1+slip if side==1 else 1-slip)
+            entry=rows[i]["o"]
             stop=entry-side*STOP_ATR*a
             target=entry+side*TARGET_R*(STOP_ATR*a)
             risk_per_unit=abs(entry-stop)/entry
