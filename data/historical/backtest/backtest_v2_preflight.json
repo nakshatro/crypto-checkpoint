@@ -1,0 +1,36 @@
+{
+  "status": "blocked_missing_hourly_history",
+  "checked_at": "2026-11-26",
+  "repository": "nakshatro/crypto-checkpoint",
+  "daily_baseline": {
+    "source_report": "data/historical/backtest/walk_forward_report.json",
+    "coins": ["BTC", "ETH", "XRP", "SOL"],
+    "daily_price_rows_per_coin": 2099,
+    "funding_rows_per_coin": 6297
+  },
+  "required_hourly_files": [
+    "data/historical/btc_spot_1h.csv.gz",
+    "data/historical/eth_spot_1h.csv.gz",
+    "data/historical/xrp_spot_1h.csv.gz",
+    "data/historical/sol_spot_1h.csv.gz"
+  ],
+  "missing_hourly_files": [
+    "data/historical/btc_spot_1h.csv.gz",
+    "data/historical/eth_spot_1h.csv.gz",
+    "data/historical/xrp_spot_1h.csv.gz",
+    "data/historical/sol_spot_1h.csv.gz"
+  ],
+  "production_model_replay": "blocked_missing_historical_features",
+  "missing_historical_features": [
+    "timestamped open interest",
+    "timestamped taker CVD / buy-sell flow",
+    "timestamped liquidation flow",
+    "timestamped order-book imbalance",
+    "timestamped ETF flows",
+    "timestamped on-chain / stablecoin / TVL features",
+    "timestamped macro, news and sentiment snapshots",
+    "timestamped five-layer model forecasts and pre-move scores"
+  ],
+  "interpretation": "No second-generation performance metrics are reported. Existing daily candles and funding data are insufficient for a reliable 1H staged-entry portfolio backtest or a historical replay of the production five-layer model.",
+  "next_requirement": "Backfill and commit at least 500 completed 1H OHLCV candles per coin; preferably 12-24 months. To validate the production CMI engine, also persist point-in-time feature snapshots and model forecasts before outcomes occur."
+}
