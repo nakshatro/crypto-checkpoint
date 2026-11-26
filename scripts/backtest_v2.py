@@ -217,27 +217,35 @@ def run_portfolio(data, funding, mode, strategy):
         "trades_detail":trades,"equity_curve":curve}
 
 def main():
-    data={c:read_rows(DATA/f"{c.lower()}_spot_1h.csv.gz") for c in COINS}
-    coverage={c:{"rows":len(v),"first":v[0]["t"] if v else None,"last":v[-1]["t"] if v else None} for c,v in data.items()}
-    missing=[c for c,v in data.items() if len(v)<500]
-    if missing:
-        report={"status":"blocked_missing_hourly_history","required_file_pattern":"data/historical/{coin}_spot_1h.csv.gz",
-            "minimum_rows_per_coin":500,"coverage":coverage,"missing_coins":missing,
-            "existing_available_history":"Repository currently contains daily spot candles and funding history, but no archived 1H OHLCV files. This script intentionally refuses to report a strategy result without sufficient hourly data.",
-            "production_model_replay":"Not possible from current archive: historical OI/CVD/liquidation/order-book/on-chain/news/ETF feature snapshots are not stored with forecast timestamps."}
+    spot_data={c:read_rows(DATA/f"{c.lower()}_spot_1h.csv.gz") for c in COINS}
+    linear_data={c:read_rows(DATA/f"{c.lower()}_linear_1h.csv.gz") for c in COINS}
+    def coverage_for(dataset):
+        return {c:{"rows":len(v),"first":v[0]["t"] if v else None,"last":v[-1]["t"] if v else None}
+                for c,v in dataset.items()}
+    coverage={"spot":coverage_for(spot_data),"linear":coverage_for(linear_data)}
+    missing_spot=[c for c,v in spot_data.items() if len(v)<500]
+    missing_linear=[c for c,v in linear_data.items() if len(v)<500]
+    if missing_spot or missing_linear:
+        report={"status":"blocked_missing_hourly_history",
+            "required_files":{"spot":"data/historical/{coin}_spot_1h.csv.gz",
+                "futures":"data/historical/{coin}_linear_1h.csv.gz"},
+            "minimum_rows_per_coin_per_market":500,"coverage":coverage,
+            "missing_spot_coins":missing_spot,"missing_linear_coins":missing_linear,
+            "production_model_replay":"Not possible from this archive: historical OI/CVD/liquidation/order-book/on-chain/news/ETF feature snapshots are not stored with forecast timestamps."}
     else:
         funding={c:read_funding(c) for c in COINS}
         report={"status":"completed_ohlcv_proxy_only","generated_at":datetime.now(timezone.utc).isoformat(),
             "scope":"CMI-inspired OHLCV reversal and trend strategies; not a replay of the live five-layer model.",
             "data_coverage":coverage,"modes":{}}
-        for mode in ("spot","futures"):
+        for mode,dataset in (("spot",spot_data),("futures",linear_data)):
             report["modes"][mode]={}
             for strategy in ("reversal","trend"):
-                report["modes"][mode][strategy]=run_portfolio(data,funding,mode,strategy)
+                report["modes"][mode][strategy]=run_portfolio(dataset,funding,mode,strategy)
         report["limitations"]=["Spot is long-only; futures supports long and short at 1x notional, no leverage.",
+            "Spot and futures simulations use their respective Bybit market candles; they are not mixed.",
             "Funding is applied only where archived funding timestamps exactly match hourly bars; missing funding rows are not interpolated.",
             "No historical OI, taker CVD, liquidations, order-book, ETF, on-chain, macro/news snapshots; production five-layer forecast cannot be replayed.",
-            "No staged second tranche in this baseline implementation; next iteration should add a separately tested scale-in rule.",
+            "Staged entry uses 50% at initial entry and a conditional second 50% tranche on the following bar; it is not averaging down.",
             "Intrabar stop is assumed to execute before target if both are touched in one candle; gaps may still worsen fills."]
     OUT.mkdir(parents=True,exist_ok=True)
     (OUT/"backtest_v2_report.json").write_text(json.dumps(report,indent=2,allow_nan=False),encoding="utf-8")
