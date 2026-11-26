@@ -114,6 +114,20 @@ def run_portfolio(data, funding, mode, strategy):
             i=indexes[coin].get(ts)
             if i is None or i==0: continue
             bar=data[coin][i]; side=pos["side"]; exit_px=None; reason=None
+            # Stage 2: add the remaining half at this bar's open only if the
+            # previous completed candle still confirms the original direction
+            # and price has not already crossed the invalidation stop.
+            if pos.get("stage2_pending"):
+                confirmed,_=signal(data[coin][:i],strategy)
+                valid_price=(bar["o"]>pos["stop"]) if side==1 else (bar["o"]<pos["stop"])
+                if confirmed==side and valid_price:
+                    add_notional=pos["target_notional"]-pos["notional"]
+                    add_px=bar["o"]*(1+slip if side==1 else 1-slip)
+                    old_value=pos["entry_avg"]*pos["notional"]
+                    pos["entry_avg"]=(old_value+add_px*add_notional)/(pos["notional"]+add_notional)
+                    pos["notional"]+=add_notional
+                    pos["entry_cost"]+=add_notional*(fee+slip)
+                pos["stage2_pending"]=False
             if side==1:
                 if bar["l"]<=pos["stop"]: exit_px=pos["stop"]; reason="stop"
                 elif bar["h"]>=pos["target"]: exit_px=pos["target"]; reason="target"
@@ -159,7 +173,10 @@ def run_portfolio(data, funding, mode, strategy):
             notional=min(notional,max(0,capital*MAX_PORTFOLIO_RISK_PCT-open_risk)/max(risk_per_unit,1e-9))
             if notional < 5: continue
             entry_cost=notional*(fee+slip)
-            positions[coin]={"side":side,"entry_ts":ts,"entry_avg":entry,"notional":notional,
+            first_tranche=notional*0.5
+            entry_cost=first_tranche*(fee+slip)
+            positions[coin]={"side":side,"entry_ts":ts,"entry_avg":entry,"notional":first_tranche,
+                "target_notional":notional,"stage2_pending":True,
                 "stop":stop,"target":target,"entry_cost":entry_cost,"funding_pnl":0.0,
                 "risk_usdt":notional*risk_per_unit}
         unrealized=0.0
@@ -196,7 +213,7 @@ def run_portfolio(data, funding, mode, strategy):
         "max_portfolio_stop_risk_pct":MAX_PORTFOLIO_RISK_PCT*100,"max_notional_per_position_pct":MAX_NOTIONAL_PCT*100,
         "stop_atr":STOP_ATR,"target_R":TARGET_R,"max_holding_hours":MAX_HOLD_HOURS,
         "fee_bps_per_side":FEE_BPS[mode],"slippage_bps_per_side":SLIPPAGE_BPS,
-        "futures_leverage":1,"spot_shorting":False,"staged_entries":"two equal tranches are planned in the next iteration; this first execution baseline enters at next-bar open"},
+        "futures_leverage":1,"spot_shorting":False,"staged_entries":"50% at next-bar open; remaining 50% at the following bar open only if the prior completed candle still confirms the signal and price has not crossed the stop"},
         "trades_detail":trades,"equity_curve":curve}
 
 def main():
