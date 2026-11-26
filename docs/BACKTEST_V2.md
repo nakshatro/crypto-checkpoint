@@ -41,7 +41,7 @@ Required columns: `open_time_ms,open,high,low,close,volume`. At least 500 valid 
 
 This is an OHLCV-only proxy inspired by CMI reversal and trend requirements. It does not reproduce the five-layer model or its pre-move scoring because historical OI, taker CVD, liquidation flow, order-book imbalance, ETF flow, on-chain, macro/news and sentiment snapshots are not archived alongside each hourly forecast. No backtest output should be described as a validation of the live AI model.
 
-The initial implementation also enters at the next bar open and does not yet model the second staged entry tranche. That must be added and unit-tested before treating this as the final CMI execution simulation.
+Staged entries are simulated as two equal tranches: 50% at the next bar open, then the remaining 50% at the following bar open only if the prior completed candle still confirms the signal and price has not crossed the stop. The signal and execution assumptions still require independent unit tests and review.
 
 ## Run
 
